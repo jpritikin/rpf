@@ -1,0 +1,31 @@
+# For discussion of Bayesian priors, see Baker & Kim (2004, pp. 187-188)
+
+rpf.drm <- function(D=1, numAlternatives=5) {
+  guess.weight <- 20
+  guessing <- (1/numAlternatives)
+  new("rpf.drm", numChoices=2, D=D,
+      a.prior.meanlog=0,
+      a.prior.sdlog=.5,
+      c.prior.alpha=guess.weight*guessing+1,
+      c.prior.beta=guess.weight*(1-guessing)+1)
+}
+
+setMethod("rpf.prob", signature(m="rpf.drm", param="numeric",
+                                theta="numeric"),
+          function(m, param, theta) {
+            a <- param[1]
+            b <- param[2]
+            c <- param[3]
+            p <- c + (1-c)/(1+exp(-m@D*a*(theta-b)))
+            c(1-p,p)
+          })
+
+setMethod("rpf.logLik", signature(m="rpf.drm", param="numeric"),
+          function(m, param) {
+            a <- param[1]
+            c <- param[3]
+            -2 * sum(dlnorm(a, meanlog=m@a.prior.meanlog,
+                               sdlog=m@a.prior.sdlog, log=TRUE),
+                     dbeta(c, shape1=c.prior.alpha-2,
+                           shape2=c.prior.beta-2, log=TRUE))
+          })

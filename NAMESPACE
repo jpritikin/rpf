@@ -1,0 +1,2 @@
+exportClasses(rpf, rpf.logistic, rpf.gpcm, rpf.drm)
+export(rpf.drm, rpf.gpcm)

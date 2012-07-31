@@ -1,0 +1,16 @@
+Package: rpf
+Type: Package
+Title: Response Probability Functions
+Version: 0.1
+Date: 2012-07-30
+Authors@R: c(person("Joshua",family="Pritikin",
+	       email="jpritikin@pobox.com",
+	       role=c('cre','aut')),
+	     person("Jonathan",family="Weeks",
+	       email="weeksjp@gmail.com",
+	       role=c('ctb')))
+Description: This package maps parameters to response probabilities
+        for dichotomous (1PL, 2PL and 3PL) and/or polytomous
+        (graded response, partial credit/generalized partial credit,
+        nominal, and multiple-choice model) items.
+License: GPL (>= 2)
