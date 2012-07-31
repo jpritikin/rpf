@@ -1,5 +1,5 @@
-rpf.gpcm <- function(numChoices=2, D=1) {
-  new("rpf.gpcm", numChoices=numChoices, D=D,
+rpf.gpcm <- function(numOutcomes=2, D=1) {
+  new("rpf.gpcm", numOutcomes=numOutcomes, D=D,
       a.prior.meanlog=0,
       a.prior.sdlog=.5)
 }
@@ -9,7 +9,7 @@ setMethod("rpf.prob", signature(m="rpf.gpcm", param="numeric",
           function(m, param, theta) {
             a <- param[1]
             b <- param[-1]
-            tri <- lower.tri(matrix(NA, m@numChoices, m@numChoices))
+            tri <- lower.tri(matrix(NA, m@numOutcomes, m@numOutcomes))
             k <- exp(apply(c(0, m@D * -a * (theta - b)) * tri, c(2), sum))
             k / sum(k)
           })

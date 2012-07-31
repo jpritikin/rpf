@@ -3,7 +3,7 @@
 rpf.drm <- function(D=1, numAlternatives=5) {
   guess.weight <- 20
   guessing <- (1/numAlternatives)
-  new("rpf.drm", numChoices=2, D=D,
+  new("rpf.drm", numOutcomes=2, D=D,
       a.prior.meanlog=0,
       a.prior.sdlog=.5,
       c.prior.alpha=guess.weight*guessing+1,

@@ -6,7 +6,7 @@
 # nrm: for the nominal response model
 
 setClass("rpf",
-         representation(numChoices="numeric"))
+         representation(numOutcomes="numeric"))
 
 setGeneric("rpf.prob", function(m, param, theta) {
   standardGeneric("rpf.prob")

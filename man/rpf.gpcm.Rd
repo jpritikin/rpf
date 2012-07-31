@@ -8,12 +8,12 @@ partial credit/generalized partial credit model
 Specify an item to be scored using the partial credit/generalized partial credit model
 }
 \usage{
-rpf.gpcm(numChoices = 2, D = 1)
+rpf.gpcm(numOutcomes = 2, D = 1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{numChoices}{
-%%     ~~Describe \code{numChoices} here~~
+  \item{numOutcomes}{
+%%     ~~Describe \code{numOutcomes} here~~
 }
   \item{D}{
 Use 1.7 for the normal-ogive version
@@ -50,9 +50,9 @@ Use 1.7 for the normal-ogive version
 ##--	or do  help(data=index)  for the standard data sets.
 
 ## The function is currently defined as
-function (numChoices = 2, D = 1) 
+function (numOutcomes = 2, D = 1) 
 {
-    new("rpf.gpcm", numChoices = numChoices, D = D)
+    new("rpf.gpcm", numOutcomes = numOutcomes, D = D)
   }
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
