@@ -10,8 +10,12 @@ setMethod("rpf.prob", signature(m="rpf.gpcm", param="numeric",
             a <- param[1]
             b <- param[-1]
             tri <- lower.tri(matrix(NA, m@numOutcomes, m@numOutcomes))
-            k <- exp(apply(c(0, m@D * -a * (theta - b)) * tri, c(2), sum))
-            k / sum(k)
+            out <- array(dim=c(length(theta), m@numOutcomes))
+            for (px in 1:length(theta)) {
+                k <- exp(apply(c(0, m@D * -a * (theta[px] - b)) * tri, c(2), sum))
+                out[px,] <- k / sum(k)
+            }
+            return(out)
           })
 
 setMethod("rpf.logLik", signature(m="rpf.gpcm", param="numeric"),
@@ -19,4 +23,11 @@ setMethod("rpf.logLik", signature(m="rpf.gpcm", param="numeric"),
             a <- param[1]
             -2 * dlnorm(p.a, meanlog=m@a.prior.meanlog,
                         sdlog=m@a.prior.sdlog, log=TRUE)
+          })
+
+setMethod("rpf.rparam", signature(m="rpf.gpcm"),
+          function(m) {
+              a <- rlnorm(1, meanlog=m@a.prior.meanlog,
+                          sdlog=m@a.prior.sdlog)
+              c(a=a, b=sort(rnorm(m@numOutcomes-1)))
           })

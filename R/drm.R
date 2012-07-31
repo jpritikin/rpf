@@ -17,7 +17,7 @@ setMethod("rpf.prob", signature(m="rpf.drm", param="numeric",
             b <- param[2]
             c <- param[3]
             p <- c + (1-c)/(1+exp(-m@D*a*(theta-b)))
-            c(1-p,p)
+            cbind(1-p,p)
           })
 
 setMethod("rpf.logLik", signature(m="rpf.drm", param="numeric"),
@@ -26,6 +26,16 @@ setMethod("rpf.logLik", signature(m="rpf.drm", param="numeric"),
             c <- param[3]
             -2 * sum(dlnorm(a, meanlog=m@a.prior.meanlog,
                                sdlog=m@a.prior.sdlog, log=TRUE),
-                     dbeta(c, shape1=c.prior.alpha-2,
-                           shape2=c.prior.beta-2, log=TRUE))
+                     dbeta(c, shape1=m@c.prior.alpha-2,
+                           shape2=m@c.prior.beta-2, log=TRUE))
+          })
+
+setMethod("rpf.rparam", signature(m="rpf.drm"),
+          function(m) {
+              n <- 1
+              c(a=rlnorm(n, meanlog=m@a.prior.meanlog,
+                       sdlog=m@a.prior.sdlog),
+                b=rnorm(n),
+                c=rbeta(n, shape1=m@c.prior.alpha-2,
+                      shape2=m@c.prior.beta-2))
           })
