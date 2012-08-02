@@ -10,7 +10,11 @@ setClass("rpf",
 
 setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 setGeneric("rpf.logLik", function(m, param) standardGeneric("rpf.logLik"))
+setGeneric("rpf.paramDim", function(m) standardGeneric("rpf.paramDim"))
 setGeneric("rpf.rparam", function(m) standardGeneric("rpf.rparam"))
+setGeneric("rpf.startingParam", function(m) standardGeneric("rpf.startingParam"))
+setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation"))
+setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLocation"))
 
 setClass("rpf.logistic", contains='rpf',
          representation(D="numeric"))
@@ -20,7 +24,8 @@ setClass("rpf.gpcm", contains='rpf.logistic',
                         a.prior.sdlog="numeric"))
 
 setClass("rpf.drm", contains='rpf.logistic',
-         representation(a.prior.meanlog="numeric",
+         representation(guessing="numeric",
+                        a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric",
                         c.prior.alpha="numeric",
                         c.prior.beta="numeric"))

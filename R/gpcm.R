@@ -21,9 +21,13 @@ setMethod("rpf.prob", signature(m="rpf.gpcm", param="numeric",
 setMethod("rpf.logLik", signature(m="rpf.gpcm", param="numeric"),
           function(m, param) {
             a <- param[1]
-            -2 * dlnorm(p.a, meanlog=m@a.prior.meanlog,
+            dlnorm(a, meanlog=m@a.prior.meanlog,
                         sdlog=m@a.prior.sdlog, log=TRUE)
           })
+
+setMethod("rpf.paramDim", signature(m="rpf.gpcm"), function(m) {
+    c(1, m@numOutcomes)
+})
 
 setMethod("rpf.rparam", signature(m="rpf.gpcm"),
           function(m) {
@@ -38,4 +42,20 @@ setMethod("rpf.rparam", signature(m="rpf.gpcm"),
               out <- cbind(a=a, b)
               dimnames(out)[[2]][-1] <- paste(sep='','b',1:(m@numOutcomes-1))
               return(out)
+          })
+
+setMethod("rpf.startingParam", signature(m="rpf.gpcm"),
+          function(m) {
+              t(as.matrix(c(a=1, b=rep(0, (m@numOutcomes-1)))))
+          })
+
+setMethod("rpf.getLocation", signature(m="rpf.gpcm", param="numeric"),
+          function(m, param) {
+              t(param[2:m@numOutcomes])
+          })
+
+setMethod("rpf.setLocation", signature(m="rpf.gpcm", param="numeric", loc="numeric"),
+          function(m, param, loc) {
+              param[2:m@numOutcomes] <- loc
+              param
           })

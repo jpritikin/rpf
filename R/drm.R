@@ -4,6 +4,7 @@ rpf.drm <- function(D=1, numAlternatives=5) {
   guess.weight <- 20
   guessing <- (1/numAlternatives)
   new("rpf.drm", numOutcomes=2, D=D,
+      guessing=guessing,
       a.prior.meanlog=0,
       a.prior.sdlog=.5,
       c.prior.alpha=guess.weight*guessing+1,
@@ -24,11 +25,13 @@ setMethod("rpf.logLik", signature(m="rpf.drm", param="numeric"),
           function(m, param) {
             a <- param[1]
             c <- param[3]
-            -2 * sum(dlnorm(a, meanlog=m@a.prior.meanlog,
+            sum(dlnorm(a, meanlog=m@a.prior.meanlog,
                                sdlog=m@a.prior.sdlog, log=TRUE),
                      dbeta(c, shape1=m@c.prior.alpha-2,
                            shape2=m@c.prior.beta-2, log=TRUE))
           })
+
+setMethod("rpf.paramDim", signature(m="rpf.drm"), function(m) c(1,3))
 
 setMethod("rpf.rparam", signature(m="rpf.drm"),
           function(m) {
@@ -38,4 +41,20 @@ setMethod("rpf.rparam", signature(m="rpf.drm"),
                 b=rnorm(n),
                 c=rbeta(n, shape1=m@c.prior.alpha-2,
                       shape2=m@c.prior.beta-2))
+          })
+
+setMethod("rpf.startingParam", signature(m="rpf.drm"),
+          function(m) {
+              cbind(a=1, b=0, c=m@guessing)
+          })
+
+setMethod("rpf.getLocation", signature(m="rpf.drm", param="numeric"),
+          function(m, param) {
+              param[2]
+          })
+
+setMethod("rpf.setLocation", signature(m="rpf.drm", param="numeric", loc="numeric"),
+          function(m, param, loc) {
+              param[2] <- loc
+              param
           })
