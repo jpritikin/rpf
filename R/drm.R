@@ -33,7 +33,7 @@ setMethod("rpf.logLik", signature(m="rpf.drm", param="numeric"),
 setMethod("rpf.rparam", signature(m="rpf.drm"),
           function(m) {
               n <- 1
-              c(a=rlnorm(n, meanlog=m@a.prior.meanlog,
+              cbind(a=rlnorm(n, meanlog=m@a.prior.meanlog,
                        sdlog=m@a.prior.sdlog),
                 b=rnorm(n),
                 c=rbeta(n, shape1=m@c.prior.alpha-2,

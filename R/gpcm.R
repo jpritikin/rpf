@@ -27,7 +27,15 @@ setMethod("rpf.logLik", signature(m="rpf.gpcm", param="numeric"),
 
 setMethod("rpf.rparam", signature(m="rpf.gpcm"),
           function(m) {
-              a <- rlnorm(1, meanlog=m@a.prior.meanlog,
+              n <- 1
+              a <- rlnorm(n, meanlog=m@a.prior.meanlog,
                           sdlog=m@a.prior.sdlog)
-              c(a=a, b=sort(rnorm(m@numOutcomes-1)))
+              b <- array(dim=c(n, m@numOutcomes-1),
+                         data=rnorm(n * (m@numOutcomes-1)))
+              if (m@numOutcomes > 2) {
+                  b <- t(apply(b, 1, sort))
+              }
+              out <- cbind(a=a, b)
+              dimnames(out)[[2]][-1] <- paste(sep='','b',1:(m@numOutcomes-1))
+              return(out)
           })

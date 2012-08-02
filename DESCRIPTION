@@ -14,6 +14,6 @@ Description: This package provides optimized, low-level functions
 	for dichotomous (1PL, 2PL and 3PL) and/or polytomous
 	(graded response, partial credit/generalized partial credit,
 	nominal, and multiple-choice model) items.
-License: GPL (>= 2)
+License: GPL (>= 3)
 Suggests: plink, RUnit
 Depends: methods

@@ -25,22 +25,23 @@ setClass("rpf.drm", contains='rpf.logistic',
                         c.prior.alpha="numeric",
                         c.prior.beta="numeric"))
 
-rpf.sample <- function(theta, items, param=NULL) {
+rpf.sample <- function(theta, items, params=NULL) {
     if (length(theta) == 1) {
         theta <- rnorm(theta)
     }
     numPeople <- length(theta)
     numItems <- length(items)
-    if (is.null(param)) {
-        param <- lapply(items, rpf.rparam)
+    if (is.null(params)) {
+        params <- lapply(items, rpf.rparam)
     }
     outcomes <- vapply(items, function(i) i@numOutcomes, 0)
     
-    P <- array(data=0, dim=c(numItems, numPeople, max(outcomes)))
+    ret <- array(dim=c(numPeople, numItems))
     for (ix in 1:numItems) {
         i <- items[[ix]]
-        P[ix,,1:i@numOutcomes] <- rpf.prob(i, param[[ix]], theta)
+        param <- params[[ix]]
+        P <- rpf.prob(i, c(param), theta)
+        ret[,ix] <- apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F)
     }
-    ret <- apply(P, c(2,1), sample, x=1:max(outcomes), size=1, replace=F)
     return(ret)
 }
