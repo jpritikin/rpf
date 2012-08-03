@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# hm, maybe could store the version here and change the date
+# if the version changes? TODO
+
+#today=$(date +%Y-%m-%d)
+#perl -pi -e "s/^Date\:.*$/Date: $today/" DESCRIPTION
+
+rm -f man/*.Rd
+R --no-restore --no-save --no-readline <<EOF
+library(roxygen2)
+roxygenize('.')
+EOF

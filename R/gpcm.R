@@ -1,3 +1,18 @@
+##' Create a generalized partial credit model and associated hyperparameters.
+##'
+##' This function instantiates a generalized partial credit model. The
+##' discrimination prior defaults to the lognormal distribution with
+##' \code{meanlog=0} and \code{sdlog=.5}.
+##'
+##' It is not yet possible to further customize the Bayesian
+##' priors. The API will change before the 1.0 release.
+##' 
+##' @param numOutcomes The number of choices available
+##' @param D defaults to 1 or pass in the \code{\link{rpf.ogive}}
+##' @return an item model
+##' @export
+##' @references Baker & Kim (2004). Item Response Theory: Parameter
+##' Estimation Techniques. Marcel Dekker, Inc.
 rpf.gpcm <- function(numOutcomes=2, D=1) {
   new("rpf.gpcm", numOutcomes=numOutcomes, D=D,
       a.prior.meanlog=0,

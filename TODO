@@ -1,0 +1,7 @@
+# grm: for the graded response model
+# mcm: for the multiple-choice model
+# nrm: for the nominal response model
+
+and multidimensional models
+
+re-implement in C for performance

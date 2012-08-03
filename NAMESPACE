@@ -1,2 +1,0 @@
-exportClasses(rpf, rpf.logistic, rpf.gpcm, rpf.drm)
-exportPattern("^rpf\\.")

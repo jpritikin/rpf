@@ -1,8 +1,24 @@
-# For discussion of Bayesian priors, see Baker & Kim (2004, pp. 187-188)
-
-rpf.drm <- function(D=1, numAlternatives=5) {
+##' Create a dichotomous response model and associated hyperparameters.
+##'
+##' This function instantiates a dichotomous response model. The
+##' discrimination prior defaults to the lognormal distribution with
+##' \code{meanlog=0} and \code{sdlog=.5}. The guessing prior is the
+##' beta distribution. See the source code for details.  For
+##' discussion on the choice of these Bayesian priors see Baker & Kim
+##' (2004, pp. 187-188).
+##'
+##' It is not yet possible to further customize the Bayesian
+##' priors. The API will change before the 1.0 release.
+##' 
+##' @param D defaults to 1 or pass in the \code{\link{rpf.ogive}}
+##' @param numChoices the number of alternatives in the question
+##' @return an item model
+##' @export
+##' @references Baker & Kim (2004). Item Response Theory: Parameter
+##' Estimation Techniques. Marcel Dekker, Inc.
+rpf.drm <- function(D=1, numChoices=5) {
   guess.weight <- 20
-  guessing <- (1/numAlternatives)
+  guessing <- (1/numChoices)
   new("rpf.drm", numOutcomes=2, D=D,
       guessing=guessing,
       a.prior.meanlog=0,
