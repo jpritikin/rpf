@@ -1,5 +1,14 @@
 #!/bin/sh
 
+set -o errexit
+set -o nounset
+set -o noclobber
+
+if [ ! -x inst/rox ]; then
+  echo "$0 must be run from the top of the package directory"
+  exit 1
+fi
+
 # hm, maybe could store the version here and change the date
 # if the version changes? TODO
 
