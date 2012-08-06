@@ -9,11 +9,13 @@ if [ ! -x inst/rox ]; then
   exit 1
 fi
 
-# hm, maybe could store the version here and change the date
-# if the version changes? TODO
-
-#today=$(date +%Y-%m-%d)
-#perl -pi -e "s/^Date\:.*$/Date: $today/" DESCRIPTION
+Version=0.2
+descVersion=$(grep Version DESCRIPTION | cut -d ' ' -f 2)
+if [ "$descVersion" != "$Version" ]; then
+  today=$(date +%Y-%m-%d)
+  perl -pi -e "s/^Date\:.*$/Date: $today/;
+               s/^Version\:.*$/Version: $Version/;" DESCRIPTION
+fi
 
 rm -f man/*.Rd
 R --no-restore --no-save --no-readline <<EOF
