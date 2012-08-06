@@ -30,7 +30,7 @@ NULL
 ##' @aliases rpf.base-class
 ##' @export
 setClass("rpf.base",
-         representation(numOutcomes="numeric"))
+         representation(numOutcomes="numeric", "VIRTUAL"))
 
 ##' Map an item model, item parameters, and person trait score into a
 ##' probability vector
@@ -169,13 +169,30 @@ setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLoca
 ##' 
 rpf.ogive <- 1.702
 
+##' The base class for 1 dimensional response probability functions.
+##' @name Class rpf.1dim
+##' @rdname rpf.1dim-class
+##' @aliases rpf.1dim-class
+##' @export
+setClass("rpf.1dim", contains='rpf.base',
+         representation("VIRTUAL"))
+
+##' The base class for multi-dimensional response probability functions.
+##' @name Class rpf.mdim
+##' @rdname rpf.mdim-class
+##' @aliases rpf.mdim-class
+##' @export
+setClass("rpf.mdim", contains='rpf.base',
+         representation(dimensions="numeric",
+                        "VIRTUAL"))
+
 ##' The unidimensional generalized partial credit item model.
 ##'
 ##' @export
 ##' @name Class rpf.gpcm
 ##' @rdname rpf.gpcm-class
 ##' @aliases rpf.gpcm-class
-setClass("rpf.gpcm", contains='rpf.base',
+setClass("rpf.gpcm", contains='rpf.1dim',
          representation(D="numeric",
                         a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric"))
@@ -186,7 +203,7 @@ setClass("rpf.gpcm", contains='rpf.base',
 ##' @name Class rpf.drm
 ##' @rdname rpf.drm-class
 ##' @aliases rpf.drm-class
-setClass("rpf.drm", contains='rpf.base',
+setClass("rpf.drm", contains='rpf.1dim',
          representation(D="numeric",
                         guessing="numeric",
                         a.prior.meanlog="numeric",
