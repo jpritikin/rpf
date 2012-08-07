@@ -29,7 +29,7 @@ rpf.drm <- function(numChoices=5, dimensions=1, D=1, multidimensional) {
   }
   guess.weight <- 20
   guessing <- (1/numChoices)
-  if (dimensions == 1) {
+  if (!multidimensional) {
     new("rpf.1dim.drm", numOutcomes=2, D=D,
         guessing=guessing,
         a.prior.meanlog=0,
@@ -98,6 +98,7 @@ setMethod("rpf.setLocation", signature(m="rpf.1dim.drm", param="numeric", loc="n
 
 ### mdim
 
+##' @author Jonathan Weeks <weeksjp@@gmail.com>
 setMethod("rpf.prob", signature(m="rpf.mdim.drm", param="matrix",
                                 theta="matrix"),
           function(m, param, theta) {

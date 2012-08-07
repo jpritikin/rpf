@@ -44,6 +44,7 @@ setClass("rpf.base",
 ##' rpf.prob,rpf.1dim.drm,matrix,numeric-method
 ##' rpf.prob,rpf.mdim.drm,matrix,matrix-method
 ##' rpf.prob,rpf.1dim.gpcm,matrix,numeric-method
+##' rpf.prob,rpf.mdim.gpcm,matrix,matrix-method
 ##' @export
 ##' @seealso
 ##' See \code{\link{rpf.drm}} and \code{\link{rpf.gpcm}} to create item models.
@@ -55,6 +56,32 @@ setClass("rpf.base",
 ##' rpf.prob(i1, c(i1.p), -1)   # low trait score
 ##' rpf.prob(i1, c(i1.p), c(0,1))    # average and high trait score
 setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
+
+##' Turn a vector of 1dim parameters into a suitably shaped matrix for
+##' \code{\link{rpf.prob}}.
+##' 
+##' @name rpf.prob wrapper1
+##' @rdname rpf.prob.wrapper1
+##' @aliases rpf.prob,rpf.base,numeric,numeric-method
+##' @docType methods
+setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
+                                theta="numeric"),
+          function(m, param, theta) {
+            rpf.prob(m, t(param), theta)
+          })
+
+##' Turn a vector of 1dim parameters into a suitably shaped matrix for
+##' \code{\link{rpf.prob}}.
+##' 
+##' @name rpf.prob wrapper2
+##' @rdname rpf.prob.wrapper2
+##' @aliases rpf.prob,rpf.base,numeric,matrix-method
+##' @docType methods
+setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
+                                theta="matrix"),
+          function(m, param, theta) {
+            rpf.prob(m, t(param), theta)
+          })
 
 ##' Log likelihood of item parameters with respect to Bayesian prior
 ##'
@@ -69,6 +96,7 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf.logLik,rpf.1dim.drm,numeric-method
 ##' rpf.logLik,rpf.mdim.drm,matrix-method
 ##' rpf.logLik,rpf.1dim.gpcm,numeric-method
+##' rpf.logLik,rpf.mdim.gpcm,numeric-method
 ##' @export
 ##' @return a log likelihood (not -2 * log likelihood)
 ##' @examples
@@ -89,6 +117,7 @@ setGeneric("rpf.logLik", function(m, param) standardGeneric("rpf.logLik"))
 ##' rpf.paramDim,rpf.1dim.drm-method
 ##' rpf.paramDim,rpf.mdim.drm-method
 ##' rpf.paramDim,rpf.1dim.gpcm-method
+##' rpf.paramDim,rpf.mdim.gpcm-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -108,6 +137,7 @@ setGeneric("rpf.paramDim", function(m) standardGeneric("rpf.paramDim"))
 ##' rpf.rparam,rpf.1dim.drm-method
 ##' rpf.rparam,rpf.mdim.drm-method
 ##' rpf.rparam,rpf.1dim.gpcm-method
+##' rpf.rparam,rpf.mdim.gpcm-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -126,6 +156,7 @@ setGeneric("rpf.rparam", function(m) standardGeneric("rpf.rparam"))
 ##' rpf.startingParam,rpf.1dim.drm-method
 ##' rpf.startingParam,rpf.mdim.drm-method
 ##' rpf.startingParam,rpf.1dim.gpcm-method
+##' rpf.startingParam,rpf.mdim.gpcm-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -142,6 +173,7 @@ setGeneric("rpf.startingParam", function(m) standardGeneric("rpf.startingParam")
 ##' rpf.getLocation,rpf.1dim.drm,numeric-method
 ##' rpf.getLocation,rpf.mdim.drm,matrix-method
 ##' rpf.getLocation,rpf.1dim.gpcm,numeric-method
+##' rpf.getLocation,rpf.mdim.gpcm,numeric-method
 ##' @export
 ##' @seealso \code{\link{rpf.setLocation}}
 setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation"))
@@ -157,6 +189,7 @@ setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation
 ##' rpf.setLocation,rpf.1dim.drm,numeric,numeric-method
 ##' rpf.setLocation,rpf.mdim.drm,matrix,numeric-method
 ##' rpf.setLocation,rpf.1dim.gpcm,numeric,numeric-method
+##' rpf.setLocation,rpf.mdim.gpcm,numeric,numeric-method
 ##' @export
 ##' @seealso \code{\link{rpf.getLocation}}
 setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLocation"))
@@ -182,21 +215,6 @@ rpf.ogive <- 1.702
 ##' @export
 setClass("rpf.1dim", contains='rpf.base',
          representation("VIRTUAL"))
-
-##' Turn a vector of 1dim parameters into a suitably shaped matrix for
-##' \code{\link{rpf.prob}}. There is no similar method for
-##' multidimensional items models because most multidimensional items
-##' models use a 2D matrix of parameters.
-##' 
-##' @name rpf.prob 1-dimensional wrapper
-##' @rdname rpf.prob.1dim
-##' @aliases rpf.prob,rpf.1dim,numeric,numeric-method
-##' @docType methods
-setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric",
-                                theta="numeric"),
-          function(m, param, theta) {
-            rpf.prob(m, t(param), theta)
-          })
 
 ##' The base class for multi-dimensional response probability functions.
 ##' @name Class rpf.mdim
@@ -245,6 +263,17 @@ setClass("rpf.mdim.drm", contains='rpf.mdim',
                         a.prior.sdlog="numeric",
                         c.prior.alpha="numeric",
                         c.prior.beta="numeric"))
+
+##' The multidimensional generalized partial credit item model.
+##'
+##' @export
+##' @name Class rpf.mdim.gpcm
+##' @rdname rpf.mdim.gpcm-class
+##' @aliases rpf.mdim.gpcm-class
+setClass("rpf.mdim.gpcm", contains='rpf.mdim',
+         representation(D="numeric",
+                        a.prior.meanlog="numeric",
+                        a.prior.sdlog="numeric"))
 
 ##' Randomly sample response patterns given a list of items
 ##'

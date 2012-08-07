@@ -9,7 +9,7 @@ library(rpf)
 set.seed(1)
 
 theta <- rnorm(2)
-theta.2d <- array(dim=c(2,2), data=rnorm(4))
+theta.2d <- array(dim=c(3,2), data=rnorm(6))
 
 i1 <- rpf.drm()
 i1.p <- rpf.rparam(i1)
@@ -28,3 +28,9 @@ i2.p <- rpf.rparam(i2)
 checkEqualsNumeric(as.matrix(gpcm(i2.p, i2@numOutcomes, theta)@prob[,-1]),
                    rpf.prob(i2, i2.p, theta),
                    "GPCM")
+
+i3 <- rpf.gpcm(dimensions=2, numOutcomes=3)
+i3.p <- rpf.rparam(i3)
+checkEqualsNumeric(rpf.prob(i3, i3.p, theta.2d),
+    as.matrix(gpcm(i3.p,dimensions=2,cat=3,theta.2d)@prob[,-1:-2]),
+                   "M-GPCM")
