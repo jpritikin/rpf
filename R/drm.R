@@ -12,7 +12,7 @@
 ##' 
 ##' @param numChoices the number of choices in the question
 ##' @param dimensions the number of dimensions
-##' @param D defaults to 1 or pass in the \code{\link{rpf.ogive}}
+##' @param D defaults to 1 or pass in \code{\link{rpf.ogive}}
 ##' @param multidimensional whether to use a multidimensional model.
 ##' Defaults to \code{TRUE} when \code{dimensions>1} and
 ##' \code{FALSE} when \code{dimensions==1}.
@@ -30,7 +30,7 @@ rpf.drm <- function(numChoices=5, dimensions=1, D=1, multidimensional) {
   guess.weight <- 20
   guessing <- (1/numChoices)
   if (!multidimensional) {
-    new("rpf.1dim.drm", numOutcomes=2, D=D,
+    new("rpf.1dim.drm", numOutcomes=2, D=D, numParam=3,
         guessing=guessing,
         a.prior.meanlog=0,
         a.prior.sdlog=.5,
@@ -38,6 +38,7 @@ rpf.drm <- function(numChoices=5, dimensions=1, D=1, multidimensional) {
         c.prior.beta=guess.weight*(1-guessing)+1)
   } else {
     new("rpf.mdim.drm", numOutcomes=2, D=D, dimensions=dimensions,
+        numParam=2+dimensions,
         guessing=guessing,
         a.prior.meanlog=0,
         a.prior.sdlog=.5,
@@ -67,8 +68,6 @@ setMethod("rpf.logLik", signature(m="rpf.1dim.drm", param="numeric"),
                      dbeta(c, shape1=m@c.prior.alpha-2,
                            shape2=m@c.prior.beta-2, log=TRUE))
           })
-
-setMethod("rpf.paramDim", signature(m="rpf.1dim.drm"), function(m) c(1,3))
 
 setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
           function(m) {
@@ -121,9 +120,6 @@ setMethod("rpf.logLik", signature(m="rpf.mdim.drm", param="matrix"),
                 dbeta(c, shape1=m@c.prior.alpha-2,
                       shape2=m@c.prior.beta-2, log=TRUE))
           })
-
-setMethod("rpf.paramDim", signature(m="rpf.mdim.drm"),
-          function(m) c(1, 2+m@dimensions))
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
           function(m) {

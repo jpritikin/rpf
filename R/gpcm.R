@@ -9,7 +9,7 @@
 ##' 
 ##' @param numOutcomes The number of choices available
 ##' @param dimensions the number of dimensions
-##' @param D defaults to 1 or pass in the \code{\link{rpf.ogive}}
+##' @param D defaults to 1 or pass in \code{\link{rpf.ogive}}
 ##' @param multidimensional whether to use a multidimensional model.
 ##' Defaults to \code{TRUE} when \code{dimensions>1} and
 ##' \code{FALSE} when \code{dimensions==1}.
@@ -26,10 +26,12 @@ rpf.gpcm <- function(numOutcomes=2, dimensions=1, D=1, multidimensional) {
   }
   if (!multidimensional) {
     new("rpf.1dim.gpcm", numOutcomes=numOutcomes, D=D,
+        numParam=numOutcomes,
         a.prior.meanlog=0,
         a.prior.sdlog=.5)
   } else {
     new("rpf.mdim.gpcm", numOutcomes=numOutcomes, D=D, dimensions=dimensions,
+        numParam=dimensions + numOutcomes - 1,
         a.prior.meanlog=0,
         a.prior.sdlog=.5)
   }
@@ -57,10 +59,6 @@ setMethod("rpf.logLik", signature(m="rpf.1dim.gpcm", param="numeric"),
             dlnorm(a, meanlog=m@a.prior.meanlog,
                         sdlog=m@a.prior.sdlog, log=TRUE)
           })
-
-setMethod("rpf.paramDim", signature(m="rpf.1dim.gpcm"), function(m) {
-    c(1, m@numOutcomes)
-})
 
 setMethod("rpf.rparam", signature(m="rpf.1dim.gpcm"),
           function(m) {
@@ -109,10 +107,6 @@ setMethod("rpf.logLik", signature(m="rpf.mdim.gpcm", param="numeric"),
             sum(dlnorm(a, meanlog=m@a.prior.meanlog,
                        sdlog=m@a.prior.sdlog, log=TRUE))
           })
-
-setMethod("rpf.paramDim", signature(m="rpf.mdim.gpcm"), function(m) {
-  c(1, m@dimensions + m@numOutcomes - 1)
-})
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.gpcm"),
           function(m) {
