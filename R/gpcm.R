@@ -26,11 +26,13 @@ rpf.gpcm <- function(numOutcomes=2, dimensions=1, D=1, multidimensional) {
   }
   if (!multidimensional) {
     new("rpf.1dim.gpcm", numOutcomes=numOutcomes, D=D,
+        dimensions=1,
         numParam=numOutcomes,
         a.prior.meanlog=0,
         a.prior.sdlog=.5)
   } else {
-    new("rpf.mdim.gpcm", numOutcomes=numOutcomes, D=D, dimensions=dimensions,
+    new("rpf.mdim.gpcm", numOutcomes=numOutcomes, D=D,
+        dimensions=dimensions,
         numParam=dimensions + numOutcomes - 1,
         a.prior.meanlog=0,
         a.prior.sdlog=.5)

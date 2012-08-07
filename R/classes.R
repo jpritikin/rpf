@@ -35,6 +35,7 @@ NULL
 setClass("rpf.base",
          representation(numOutcomes="numeric",
                         numParam="numeric",
+                        dimensions="numeric",
                         "VIRTUAL"))
 
 ##' Map an item model, item parameters, and person trait score into a
@@ -209,8 +210,7 @@ setClass("rpf.1dim", contains='rpf.base',
 ##' @aliases rpf.mdim-class
 ##' @export
 setClass("rpf.mdim", contains='rpf.base',
-         representation(dimensions="numeric",
-                        "VIRTUAL"))
+         representation("VIRTUAL"))
 
 ##' The unidimensional generalized partial credit item model.
 ##'
@@ -296,22 +296,25 @@ setClass("rpf.mdim.nrm", contains='rpf.mdim',
 ##' rpf.sample(5, list(i1,i2), list(i1.p, i2.p))
 ##' @seealso \code{\link{sample}}
 rpf.sample <- function(theta, items, params) {
-    if (length(theta) == 1) {
-        theta <- rnorm(theta)
-    }
-    numPeople <- length(theta)
-    numItems <- length(items)
-    if (missing(params)) {
-        params <- lapply(items, rpf.rparam)
-    }
-    outcomes <- vapply(items, function(i) i@numOutcomes, 0)
-    
-    ret <- array(dim=c(numPeople, numItems))
-    for (ix in 1:numItems) {
-        i <- items[[ix]]
-        param <- params[[ix]]
-        P <- rpf.prob(i, c(param), theta)
-        ret[,ix] <- apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F)
-    }
-    return(ret)
+  if (max(vapply(items, function(i) i@dimensions, 0)) > 1) {
+    stop("Can only sample unidimensional items")
+  }
+  if (length(theta) == 1) {
+    theta <- rnorm(theta)
+  }
+  numPeople <- length(theta)
+  numItems <- length(items)
+  if (missing(params)) {
+    params <- lapply(items, rpf.rparam)
+  }
+  outcomes <- vapply(items, function(i) i@numOutcomes, 0)
+  
+  ret <- array(dim=c(numPeople, numItems))
+  for (ix in 1:numItems) {
+    i <- items[[ix]]
+    param <- params[[ix]]
+    P <- rpf.prob(i, c(param), theta)
+    ret[,ix] <- apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F)
+  }
+  return(ret)
 }

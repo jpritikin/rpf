@@ -31,6 +31,7 @@ rpf.drm <- function(numChoices=5, dimensions=1, D=1, multidimensional) {
   guessing <- (1/numChoices)
   if (!multidimensional) {
     new("rpf.1dim.drm", numOutcomes=2, D=D, numParam=3,
+        dimensions=1,
         guessing=guessing,
         a.prior.meanlog=0,
         a.prior.sdlog=.5,
