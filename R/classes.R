@@ -37,12 +37,13 @@ setClass("rpf.base",
 ##'
 ##' @param m an item model
 ##' @param param item parameters
-##' @param theta a single person's trait score
+##' @param theta the trait score(s)
 ##' @return a vector of probabilities
 ##' @docType methods
 ##' @aliases
-##' rpf.prob,rpf.drm,numeric,numeric-method
-##' rpf.prob,rpf.gpcm,numeric,numeric-method
+##' rpf.prob,rpf.1dim.drm,matrix,numeric-method
+##' rpf.prob,rpf.mdim.drm,matrix,matrix-method
+##' rpf.prob,rpf.1dim.gpcm,matrix,numeric-method
 ##' @export
 ##' @seealso
 ##' See \code{\link{rpf.drm}} and \code{\link{rpf.gpcm}} to create item models.
@@ -52,8 +53,7 @@ setClass("rpf.base",
 ##' i1 <- rpf.drm()
 ##' i1.p <- rpf.rparam(i1)
 ##' rpf.prob(i1, c(i1.p), -1)   # low trait score
-##' rpf.prob(i1, c(i1.p), 0)    # average trait score
-##' rpf.prob(i1, c(i1.p), 1)    # high trait score
+##' rpf.prob(i1, c(i1.p), c(0,1))    # average and high trait score
 setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 
 ##' Log likelihood of item parameters with respect to Bayesian prior
@@ -66,8 +66,9 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' @param param item parameters
 ##' @docType methods
 ##' @aliases
-##' rpf.logLik,rpf.drm,numeric-method
-##' rpf.logLik,rpf.gpcm,numeric-method
+##' rpf.logLik,rpf.1dim.drm,numeric-method
+##' rpf.logLik,rpf.mdim.drm,matrix-method
+##' rpf.logLik,rpf.1dim.gpcm,numeric-method
 ##' @export
 ##' @return a log likelihood (not -2 * log likelihood)
 ##' @examples
@@ -85,8 +86,9 @@ setGeneric("rpf.logLik", function(m, param) standardGeneric("rpf.logLik"))
 ##' @return a vector of dimension sizes
 ##' @docType methods
 ##' @aliases
-##' rpf.paramDim,rpf.drm-method
-##' rpf.paramDim,rpf.gpcm-method
+##' rpf.paramDim,rpf.1dim.drm-method
+##' rpf.paramDim,rpf.mdim.drm-method
+##' rpf.paramDim,rpf.1dim.gpcm-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -103,8 +105,9 @@ setGeneric("rpf.paramDim", function(m) standardGeneric("rpf.paramDim"))
 ##' @return item parameters
 ##' @docType methods
 ##' @aliases
-##' rpf.rparam,rpf.drm-method
-##' rpf.rparam,rpf.gpcm-method
+##' rpf.rparam,rpf.1dim.drm-method
+##' rpf.rparam,rpf.mdim.drm-method
+##' rpf.rparam,rpf.1dim.gpcm-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -120,8 +123,9 @@ setGeneric("rpf.rparam", function(m) standardGeneric("rpf.rparam"))
 ##' @return item parameters
 ##' @docType methods
 ##' @aliases
-##' rpf.startingParam,rpf.drm-method
-##' rpf.startingParam,rpf.gpcm-method
+##' rpf.startingParam,rpf.1dim.drm-method
+##' rpf.startingParam,rpf.mdim.drm-method
+##' rpf.startingParam,rpf.1dim.gpcm-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -135,8 +139,9 @@ setGeneric("rpf.startingParam", function(m) standardGeneric("rpf.startingParam")
 ##' @return location related item parameters
 ##' @docType methods
 ##' @aliases
-##' rpf.getLocation,rpf.drm,numeric-method
-##' rpf.getLocation,rpf.gpcm,numeric-method
+##' rpf.getLocation,rpf.1dim.drm,numeric-method
+##' rpf.getLocation,rpf.mdim.drm,matrix-method
+##' rpf.getLocation,rpf.1dim.gpcm,numeric-method
 ##' @export
 ##' @seealso \code{\link{rpf.setLocation}}
 setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation"))
@@ -149,8 +154,9 @@ setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation
 ##' @return updated item parameters
 ##' @docType methods
 ##' @aliases
-##' rpf.setLocation,rpf.drm,numeric,numeric-method
-##' rpf.setLocation,rpf.gpcm,numeric,numeric-method
+##' rpf.setLocation,rpf.1dim.drm,numeric,numeric-method
+##' rpf.setLocation,rpf.mdim.drm,matrix,numeric-method
+##' rpf.setLocation,rpf.1dim.gpcm,numeric,numeric-method
 ##' @export
 ##' @seealso \code{\link{rpf.getLocation}}
 setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLocation"))
@@ -177,6 +183,21 @@ rpf.ogive <- 1.702
 setClass("rpf.1dim", contains='rpf.base',
          representation("VIRTUAL"))
 
+##' Turn a vector of 1dim parameters into a suitably shaped matrix for
+##' \code{\link{rpf.prob}}. There is no similar method for
+##' multidimensional items models because most multidimensional items
+##' models use a 2D matrix of parameters.
+##' 
+##' @name rpf.prob 1-dimensional wrapper
+##' @rdname rpf.prob.1dim
+##' @aliases rpf.prob,rpf.1dim,numeric,numeric-method
+##' @docType methods
+setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric",
+                                theta="numeric"),
+          function(m, param, theta) {
+            rpf.prob(m, t(param), theta)
+          })
+
 ##' The base class for multi-dimensional response probability functions.
 ##' @name Class rpf.mdim
 ##' @rdname rpf.mdim-class
@@ -189,10 +210,10 @@ setClass("rpf.mdim", contains='rpf.base',
 ##' The unidimensional generalized partial credit item model.
 ##'
 ##' @export
-##' @name Class rpf.gpcm
-##' @rdname rpf.gpcm-class
-##' @aliases rpf.gpcm-class
-setClass("rpf.gpcm", contains='rpf.1dim',
+##' @name Class rpf.1dim.gpcm
+##' @rdname rpf.1dim.gpcm-class
+##' @aliases rpf.1dim.gpcm-class
+setClass("rpf.1dim.gpcm", contains='rpf.1dim',
          representation(D="numeric",
                         a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric"))
@@ -200,10 +221,24 @@ setClass("rpf.gpcm", contains='rpf.1dim',
 ##' Unidimensional dichotomous item models (1PL, 2PL, and 3PL).
 ##'
 ##' @export
-##' @name Class rpf.drm
-##' @rdname rpf.drm-class
-##' @aliases rpf.drm-class
-setClass("rpf.drm", contains='rpf.1dim',
+##' @name Class rpf.1dim.drm
+##' @rdname rpf.1dim.drm-class
+##' @aliases rpf.1dim.drm-class
+setClass("rpf.1dim.drm", contains='rpf.1dim',
+         representation(D="numeric",
+                        guessing="numeric",
+                        a.prior.meanlog="numeric",
+                        a.prior.sdlog="numeric",
+                        c.prior.alpha="numeric",
+                        c.prior.beta="numeric"))
+
+##' Multidimensional dichotomous item models (M1PL, M2PL, and M3PL).
+##'
+##' @export
+##' @name Class rpf.mdim.drm
+##' @rdname rpf.mdim.drm-class
+##' @aliases rpf.mdim.drm-class
+setClass("rpf.mdim.drm", contains='rpf.mdim',
          representation(D="numeric",
                         guessing="numeric",
                         a.prior.meanlog="numeric",
@@ -214,7 +249,7 @@ setClass("rpf.drm", contains='rpf.1dim',
 ##' Randomly sample response patterns given a list of items
 ##'
 ##' Returns a random sample of response patterns given
-##' a list of item models and parameters.
+##' a list of unidimensional item models and parameters.
 ##'
 ##' @name rpf.sample
 ##' @usage

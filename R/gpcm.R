@@ -14,12 +14,12 @@
 ##' @references Baker & Kim (2004). Item Response Theory: Parameter
 ##' Estimation Techniques. Marcel Dekker, Inc.
 rpf.gpcm <- function(numOutcomes=2, D=1) {
-  new("rpf.gpcm", numOutcomes=numOutcomes, D=D,
+  new("rpf.1dim.gpcm", numOutcomes=numOutcomes, D=D,
       a.prior.meanlog=0,
       a.prior.sdlog=.5)
 }
 
-setMethod("rpf.prob", signature(m="rpf.gpcm", param="numeric",
+setMethod("rpf.prob", signature(m="rpf.1dim.gpcm", param="matrix",
                                 theta="numeric"),
           function(m, param, theta) {
             a <- param[1]
@@ -33,18 +33,18 @@ setMethod("rpf.prob", signature(m="rpf.gpcm", param="numeric",
             return(out)
           })
 
-setMethod("rpf.logLik", signature(m="rpf.gpcm", param="numeric"),
+setMethod("rpf.logLik", signature(m="rpf.1dim.gpcm", param="numeric"),
           function(m, param) {
             a <- param[1]
             dlnorm(a, meanlog=m@a.prior.meanlog,
                         sdlog=m@a.prior.sdlog, log=TRUE)
           })
 
-setMethod("rpf.paramDim", signature(m="rpf.gpcm"), function(m) {
+setMethod("rpf.paramDim", signature(m="rpf.1dim.gpcm"), function(m) {
     c(1, m@numOutcomes)
 })
 
-setMethod("rpf.rparam", signature(m="rpf.gpcm"),
+setMethod("rpf.rparam", signature(m="rpf.1dim.gpcm"),
           function(m) {
               n <- 1
               a <- rlnorm(n, meanlog=m@a.prior.meanlog,
@@ -59,17 +59,17 @@ setMethod("rpf.rparam", signature(m="rpf.gpcm"),
               return(out)
           })
 
-setMethod("rpf.startingParam", signature(m="rpf.gpcm"),
+setMethod("rpf.startingParam", signature(m="rpf.1dim.gpcm"),
           function(m) {
               t(as.matrix(c(a=1, b=rep(0, (m@numOutcomes-1)))))
           })
 
-setMethod("rpf.getLocation", signature(m="rpf.gpcm", param="numeric"),
+setMethod("rpf.getLocation", signature(m="rpf.1dim.gpcm", param="numeric"),
           function(m, param) {
               t(param[2:m@numOutcomes])
           })
 
-setMethod("rpf.setLocation", signature(m="rpf.gpcm", param="numeric", loc="numeric"),
+setMethod("rpf.setLocation", signature(m="rpf.1dim.gpcm", param="numeric", loc="numeric"),
           function(m, param, loc) {
               param[2:m@numOutcomes] <- loc
               param
