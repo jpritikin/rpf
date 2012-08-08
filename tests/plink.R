@@ -50,3 +50,13 @@ checkDim(i4,i4.p)
 checkEqualsNumeric(rpf.prob(i4, i4.p, theta.2d),
                    as.matrix(nrm(x=t(i4.p),cat=3, dimensions=2, theta.2d)@prob[,-1:-2]),
                    "NRM")
+
+i5 <- rpf.mcm(numOutcomes=4,dimensions=2)
+i5.p <- rpf.rparam(i5)
+checkDim(i5,i5.p)
+checkEqualsNumeric(rpf.prob(i5, i5.p, theta.2d),
+    as.matrix(mcm(t(i5.p),dimensions=2,cat=4,theta=theta.2d)@prob[,-1:-2]),
+                   "MCM")
+
+# later:
+#grm(t(rep(0,10)), dimensions=2,cat=4, theta=theta.2d)

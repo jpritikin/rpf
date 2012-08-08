@@ -9,14 +9,14 @@
 ##' parameters to response probabilities for dichotomous (1PL, 2PL and
 ##' 3PL) \code{\link{rpf.drm}} and polytomous (graded response,
 ##' partial credit/generalized partial credit \code{\link{rpf.gpcm}},
-##' nominal \code{\link{rpf.nrm}}, and multiple-choice model)
-##' items. Both unidimensional and multidimensional versions of the
-##' models will be available.
+##' nominal \code{\link{rpf.nrm}}, and multiple-choice model
+##' \code{\link{rpf.mcm}}) items. Both unidimensional and
+##' multidimensional versions of the models will be available.
 ##'
 ##' Item model parameters are passed around as a numeric vector. A 1D
 ##' matrix is also acceptable. Regardless of model, parameters are
-##' always in the order discrimination ("a"), difficulty ("b"), and
-##' guessing ("c").
+##' always ordered as follows: discrimination ("a"), difficulty ("b"),
+##' and guessing ("c").
 ##'
 ##' This package could also accrete functions to support plotting (but
 ##' not the actual plot functions).
@@ -57,6 +57,7 @@ setClass("rpf.base",
 ##' rpf.prob,rpf.1dim.gpcm,numeric,numeric-method
 ##' rpf.prob,rpf.mdim.gpcm,numeric,matrix-method
 ##' rpf.prob,rpf.mdim.nrm,numeric,matrix-method
+##' rpf.prob,rpf.mdim.mcm,numeric,matrix-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -106,6 +107,7 @@ setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
 ##' rpf.logLik,rpf.1dim.gpcm,numeric-method
 ##' rpf.logLik,rpf.mdim.gpcm,numeric-method
 ##' rpf.logLik,rpf.mdim.nrm,numeric-method
+##' rpf.logLik,rpf.mdim.mcm,numeric-method
 ##' @export
 ##' @return a log likelihood (not -2 * log likelihood)
 ##' @examples
@@ -128,6 +130,7 @@ setGeneric("rpf.logLik", function(m, param) standardGeneric("rpf.logLik"))
 ##' rpf.rparam,rpf.1dim.gpcm-method
 ##' rpf.rparam,rpf.mdim.gpcm-method
 ##' rpf.rparam,rpf.mdim.nrm-method
+##' rpf.rparam,rpf.mdim.mcm-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -148,6 +151,7 @@ setGeneric("rpf.rparam", function(m) standardGeneric("rpf.rparam"))
 ##' rpf.startingParam,rpf.1dim.gpcm-method
 ##' rpf.startingParam,rpf.mdim.gpcm-method
 ##' rpf.startingParam,rpf.mdim.nrm-method
+##' rpf.startingParam,rpf.mdim.mcm-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -166,6 +170,7 @@ setGeneric("rpf.startingParam", function(m) standardGeneric("rpf.startingParam")
 ##' rpf.getLocation,rpf.1dim.gpcm,numeric-method
 ##' rpf.getLocation,rpf.mdim.gpcm,numeric-method
 ##' rpf.getLocation,rpf.mdim.nrm,numeric-method
+##' rpf.getLocation,rpf.mdim.mcm,numeric-method
 ##' @export
 ##' @seealso \code{\link{rpf.setLocation}}
 setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation"))
@@ -183,6 +188,7 @@ setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation
 ##' rpf.setLocation,rpf.1dim.gpcm,numeric,numeric-method
 ##' rpf.setLocation,rpf.mdim.gpcm,numeric,numeric-method
 ##' rpf.setLocation,rpf.mdim.nrm,numeric,numeric-method
+##' rpf.setLocation,rpf.mdim.mcm,numeric,numeric-method
 ##' @export
 ##' @seealso \code{\link{rpf.getLocation}}
 setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLocation"))
@@ -277,6 +283,19 @@ setClass("rpf.mdim.gpcm", contains='rpf.mdim',
 setClass("rpf.mdim.nrm", contains='rpf.mdim',
          representation(a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric"))
+
+##' The multiple-choice response item model (both unidimensional and
+##' multidimensional models have the same parameterization).
+##'
+##' @export
+##' @name Class rpf.mdim.mcm
+##' @rdname rpf.mdim.mcm-class
+##' @aliases rpf.mdim.mcm-class
+setClass("rpf.mdim.mcm", contains='rpf.mdim',
+         representation(a.prior.meanlog="numeric",
+                        a.prior.sdlog="numeric",
+                        c.prior.alpha="numeric",
+                        c.prior.beta="numeric"))
 
 ##' Randomly sample response patterns given a list of items
 ##'
