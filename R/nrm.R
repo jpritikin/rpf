@@ -22,7 +22,7 @@ rpf.nrm <- function(numOutcomes=2, dimensions=1) {
 
 ### mdim
 
-setMethod("rpf.prob", signature(m="rpf.mdim.nrm", param="matrix",
+setMethod("rpf.prob", signature(m="rpf.mdim.nrm", param="numeric",
                                 theta="matrix"),
           function(m, param, theta) {
             ##   Object for the denominator in the final MMCM equation
@@ -67,13 +67,13 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
                           meanlog=m@a.prior.meanlog,
                           sdlog=m@a.prior.sdlog)
               b <- sort(rnorm(m@numOutcomes))
-              t(c(a=a,b=b))
+              c(a=a,b=b)
           })
 
 setMethod("rpf.startingParam", signature(m="rpf.mdim.nrm"),
           function(m) {
-              t(c(a=rep(1,m@numOutcomes * m@dimensions),
-                  b=rep(0, m@numOutcomes)))
+            c(a=rep(1,m@numOutcomes * m@dimensions),
+              b=rep(0, m@numOutcomes))
           })
 
 setMethod("rpf.getLocation", signature(m="rpf.mdim.nrm", param="numeric"),

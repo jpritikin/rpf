@@ -41,7 +41,7 @@ rpf.gpcm <- function(numOutcomes=2, dimensions=1, D=1, multidimensional) {
 
 ### 1dim
 
-setMethod("rpf.prob", signature(m="rpf.1dim.gpcm", param="matrix",
+setMethod("rpf.prob", signature(m="rpf.1dim.gpcm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
             a <- param[1]
@@ -67,17 +67,17 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.gpcm"),
               a <- rlnorm(1, meanlog=m@a.prior.meanlog,
                           sdlog=m@a.prior.sdlog)
               b <- sort(rnorm(m@numOutcomes-1))
-              t(c(a=a,b=b))
+              c(a=a,b=b)
           })
 
 setMethod("rpf.startingParam", signature(m="rpf.1dim.gpcm"),
           function(m) {
-              t(as.matrix(c(a=1, b=rep(0, (m@numOutcomes-1)))))
+            c(a=1, b=rep(0, (m@numOutcomes-1)))
           })
 
 setMethod("rpf.getLocation", signature(m="rpf.1dim.gpcm", param="numeric"),
           function(m, param) {
-              t(param[2:m@numOutcomes])
+            param[2:m@numOutcomes]
           })
 
 setMethod("rpf.setLocation", signature(m="rpf.1dim.gpcm", param="numeric", loc="numeric"),
@@ -88,7 +88,7 @@ setMethod("rpf.setLocation", signature(m="rpf.1dim.gpcm", param="numeric", loc="
 
 ### mdim
 
-setMethod("rpf.prob", signature(m="rpf.mdim.gpcm", param="matrix",
+setMethod("rpf.prob", signature(m="rpf.mdim.gpcm", param="numeric",
                                 theta="matrix"),
           function(m, param, theta) {
             a <- param[1:m@dimensions] * m@D
@@ -115,12 +115,12 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.gpcm"),
               a <- rlnorm(m@dimensions, meanlog=m@a.prior.meanlog,
                           sdlog=m@a.prior.sdlog)
               b <- sort(rnorm(m@numOutcomes-1))
-              t(c(a=a,b=b))
+              c(a=a,b=b)
           })
 
 setMethod("rpf.startingParam", signature(m="rpf.mdim.gpcm"),
           function(m) {
-              t(c(a=rep(1,m@dimensions), b=rep(0, (m@numOutcomes-1))))
+            c(a=rep(1,m@dimensions), b=rep(0, (m@numOutcomes-1)))
           })
 
 setMethod("rpf.getLocation", signature(m="rpf.mdim.gpcm", param="numeric"),

@@ -50,7 +50,7 @@ rpf.drm <- function(numChoices=5, dimensions=1, D=1, multidimensional) {
 
 ### 1dim
 
-setMethod("rpf.prob", signature(m="rpf.1dim.drm", param="matrix",
+setMethod("rpf.prob", signature(m="rpf.1dim.drm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
             a <- param[1]
@@ -65,24 +65,24 @@ setMethod("rpf.logLik", signature(m="rpf.1dim.drm", param="numeric"),
             a <- param[1]
             c <- param[3]
             sum(dlnorm(a, meanlog=m@a.prior.meanlog,
-                               sdlog=m@a.prior.sdlog, log=TRUE),
-                     dbeta(c, shape1=m@c.prior.alpha-2,
-                           shape2=m@c.prior.beta-2, log=TRUE))
+                       sdlog=m@a.prior.sdlog, log=TRUE),
+                dbeta(c, shape1=m@c.prior.alpha-2,
+                      shape2=m@c.prior.beta-2, log=TRUE))
           })
 
 setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
           function(m) {
-              n <- 1
-              cbind(a=rlnorm(n, meanlog=m@a.prior.meanlog,
-                       sdlog=m@a.prior.sdlog),
-                b=rnorm(n),
-                c=rbeta(n, shape1=m@c.prior.alpha-2,
-                      shape2=m@c.prior.beta-2))
+            n <- 1
+            c(a=rlnorm(n, meanlog=m@a.prior.meanlog,
+                sdlog=m@a.prior.sdlog),
+              b=rnorm(n),
+              c=rbeta(n, shape1=m@c.prior.alpha-2,
+                shape2=m@c.prior.beta-2))
           })
 
 setMethod("rpf.startingParam", signature(m="rpf.1dim.drm"),
           function(m) {
-              cbind(a=1, b=0, c=m@guessing)
+            c(a=1, b=0, c=m@guessing)
           })
 
 setMethod("rpf.getLocation", signature(m="rpf.1dim.drm", param="numeric"),
@@ -99,7 +99,7 @@ setMethod("rpf.setLocation", signature(m="rpf.1dim.drm", param="numeric", loc="n
 ### mdim
 
 ##' @author Jonathan Weeks <weeksjp@@gmail.com>
-setMethod("rpf.prob", signature(m="rpf.mdim.drm", param="matrix",
+setMethod("rpf.prob", signature(m="rpf.mdim.drm", param="numeric",
                                 theta="matrix"),
           function(m, param, theta) {
             a <- param[1:m@dimensions] * m@D
@@ -110,7 +110,7 @@ setMethod("rpf.prob", signature(m="rpf.mdim.drm", param="matrix",
             cbind(1-p,p)
           })
 
-setMethod("rpf.logLik", signature(m="rpf.mdim.drm", param="matrix"),
+setMethod("rpf.logLik", signature(m="rpf.mdim.drm", param="numeric"),
           function(m, param) {
             a <- param[1:m@dimensions] * m@D
             p.rest <- param[-1:-m@dimensions]
@@ -124,24 +124,25 @@ setMethod("rpf.logLik", signature(m="rpf.mdim.drm", param="matrix"),
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
           function(m) {
-            t(c(a=rlnorm(m@dimensions, meanlog=m@a.prior.meanlog,
-                  sdlog=m@a.prior.sdlog),
-                b=rnorm(1),
-                c=rbeta(1, shape1=m@c.prior.alpha-2,
-                  shape2=m@c.prior.beta-2)))
+            c(a=rlnorm(m@dimensions, meanlog=m@a.prior.meanlog,
+                sdlog=m@a.prior.sdlog),
+              b=rnorm(1),
+              c=rbeta(1, shape1=m@c.prior.alpha-2,
+                shape2=m@c.prior.beta-2))
           })
 
 setMethod("rpf.startingParam", signature(m="rpf.mdim.drm"),
           function(m) {
-            t(c(a=rep(1,m@dimensions), b=0, c=m@guessing))
+            c(a=rep(1,m@dimensions), b=0, c=m@guessing)
           })
 
-setMethod("rpf.getLocation", signature(m="rpf.mdim.drm", param="matrix"),
+setMethod("rpf.getLocation", signature(m="rpf.mdim.drm", param="numeric"),
           function(m, param) {
             param[m@dimensions+1]
           })
 
-setMethod("rpf.setLocation", signature(m="rpf.mdim.drm", param="matrix", loc="numeric"),
+setMethod("rpf.setLocation", signature(m="rpf.mdim.drm", param="numeric",
+                                       loc="numeric"),
           function(m, param, loc) {
             param[m@dimensions+1] <- loc
             param

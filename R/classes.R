@@ -13,6 +13,11 @@
 ##' items. Both unidimensional and multidimensional versions of the
 ##' models will be available.
 ##'
+##' Item model parameters are passed around as a numeric vector. A 1D
+##' matrix is also acceptable. Regardless of model, parameters are
+##' always in the order discrimination ("a"), difficulty ("b"), and
+##' guessing ("c").
+##'
 ##' This package could also accrete functions to support plotting (but
 ##' not the actual plot functions).
 ##'
@@ -47,11 +52,11 @@ setClass("rpf.base",
 ##' @return a vector of probabilities
 ##' @docType methods
 ##' @aliases
-##' rpf.prob,rpf.1dim.drm,matrix,numeric-method
-##' rpf.prob,rpf.mdim.drm,matrix,matrix-method
-##' rpf.prob,rpf.1dim.gpcm,matrix,numeric-method
-##' rpf.prob,rpf.mdim.gpcm,matrix,matrix-method
-##' rpf.prob,rpf.mdim.nrm,matrix,matrix-method
+##' rpf.prob,rpf.1dim.drm,numeric,numeric-method
+##' rpf.prob,rpf.mdim.drm,numeric,matrix-method
+##' rpf.prob,rpf.1dim.gpcm,numeric,numeric-method
+##' rpf.prob,rpf.mdim.gpcm,numeric,matrix-method
+##' rpf.prob,rpf.mdim.nrm,numeric,matrix-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -60,30 +65,30 @@ setClass("rpf.base",
 ##' rpf.prob(i1, c(i1.p), c(0,1))    # average and high trait score
 setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 
-##' Turn a vector of 1dim parameters into a suitably shaped matrix for
+##' Turn a matrix of parameters into a vector for
 ##' \code{\link{rpf.prob}}.
 ##' 
 ##' @name rpf.prob wrapper1
 ##' @rdname rpf.prob.wrapper1
-##' @aliases rpf.prob,rpf.base,numeric,numeric-method
+##' @aliases rpf.prob,rpf.base,matrix,numeric-method
 ##' @docType methods
-setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
+setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
                                 theta="numeric"),
           function(m, param, theta) {
-            rpf.prob(m, t(param), theta)
+            rpf.prob(m, as.numeric(param), theta)
           })
 
-##' Turn a vector of 1dim parameters into a suitably shaped matrix for
+##' Turn a matrix of parameters into a vector for
 ##' \code{\link{rpf.prob}}.
 ##' 
 ##' @name rpf.prob wrapper2
 ##' @rdname rpf.prob.wrapper2
-##' @aliases rpf.prob,rpf.base,numeric,matrix-method
+##' @aliases rpf.prob,rpf.base,matrix,matrix-method
 ##' @docType methods
-setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
+setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
                                 theta="matrix"),
           function(m, param, theta) {
-            rpf.prob(m, t(param), theta)
+            rpf.prob(m, as.numeric(param), theta)
           })
 
 ##' Log likelihood of item parameters with respect to Bayesian prior
@@ -97,7 +102,7 @@ setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
 ##' @docType methods
 ##' @aliases
 ##' rpf.logLik,rpf.1dim.drm,numeric-method
-##' rpf.logLik,rpf.mdim.drm,matrix-method
+##' rpf.logLik,rpf.mdim.drm,numeric-method
 ##' rpf.logLik,rpf.1dim.gpcm,numeric-method
 ##' rpf.logLik,rpf.mdim.gpcm,numeric-method
 ##' rpf.logLik,rpf.mdim.nrm,numeric-method
@@ -157,7 +162,7 @@ setGeneric("rpf.startingParam", function(m) standardGeneric("rpf.startingParam")
 ##' @docType methods
 ##' @aliases
 ##' rpf.getLocation,rpf.1dim.drm,numeric-method
-##' rpf.getLocation,rpf.mdim.drm,matrix-method
+##' rpf.getLocation,rpf.mdim.drm,numeric-method
 ##' rpf.getLocation,rpf.1dim.gpcm,numeric-method
 ##' rpf.getLocation,rpf.mdim.gpcm,numeric-method
 ##' rpf.getLocation,rpf.mdim.nrm,numeric-method
@@ -174,7 +179,7 @@ setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation
 ##' @docType methods
 ##' @aliases
 ##' rpf.setLocation,rpf.1dim.drm,numeric,numeric-method
-##' rpf.setLocation,rpf.mdim.drm,matrix,numeric-method
+##' rpf.setLocation,rpf.mdim.drm,numeric,numeric-method
 ##' rpf.setLocation,rpf.1dim.gpcm,numeric,numeric-method
 ##' rpf.setLocation,rpf.mdim.gpcm,numeric,numeric-method
 ##' rpf.setLocation,rpf.mdim.nrm,numeric,numeric-method
@@ -313,7 +318,7 @@ rpf.sample <- function(theta, items, params) {
   for (ix in 1:numItems) {
     i <- items[[ix]]
     param <- params[[ix]]
-    P <- rpf.prob(i, c(param), theta)
+    P <- rpf.prob(i, param, theta)
     ret[,ix] <- apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F)
   }
   return(ret)
