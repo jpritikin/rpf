@@ -2,14 +2,20 @@
 \alias{rpf.drm}
 \title{Create a dichotomous response model and associated hyperparameters.}
 \usage{
-  rpf.drm(D = 1, numChoices = 5)
+  rpf.drm(numChoices = 5, dimensions = 1, D = 1,
+    multidimensional)
 }
 \arguments{
-  \item{D}{defaults to 1 or pass in the
+  \item{numChoices}{the number of choices in the question}
+
+  \item{dimensions}{the number of dimensions}
+
+  \item{D}{defaults to 1 or pass in
   \code{\link{rpf.ogive}}}
 
-  \item{numChoices}{the number of alternatives in the
-  question}
+  \item{multidimensional}{whether to use a multidimensional
+  model. Defaults to \code{TRUE} when \code{dimensions>1}
+  and \code{FALSE} when \code{dimensions==1}.}
 }
 \value{
   an item model

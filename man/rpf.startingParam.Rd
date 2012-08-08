@@ -1,8 +1,12 @@
 \docType{methods}
 \name{rpf.startingParam}
 \alias{rpf.startingParam}
-\alias{rpf.startingParam,rpf.drm-method}
-\alias{rpf.startingParam,rpf.gpcm-method}
+\alias{rpf.startingParam,rpf.1dim.drm-method}
+\alias{rpf.startingParam,rpf.1dim.gpcm-method}
+\alias{rpf.startingParam,rpf.mdim.drm-method}
+\alias{rpf.startingParam,rpf.mdim.gpcm-method}
+\alias{rpf.startingParam,rpf.mdim.mcm-method}
+\alias{rpf.startingParam,rpf.mdim.nrm-method}
 \title{Initial item parameters}
 \arguments{
   \item{m}{an item model}

@@ -1,0 +1,9 @@
+\name{Class rpf.mdim.drm}
+\alias{Class rpf.mdim.drm}
+\alias{rpf.mdim.drm-class}
+\title{Multidimensional dichotomous item models (M1PL, M2PL, and M3PL).}
+\description{
+  Multidimensional dichotomous item models (M1PL, M2PL, and
+  M3PL).
+}
+

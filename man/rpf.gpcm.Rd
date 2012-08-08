@@ -2,13 +2,20 @@
 \alias{rpf.gpcm}
 \title{Create a generalized partial credit model and associated hyperparameters.}
 \usage{
-  rpf.gpcm(numOutcomes = 2, D = 1)
+  rpf.gpcm(numOutcomes = 2, dimensions = 1, D = 1,
+    multidimensional)
 }
 \arguments{
   \item{numOutcomes}{The number of choices available}
 
-  \item{D}{defaults to 1 or pass in the
+  \item{dimensions}{the number of dimensions}
+
+  \item{D}{defaults to 1 or pass in
   \code{\link{rpf.ogive}}}
+
+  \item{multidimensional}{whether to use a multidimensional
+  model. Defaults to \code{TRUE} when \code{dimensions>1}
+  and \code{FALSE} when \code{dimensions==1}.}
 }
 \value{
   an item model

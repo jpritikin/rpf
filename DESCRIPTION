@@ -1,8 +1,8 @@
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.2
-Date: 2012-08-06
+Version: 0.3
+Date: 2012-08-08
 Authors@R: c(person("Joshua",family="Pritikin",
         email="jpritikin@pobox.com", role=c('cre','aut')),
         person("Jonathan",family="Weeks", email="weeksjp@gmail.com",
@@ -17,10 +17,10 @@ Description: The purpose of this package is to factor out logic and
 License: GPL (>= 3)
 Suggests: plink, RUnit, roxygen2
 Depends: methods
-Collate: 'classes.R' 'drm.R' 'gpcm.R'
+Collate: 'classes.R' 'drm.R' 'gpcm.R' 'nrm.R' 'mcm.R'
 URL: https://gitorious.org/rpf
-Packaged: 2012-08-06 09:34:21 UTC; joshua
+Packaged: 2012-08-08 06:12:55 UTC; joshua
 Author: Joshua Pritikin [cre, aut], Jonathan Weeks [ctb]
 Maintainer: Joshua Pritikin <jpritikin@pobox.com>
 Repository: CRAN
-Date/Publication: 2012-08-06 09:46:37
+Date/Publication: 2012-08-08 07:16:39

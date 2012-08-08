@@ -1,8 +1,12 @@
 \docType{methods}
 \name{rpf.logLik}
 \alias{rpf.logLik}
-\alias{rpf.logLik,rpf.drm,numeric-method}
-\alias{rpf.logLik,rpf.gpcm,numeric-method}
+\alias{rpf.logLik,rpf.1dim.drm,numeric-method}
+\alias{rpf.logLik,rpf.1dim.gpcm,numeric-method}
+\alias{rpf.logLik,rpf.mdim.drm,numeric-method}
+\alias{rpf.logLik,rpf.mdim.gpcm,numeric-method}
+\alias{rpf.logLik,rpf.mdim.mcm,numeric-method}
+\alias{rpf.logLik,rpf.mdim.nrm,numeric-method}
 \title{Log likelihood of item parameters with respect to Bayesian prior}
 \arguments{
   \item{m}{an item model}

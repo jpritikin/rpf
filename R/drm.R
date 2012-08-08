@@ -10,24 +10,47 @@
 ##' It is not yet possible to further customize the Bayesian
 ##' priors. The API will change before the 1.0 release.
 ##' 
-##' @param D defaults to 1 or pass in the \code{\link{rpf.ogive}}
-##' @param numChoices the number of alternatives in the question
+##' @param numChoices the number of choices in the question
+##' @param dimensions the number of dimensions
+##' @param D defaults to 1 or pass in \code{\link{rpf.ogive}}
+##' @param multidimensional whether to use a multidimensional model.
+##' Defaults to \code{TRUE} when \code{dimensions>1} and
+##' \code{FALSE} when \code{dimensions==1}.
 ##' @return an item model
 ##' @export
 ##' @references Baker & Kim (2004). Item Response Theory: Parameter
 ##' Estimation Techniques. Marcel Dekker, Inc.
-rpf.drm <- function(D=1, numChoices=5) {
+rpf.drm <- function(numChoices=5, dimensions=1, D=1, multidimensional) {
+  if (missing(multidimensional)) {
+    multidimensional <- dimensions > 1
+  }
+  if (!multidimensional && dimensions > 1) {
+    stop("More than 1 dimension must use a multidimensional model")
+  }
   guess.weight <- 20
   guessing <- (1/numChoices)
-  new("rpf.drm", numOutcomes=2, D=D,
-      guessing=guessing,
-      a.prior.meanlog=0,
-      a.prior.sdlog=.5,
-      c.prior.alpha=guess.weight*guessing+1,
-      c.prior.beta=guess.weight*(1-guessing)+1)
+  if (!multidimensional) {
+    new("rpf.1dim.drm", numOutcomes=2, D=D, numParam=3,
+        dimensions=1,
+        guessing=guessing,
+        a.prior.meanlog=0,
+        a.prior.sdlog=.5,
+        c.prior.alpha=guess.weight*guessing+1,
+        c.prior.beta=guess.weight*(1-guessing)+1)
+  } else {
+    new("rpf.mdim.drm", numOutcomes=2, D=D, dimensions=dimensions,
+        numParam=2+dimensions,
+        guessing=guessing,
+        a.prior.meanlog=0,
+        a.prior.sdlog=.5,
+        c.prior.alpha=guess.weight*guessing+1,
+        c.prior.beta=guess.weight*(1-guessing)+1)
+  }
 }
 
-setMethod("rpf.prob", signature(m="rpf.drm", param="numeric",
+### 1dim
+
+setMethod("rpf.prob", signature(m="rpf.1dim.drm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
             a <- param[1]
@@ -37,40 +60,90 @@ setMethod("rpf.prob", signature(m="rpf.drm", param="numeric",
             cbind(1-p,p)
           })
 
-setMethod("rpf.logLik", signature(m="rpf.drm", param="numeric"),
+setMethod("rpf.logLik", signature(m="rpf.1dim.drm", param="numeric"),
           function(m, param) {
             a <- param[1]
             c <- param[3]
             sum(dlnorm(a, meanlog=m@a.prior.meanlog,
-                               sdlog=m@a.prior.sdlog, log=TRUE),
-                     dbeta(c, shape1=m@c.prior.alpha-2,
-                           shape2=m@c.prior.beta-2, log=TRUE))
+                       sdlog=m@a.prior.sdlog, log=TRUE),
+                dbeta(c, shape1=m@c.prior.alpha-2,
+                      shape2=m@c.prior.beta-2, log=TRUE))
           })
 
-setMethod("rpf.paramDim", signature(m="rpf.drm"), function(m) c(1,3))
-
-setMethod("rpf.rparam", signature(m="rpf.drm"),
+setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
           function(m) {
-              n <- 1
-              cbind(a=rlnorm(n, meanlog=m@a.prior.meanlog,
-                       sdlog=m@a.prior.sdlog),
-                b=rnorm(n),
-                c=rbeta(n, shape1=m@c.prior.alpha-2,
-                      shape2=m@c.prior.beta-2))
+            n <- 1
+            c(a=rlnorm(n, meanlog=m@a.prior.meanlog,
+                sdlog=m@a.prior.sdlog),
+              b=rnorm(n),
+              c=rbeta(n, shape1=m@c.prior.alpha-2,
+                shape2=m@c.prior.beta-2))
           })
 
-setMethod("rpf.startingParam", signature(m="rpf.drm"),
+setMethod("rpf.startingParam", signature(m="rpf.1dim.drm"),
           function(m) {
-              cbind(a=1, b=0, c=m@guessing)
+            c(a=1, b=0, c=m@guessing)
           })
 
-setMethod("rpf.getLocation", signature(m="rpf.drm", param="numeric"),
+setMethod("rpf.getLocation", signature(m="rpf.1dim.drm", param="numeric"),
           function(m, param) {
               param[2]
           })
 
-setMethod("rpf.setLocation", signature(m="rpf.drm", param="numeric", loc="numeric"),
+setMethod("rpf.setLocation", signature(m="rpf.1dim.drm", param="numeric", loc="numeric"),
           function(m, param, loc) {
               param[2] <- loc
               param
+          })
+
+### mdim
+
+##' @author Jonathan Weeks <weeksjp@@gmail.com>
+setMethod("rpf.prob", signature(m="rpf.mdim.drm", param="numeric",
+                                theta="matrix"),
+          function(m, param, theta) {
+            a <- param[1:m@dimensions] * m@D
+            p.rest <- param[-1:-m@dimensions]
+            b <- p.rest[1]
+            c <- p.rest[2]
+            p <- c + (1-c)/(1+exp(-(theta %*% a + b)))
+            cbind(1-p,p)
+          })
+
+setMethod("rpf.logLik", signature(m="rpf.mdim.drm", param="numeric"),
+          function(m, param) {
+            a <- param[1:m@dimensions] * m@D
+            p.rest <- param[-1:-m@dimensions]
+            b <- p.rest[1]
+            c <- p.rest[2]
+            sum(dlnorm(a, meanlog=m@a.prior.meanlog,
+                       sdlog=m@a.prior.sdlog, log=TRUE),
+                dbeta(c, shape1=m@c.prior.alpha-2,
+                      shape2=m@c.prior.beta-2, log=TRUE))
+          })
+
+setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
+          function(m) {
+            c(a=rlnorm(m@dimensions, meanlog=m@a.prior.meanlog,
+                sdlog=m@a.prior.sdlog),
+              b=rnorm(1),
+              c=rbeta(1, shape1=m@c.prior.alpha-2,
+                shape2=m@c.prior.beta-2))
+          })
+
+setMethod("rpf.startingParam", signature(m="rpf.mdim.drm"),
+          function(m) {
+            c(a=rep(1,m@dimensions), b=0, c=m@guessing)
+          })
+
+setMethod("rpf.getLocation", signature(m="rpf.mdim.drm", param="numeric"),
+          function(m, param) {
+            param[m@dimensions+1]
+          })
+
+setMethod("rpf.setLocation", signature(m="rpf.mdim.drm", param="numeric",
+                                       loc="numeric"),
+          function(m, param, loc) {
+            param[m@dimensions+1] <- loc
+            param
           })

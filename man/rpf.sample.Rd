@@ -19,7 +19,7 @@
 }
 \description{
   Returns a random sample of response patterns given a list
-  of item models and parameters.
+  of unidimensional item models and parameters.
 }
 \examples{
 i1 <- rpf.drm()
