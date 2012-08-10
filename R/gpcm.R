@@ -55,37 +55,6 @@ setMethod("rpf.prob", signature(m="rpf.1dim.gpcm", param="numeric",
             return(out)
           })
 
-setMethod("rpf.logLik", signature(m="rpf.1dim.gpcm", param="numeric"),
-          function(m, param) {
-            a <- param[1]
-            dlnorm(a, meanlog=m@a.prior.meanlog,
-                        sdlog=m@a.prior.sdlog, log=TRUE)
-          })
-
-setMethod("rpf.rparam", signature(m="rpf.1dim.gpcm"),
-          function(m) {
-              a <- rlnorm(1, meanlog=m@a.prior.meanlog,
-                          sdlog=m@a.prior.sdlog)
-              b <- sort(rnorm(m@numOutcomes-1))
-              c(a=a,b=b)
-          })
-
-setMethod("rpf.startingParam", signature(m="rpf.1dim.gpcm"),
-          function(m) {
-            c(a=1, b=rep(0, (m@numOutcomes-1)))
-          })
-
-setMethod("rpf.getLocation", signature(m="rpf.1dim.gpcm", param="numeric"),
-          function(m, param) {
-            param[2:m@numOutcomes]
-          })
-
-setMethod("rpf.setLocation", signature(m="rpf.1dim.gpcm", param="numeric", loc="numeric"),
-          function(m, param, loc) {
-              param[2:m@numOutcomes] <- loc
-              param
-          })
-
 ### mdim
 
 setMethod("rpf.prob", signature(m="rpf.mdim.gpcm", param="numeric",
@@ -101,35 +70,4 @@ setMethod("rpf.prob", signature(m="rpf.mdim.gpcm", param="numeric",
                 out[px,] <- k / sum(k)
             }
             return(out)
-          })
-
-setMethod("rpf.logLik", signature(m="rpf.mdim.gpcm", param="numeric"),
-          function(m, param) {
-            a <- param[1:m@dimensions]
-            sum(dlnorm(a, meanlog=m@a.prior.meanlog,
-                       sdlog=m@a.prior.sdlog, log=TRUE))
-          })
-
-setMethod("rpf.rparam", signature(m="rpf.mdim.gpcm"),
-          function(m) {
-              a <- rlnorm(m@dimensions, meanlog=m@a.prior.meanlog,
-                          sdlog=m@a.prior.sdlog)
-              b <- sort(rnorm(m@numOutcomes-1))
-              c(a=a,b=b)
-          })
-
-setMethod("rpf.startingParam", signature(m="rpf.mdim.gpcm"),
-          function(m) {
-            c(a=rep(1,m@dimensions), b=rep(0, (m@numOutcomes-1)))
-          })
-
-setMethod("rpf.getLocation", signature(m="rpf.mdim.gpcm", param="numeric"),
-          function(m, param) {
-            param[-1:-m@dimensions]
-          })
-
-setMethod("rpf.setLocation", signature(m="rpf.mdim.gpcm", param="numeric", loc="numeric"),
-          function(m, param, loc) {
-            param[-1:-m@dimensions] <- loc
-            param
           })

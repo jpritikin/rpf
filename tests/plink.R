@@ -58,5 +58,15 @@ checkEqualsNumeric(rpf.prob(i5, i5.p, theta.2d),
     as.matrix(mcm(t(i5.p),dimensions=2,cat=4,theta=theta.2d)@prob[,-1:-2]),
                    "MCM")
 
-# later:
-#grm(t(rep(0,10)), dimensions=2,cat=4, theta=theta.2d)
+i6 <- rpf.grm(numOutcomes=4)
+i6.p <- rpf.rparam(i6)
+checkDim(i6,i6.p)
+checkEqualsNumeric(rpf.prob(i6, i6.p, theta),
+  as.matrix(grm(t(i6.p), dimensions=1,cat=4, theta=theta, catprob=TRUE)@prob[,-1]))
+
+i7 <- rpf.grm(dimensions=2, numOutcomes=3)
+i7.p <- rpf.rparam(i7)
+checkDim(i7,i7.p)
+checkEqualsNumeric(rpf.prob(i7, i7.p, theta.2d),
+                   as.matrix(grm(t(i7.p),dimensions=2,cat=3,theta.2d,catprob=TRUE)@prob[,-1:-2]),
+                   "M-GRM")

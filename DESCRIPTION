@@ -28,4 +28,6 @@ Collate:
     'gpcm.R'
     'nrm.R'
     'mcm.R'
+    'graded.R'
+    'grm.R'
 URL: https://gitorious.org/rpf
