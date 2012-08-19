@@ -28,6 +28,7 @@
 ##' @docType package
 ##' @rdname rpf.introduction
 ##' @name An introduction
+##' @useDynLib rpf
 ##' @seealso
 ##' See \code{\link{rpf.rparam}} and \code{\link{rpf.startingParam}}
 ##' to create item parameters.

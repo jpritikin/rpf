@@ -41,18 +41,23 @@ rpf.gpcm <- function(numOutcomes=2, dimensions=1, D=1, multidimensional) {
 
 ### 1dim
 
+rpf.1dim.gpcm.prob.slow <- function(m, param, theta) {
+  a <- param[1] * m@D
+  b <- param[-1]
+  tri <- lower.tri(matrix(NA, m@numOutcomes, m@numOutcomes))
+  out <- array(dim=c(length(theta), m@numOutcomes))
+  for (px in 1:length(theta)) {
+    k <- exp(apply(c(0, -a * (theta[px] - b)) * tri, c(2), sum))
+    out[px,] <- k / sum(k)
+  }
+  return(out)
+}
+
 setMethod("rpf.prob", signature(m="rpf.1dim.gpcm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
-            a <- param[1]
-            b <- param[-1]
-            tri <- lower.tri(matrix(NA, m@numOutcomes, m@numOutcomes))
-            out <- array(dim=c(length(theta), m@numOutcomes))
-            for (px in 1:length(theta)) {
-                k <- exp(apply(c(0, m@D * -a * (theta[px] - b)) * tri, c(2), sum))
-                out[px,] <- k / sum(k)
-            }
-            return(out)
+            .Call("rpf_1dim_gpcm_prob_wrapper",
+                  m@numOutcomes, m@D, param, theta)
           })
 
 ### mdim
