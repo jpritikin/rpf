@@ -97,6 +97,24 @@ setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
             rpf.prob(m, as.numeric(param), theta)
           })
 
+##' Map an item model, item parameters, and person trait score into a
+##' information vector
+##'
+##' @param m an item model
+##' @param param item parameters
+##' @param theta the trait score(s)
+##' @return Fisher information
+##' @docType methods
+##' @aliases
+##' rpf.info,rpf.1dim.drm,numeric,numeric-method
+##' @export
+##' @examples
+##' i1 <- rpf.drm()
+##' i1.p <- c(.6,1,.1)
+##' theta <- seq(0,3,.05)
+##' plot(theta, rpf.info(i1, i1.p, theta), type="l")
+setGeneric("rpf.info", function(m, param, theta) standardGeneric("rpf.info"))
+
 ##' Log likelihood of item parameters with respect to Bayesian prior
 ##'
 ##' This function calculates the log likelihood of the item parameters

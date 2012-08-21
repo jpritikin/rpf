@@ -53,11 +53,22 @@ rpf.drm <- function(numChoices=5, dimensions=1, D=1, multidimensional) {
 setMethod("rpf.prob", signature(m="rpf.1dim.drm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
-            a <- param[1]
+            a <- param[1] * m@D
             b <- param[2]
             c <- param[3]
-            p <- c + (1-c)/(1+exp(-m@D*a*(theta-b)))
+            p <- c + (1-c)/(1+exp(-a*(theta-b)))
             cbind(1-p,p)
+          })
+
+##' @references
+##' Embretson & Reise (2000, p. 184)
+setMethod("rpf.info", signature(m="rpf.1dim.drm", param="numeric",
+                                theta="numeric"),
+          function(m, param, theta) {
+            p <- rpf.prob(m, param, theta)
+            a <- param[1] * m@D
+            c <- param[3]
+            a^2 * (p[,1]/p[,2]) * ((p[,2]-c)^2/(1-c)^2)
           })
 
 setMethod("rpf.logLik", signature(m="rpf.1dim.drm", param="numeric"),
