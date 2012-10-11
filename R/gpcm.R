@@ -41,49 +41,23 @@ rpf.gpcm <- function(numOutcomes=2, dimensions=1, D=1, multidimensional) {
 
 ### 1dim
 
+rpf.1dim.gpcm.prob.slow <- function(m, param, theta) {
+  a <- param[1] * m@D
+  b <- param[-1]
+  tri <- lower.tri(matrix(NA, m@numOutcomes, m@numOutcomes))
+  out <- array(dim=c(length(theta), m@numOutcomes))
+  for (px in 1:length(theta)) {
+    k <- exp(apply(c(0, -a * (theta[px] - b)) * tri, c(2), sum))
+    out[px,] <- k / sum(k)
+  }
+  return(out)
+}
+
 setMethod("rpf.prob", signature(m="rpf.1dim.gpcm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
-            a <- param[1]
-            b <- param[-1]
-            tri <- lower.tri(matrix(NA, m@numOutcomes, m@numOutcomes))
-            out <- array(dim=c(length(theta), m@numOutcomes))
-            for (px in 1:length(theta)) {
-                k <- exp(apply(c(0, m@D * -a * (theta[px] - b)) * tri, c(2), sum))
-                out[px,] <- k / sum(k)
-            }
-            return(out)
-          })
-
-setMethod("rpf.logLik", signature(m="rpf.1dim.gpcm", param="numeric"),
-          function(m, param) {
-            a <- param[1]
-            dlnorm(a, meanlog=m@a.prior.meanlog,
-                        sdlog=m@a.prior.sdlog, log=TRUE)
-          })
-
-setMethod("rpf.rparam", signature(m="rpf.1dim.gpcm"),
-          function(m) {
-              a <- rlnorm(1, meanlog=m@a.prior.meanlog,
-                          sdlog=m@a.prior.sdlog)
-              b <- sort(rnorm(m@numOutcomes-1))
-              c(a=a,b=b)
-          })
-
-setMethod("rpf.startingParam", signature(m="rpf.1dim.gpcm"),
-          function(m) {
-            c(a=1, b=rep(0, (m@numOutcomes-1)))
-          })
-
-setMethod("rpf.getLocation", signature(m="rpf.1dim.gpcm", param="numeric"),
-          function(m, param) {
-            param[2:m@numOutcomes]
-          })
-
-setMethod("rpf.setLocation", signature(m="rpf.1dim.gpcm", param="numeric", loc="numeric"),
-          function(m, param, loc) {
-              param[2:m@numOutcomes] <- loc
-              param
+            .Call("rpf_1dim_gpcm_prob_wrapper",
+                  m@numOutcomes, m@D, param, theta)
           })
 
 ### mdim
@@ -101,35 +75,4 @@ setMethod("rpf.prob", signature(m="rpf.mdim.gpcm", param="numeric",
                 out[px,] <- k / sum(k)
             }
             return(out)
-          })
-
-setMethod("rpf.logLik", signature(m="rpf.mdim.gpcm", param="numeric"),
-          function(m, param) {
-            a <- param[1:m@dimensions]
-            sum(dlnorm(a, meanlog=m@a.prior.meanlog,
-                       sdlog=m@a.prior.sdlog, log=TRUE))
-          })
-
-setMethod("rpf.rparam", signature(m="rpf.mdim.gpcm"),
-          function(m) {
-              a <- rlnorm(m@dimensions, meanlog=m@a.prior.meanlog,
-                          sdlog=m@a.prior.sdlog)
-              b <- sort(rnorm(m@numOutcomes-1))
-              c(a=a,b=b)
-          })
-
-setMethod("rpf.startingParam", signature(m="rpf.mdim.gpcm"),
-          function(m) {
-            c(a=rep(1,m@dimensions), b=rep(0, (m@numOutcomes-1)))
-          })
-
-setMethod("rpf.getLocation", signature(m="rpf.mdim.gpcm", param="numeric"),
-          function(m, param) {
-            param[-1:-m@dimensions]
-          })
-
-setMethod("rpf.setLocation", signature(m="rpf.mdim.gpcm", param="numeric", loc="numeric"),
-          function(m, param, loc) {
-            param[-1:-m@dimensions] <- loc
-            param
           })

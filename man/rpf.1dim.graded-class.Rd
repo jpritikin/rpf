@@ -1,0 +1,10 @@
+\name{Class rpf.1dim.graded}
+\alias{Class rpf.1dim.graded}
+\alias{rpf.1dim.graded-class}
+\title{The base class for 1 dimensional graded response probability functions.}
+\description{
+  This class contains methods common to both the
+  generalized partial credit model and the graded response
+  model.
+}
+

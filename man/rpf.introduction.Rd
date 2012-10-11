@@ -13,12 +13,11 @@
   This package provides optimized, low-level functions to
   map parameters to response probabilities for dichotomous
   (1PL, 2PL and 3PL) \code{\link{rpf.drm}} and polytomous
-  (graded response, partial credit/generalized partial
-  credit \code{\link{rpf.gpcm}}, nominal
-  \code{\link{rpf.nrm}}, and multiple-choice model
+  (graded response \code{\link{rpf.grm}}, partial
+  credit/generalized partial credit \code{\link{rpf.gpcm}},
+  nominal \code{\link{rpf.nrm}}, and multiple-choice model
   \code{\link{rpf.mcm}}) items. Both unidimensional and
-  multidimensional versions of the models will be
-  available.
+  multidimensional versions of the models are available.
 
   Item model parameters are passed around as a numeric
   vector. A 1D matrix is also acceptable. Regardless of

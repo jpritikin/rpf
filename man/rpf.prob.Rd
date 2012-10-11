@@ -3,8 +3,11 @@
 \alias{rpf.prob}
 \alias{rpf.prob,rpf.1dim.drm,numeric,numeric-method}
 \alias{rpf.prob,rpf.1dim.gpcm,numeric,numeric-method}
+\alias{rpf.prob,rpf.1dim.grm,numeric,numeric-method}
 \alias{rpf.prob,rpf.mdim.drm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.gpcm,numeric,matrix-method}
+\alias{rpf.prob,rpf.mdim.grm,numeric,matrix-method}
+\alias{rpf.prob,rpf.mdim.grm,numeric,numeric-method}
 \alias{rpf.prob,rpf.mdim.mcm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.nrm,numeric,matrix-method}
 \title{Map an item model, item parameters, and person trait score into a
@@ -17,7 +20,11 @@ probability vector}
   \item{theta}{the trait score(s)}
 }
 \value{
-  a vector of probabilities
+  a vector of probabilities. For dichotomous items,
+  probabilities are returned in the order incorrect,
+  correct. Although redundent, both incorrect and correct
+  probabilities are returned for API consistency with
+  polytomous item models.
 }
 \description{
   Map an item model, item parameters, and person trait

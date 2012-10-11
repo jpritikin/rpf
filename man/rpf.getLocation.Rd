@@ -2,9 +2,9 @@
 \name{rpf.getLocation}
 \alias{rpf.getLocation}
 \alias{rpf.getLocation,rpf.1dim.drm,numeric-method}
-\alias{rpf.getLocation,rpf.1dim.gpcm,numeric-method}
+\alias{rpf.getLocation,rpf.1dim.graded,numeric-method}
 \alias{rpf.getLocation,rpf.mdim.drm,numeric-method}
-\alias{rpf.getLocation,rpf.mdim.gpcm,numeric-method}
+\alias{rpf.getLocation,rpf.mdim.graded,numeric-method}
 \alias{rpf.getLocation,rpf.mdim.mcm,numeric-method}
 \alias{rpf.getLocation,rpf.mdim.nrm,numeric-method}
 \title{Extract location related item parameters}
