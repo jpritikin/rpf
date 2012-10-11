@@ -1,12 +1,5 @@
 ### 1dim
 
-setMethod("rpf.logLik", signature(m="rpf.1dim.graded", param="numeric"),
-          function(m, param) {
-            a <- param[1]
-            dlnorm(a, meanlog=m@a.prior.meanlog,
-                        sdlog=m@a.prior.sdlog, log=TRUE)
-          })
-
 setMethod("rpf.rparam", signature(m="rpf.1dim.graded"),
           function(m) {
               a <- rlnorm(1, meanlog=m@a.prior.meanlog,
@@ -32,13 +25,6 @@ setMethod("rpf.setLocation", signature(m="rpf.1dim.graded", param="numeric", loc
           })
 
 ### mdim
-
-setMethod("rpf.logLik", signature(m="rpf.mdim.graded", param="numeric"),
-          function(m, param) {
-            a <- param[1:m@dimensions]
-            sum(dlnorm(a, meanlog=m@a.prior.meanlog,
-                       sdlog=m@a.prior.sdlog, log=TRUE))
-          })
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.graded"),
           function(m) {

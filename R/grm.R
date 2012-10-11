@@ -6,6 +6,11 @@
 ##'
 ##' It is not yet possible to further customize the Bayesian
 ##' priors. The API will change before the 1.0 release.
+##'
+##' The graded response model was designed for a item with a series of
+##' dependent parts where a higher score implies that easier parts of
+##' the item were surmounted. If your polytomous item has a number of
+##' independent parts then consider \code{\link{rpf.gpcm}}.
 ##' 
 ##' @param numOutcomes The number of choices available
 ##' @param dimensions the number of dimensions

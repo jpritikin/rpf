@@ -54,13 +54,6 @@ setMethod("rpf.prob", signature(m="rpf.mdim.nrm", param="numeric",
             return(p)
           })
 
-setMethod("rpf.logLik", signature(m="rpf.mdim.nrm", param="numeric"),
-          function(m, param) {
-            a <- param[1:m@numOutcomes * m@dimensions]
-            sum(dlnorm(a, meanlog=m@a.prior.meanlog,
-                       sdlog=m@a.prior.sdlog, log=TRUE))
-          })
-
 setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
           function(m) {
               a <- rlnorm(m@numOutcomes * m@dimensions,

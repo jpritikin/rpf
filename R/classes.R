@@ -51,7 +51,10 @@ setClass("rpf.base",
 ##' @param m an item model
 ##' @param param item parameters
 ##' @param theta the trait score(s)
-##' @return a vector of probabilities
+##' @return a vector of probabilities. For dichotomous items,
+##' probabilities are returned in the order incorrect, correct.
+##' Although redundent, both incorrect and correct probabilities are
+##' returned for API consistency with polytomous item models.
 ##' @docType methods
 ##' @aliases
 ##' rpf.prob,rpf.1dim.drm,numeric,numeric-method
@@ -114,30 +117,6 @@ setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
 ##' theta <- seq(0,3,.05)
 ##' plot(theta, rpf.info(i1, i1.p, theta), type="l")
 setGeneric("rpf.info", function(m, param, theta) standardGeneric("rpf.info"))
-
-##' Log likelihood of item parameters with respect to Bayesian prior
-##'
-##' This function calculates the log likelihood of the item parameters
-##' with respect to the item model's Bayesian prior. This function is
-##' typically used by model fitting algorithms.
-##' 
-##' @param m an item model
-##' @param param item parameters
-##' @docType methods
-##' @aliases
-##' rpf.logLik,rpf.1dim.drm,numeric-method
-##' rpf.logLik,rpf.mdim.drm,numeric-method
-##' rpf.logLik,rpf.1dim.graded,numeric-method
-##' rpf.logLik,rpf.mdim.graded,numeric-method
-##' rpf.logLik,rpf.mdim.nrm,numeric-method
-##' rpf.logLik,rpf.mdim.mcm,numeric-method
-##' @export
-##' @return a log likelihood (not -2 * log likelihood)
-##' @examples
-##' i1 <- rpf.drm()
-##' i1.p <- rpf.rparam(i1)
-##' rpf.logLik(i1, c(i1.p))
-setGeneric("rpf.logLik", function(m, param) standardGeneric("rpf.logLik"))
 
 ##' Generates item parameters
 ##'
@@ -220,13 +199,19 @@ setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLoca
 ##'
 ##' Models built on the logistic function take an argument \code{D}
 ##' where you can pass in the ogive constant to obtain a response
-##' curve very similar to the Normal cumulative distribution function.
+##' curve very similar to the Normal cumulative distribution function
+##' (Haley, 1952).
 ##' In recent years, the logistic has grown in favor, and therefore,
 ##' \code{D} defaults to 1 in this package (Baker & Kim, 2004, pp. 14-18).
 ##' 
 ##' @export
 ##' @references Baker & Kim (2004). Item Response Theory: Parameter
 ##' Estimation Techniques. Marcel Dekker, Inc.
+##'
+##' Haley, D. C. (1952). Estimation of the dosage mortality
+##' relationship when the dose is subject to error (Technical Report
+##' No. 15). Stanford University Applied Mathematics and Statistics
+##' Laboratory, Stanford, CA.
 ##' 
 rpf.ogive <- 1.702
 
