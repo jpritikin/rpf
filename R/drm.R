@@ -32,7 +32,6 @@ rpf.drm <- function(numChoices=5, dimensions=1, D=1, multidimensional) {
   if (!multidimensional) {
     new("rpf.1dim.drm", numOutcomes=2, D=D, numParam=3,
         dimensions=1,
-        guessing=guessing,
         a.prior.meanlog=0,
         a.prior.sdlog=.5,
         c.prior.alpha=guess.weight*guessing+1,
@@ -40,7 +39,6 @@ rpf.drm <- function(numChoices=5, dimensions=1, D=1, multidimensional) {
   } else {
     new("rpf.mdim.drm", numOutcomes=2, D=D, dimensions=dimensions,
         numParam=2+dimensions,
-        guessing=guessing,
         a.prior.meanlog=0,
         a.prior.sdlog=.5,
         c.prior.alpha=guess.weight*guessing+1,
@@ -83,7 +81,7 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
 
 setMethod("rpf.startingParam", signature(m="rpf.1dim.drm"),
           function(m) {
-            c(a=1, b=0, c=m@guessing)
+            c(a=1, b=0, c=0)
           })
 
 setMethod("rpf.getLocation", signature(m="rpf.1dim.drm", param="numeric"),
@@ -122,7 +120,7 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
 
 setMethod("rpf.startingParam", signature(m="rpf.mdim.drm"),
           function(m) {
-            c(a=rep(1,m@dimensions), b=0, c=m@guessing)
+            c(a=rep(1,m@dimensions), b=0, c=0)
           })
 
 setMethod("rpf.getLocation", signature(m="rpf.mdim.drm", param="numeric"),
