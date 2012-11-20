@@ -74,6 +74,51 @@ setClass("rpf.base",
 ##' rpf.prob(i1, c(i1.p), c(0,1))    # average and high trait score
 setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 
+##' Map an item model, item parameters, and person trait score into a
+##' probability vector
+##'
+##' @param m an item model
+##' @param param item parameters
+##' @param theta the trait score(s)
+##' @return a vector of probabilities. For dichotomous items,
+##' probabilities are returned in the order incorrect, correct.
+##' Although redundent, both incorrect and correct probabilities are
+##' returned for API consistency with polytomous item models.
+##' @docType methods
+##' @aliases
+##' rpf.logprob,rpf.1dim.gpcm,numeric,numeric-method
+##' @export
+##' @examples
+##' i1 <- rpf.drm()
+##' i1.p <- rpf.rparam(i1)
+##' rpf.logprob(i1, c(i1.p), -1)   # low trait score
+##' rpf.logprob(i1, c(i1.p), c(0,1))    # average and high trait score
+setGeneric("rpf.logprob", function(m, param, theta) standardGeneric("rpf.logprob"))
+
+##' Slow wrapper around \code{\link{rpf.prob}} to obtain log probabilities.
+##' 
+##' @name rpf.logprob wrapper1
+##' @rdname rpf.logprob.wrapper1
+##' @aliases rpf.logprob,rpf.base,numeric,numeric-method
+##' @docType methods
+setMethod("rpf.logprob", signature(m="rpf.base", param="numeric",
+                                theta="numeric"),
+          function(m, param, theta) {
+            log(rpf.prob(m, param, theta))
+          })
+
+##' Slow wrapper around \code{\link{rpf.prob}} to obtain log probabilities.
+##' 
+##' @name rpf.logprob wrapper2
+##' @rdname rpf.logprob.wrapper2
+##' @aliases rpf.logprob,rpf.base,numeric,matrix-method
+##' @docType methods
+setMethod("rpf.logprob", signature(m="rpf.base", param="numeric",
+                                theta="matrix"),
+          function(m, param, theta) {
+            log(rpf.prob(m, param, theta))
+          })
+
 ##' Turn a matrix of parameters into a vector for
 ##' \code{\link{rpf.prob}}.
 ##' 

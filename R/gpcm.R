@@ -57,7 +57,14 @@ setMethod("rpf.prob", signature(m="rpf.1dim.gpcm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
             .Call("rpf_1dim_gpcm_prob_wrapper",
-                  m@numOutcomes, m@D, param, theta)
+                  m@numOutcomes, m@D, param, theta, FALSE)
+          })
+
+setMethod("rpf.logprob", signature(m="rpf.1dim.gpcm", param="numeric",
+                                theta="numeric"),
+          function(m, param, theta) {
+            .Call("rpf_1dim_gpcm_prob_wrapper",
+                  m@numOutcomes, m@D, param, theta, TRUE)
           })
 
 ### mdim

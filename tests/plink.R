@@ -36,6 +36,9 @@ checkDim(i2,i2.p)
 checkEqualsNumeric(as.matrix(gpcm(t(i2.p), i2@numOutcomes, theta)@prob[,-1]),
                    rpf.prob(i2, i2.p, theta),
                    "GPCM")
+checkEqualsNumeric(rpf.logprob(i2, i2.p, theta),
+                   log(rpf.prob(i2, i2.p, theta)),
+                   "GPCM")
 
 i3 <- rpf.gpcm(dimensions=2, numOutcomes=3)
 i3.p <- rpf.rparam(i3)
