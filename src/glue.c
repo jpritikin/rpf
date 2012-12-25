@@ -15,8 +15,8 @@ SEXP rpf_1dim_drm_logprob_wrapper(SEXP r_param, SEXP r_theta)
   double *out = REAL(outsxp);
 
   for (int px=0; px < thetaLen; px++) {
-    double th = theta[px];
-    irt_rpf_1dim_drm_logprob(REAL(r_param), th, out+px*numOutcomes);
+    irt_rpf_1dim_drm_logprob(1, REAL(r_param), theta+px,
+			     numOutcomes, out+px*numOutcomes);
   }
 
   UNPROTECT(1);
@@ -54,7 +54,7 @@ SEXP rpf_mdim_drm_logprob_wrapper(SEXP r_numDims,
 
   for (int px=0; px < numPersons; px++) {
     irt_rpf_mdim_drm_logprob(numDims, REAL(r_param), theta + px*numAbilities,
-			     out+px*numOutcomes);
+			     numOutcomes, out+px*numOutcomes);
   }
 
   UNPROTECT(1);
@@ -76,9 +76,8 @@ SEXP rpf_1dim_gpcm_logprob_wrapper(SEXP r_numOutcomes,
   double *out = REAL(outsxp);
 
   for (int px=0; px < thetaLen; px++) {
-    double th = theta[px];
-    irt_rpf_1dim_gpcm_logprob(numOutcomes, REAL(r_param),
-			      th, out+px*numOutcomes);
+    irt_rpf_1dim_gpcm_logprob(1, REAL(r_param), theta+px,
+			      numOutcomes, out+px*numOutcomes);
   }
 
   UNPROTECT(1);

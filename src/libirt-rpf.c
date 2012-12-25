@@ -18,19 +18,29 @@
 #include <math.h>
 #include "libirt-rpf.h"
 
+int
+irt_rpf_1dim_drm_numParam(const int numDims, const int numOutcomes)
+{ return 3; }
+
 void
-irt_rpf_1dim_drm_logprob(const double *restrict param,
-			 const double th, double *restrict out)
+irt_rpf_1dim_drm_logprob(const int numDims, const double *restrict param,
+			 const double *restrict th,
+			 const int numOutcomes, double *restrict out)
 {
   double guessing = param[2];
-  out[1] = guessing + (1-guessing) / (1 + exp(-param[0] * (th - param[1])));
+  out[1] = guessing + (1-guessing) / (1 + exp(-param[0] * (*th - param[1])));
   out[0] = log(1-out[1]);
   out[1] = log(out[1]);
 }
 
+int
+irt_rpf_mdim_drm_numParam(const int numDims, const int numOutcomes)
+{ return 2 + numDims; }
+
 void
 irt_rpf_mdim_drm_logprob(const int numDims, const double *restrict param,
-			 const double *restrict th, double *restrict out)
+			 const double *restrict th,
+			 const int numOutcomes, double *restrict out)
 {
   double dprod = 0;
   for (int dx=0; dx < numDims; dx++) {
@@ -44,9 +54,14 @@ irt_rpf_mdim_drm_logprob(const int numDims, const double *restrict param,
   out[1] = log(tmp);
 }
 
+int
+irt_rpf_1dim_gpcm_numParam(const int numDims, const int numOutcomes)
+{ return numOutcomes; }
+
 void
-irt_rpf_1dim_gpcm_logprob(const int numOutcomes, const double *restrict param,
-			  const double th, double *restrict out)
+irt_rpf_1dim_gpcm_logprob(const int numDims, const double *restrict param,
+			  const double *restrict th,
+			  const int numOutcomes, double *restrict out)
 {
   double discr = param[0];
   double term1[numOutcomes];
@@ -54,7 +69,7 @@ irt_rpf_1dim_gpcm_logprob(const int numOutcomes, const double *restrict param,
   term1[numOutcomes - 1] = 0;
 
   for (int tx=0; tx < numOutcomes-1; tx++) {
-    term1[tx] = -discr * (th - param[tx+1]);
+    term1[tx] = -discr * (*th - param[tx+1]);
   }
   double sum = 0;
   double denom = 0;

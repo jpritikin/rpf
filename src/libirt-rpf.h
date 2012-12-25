@@ -18,17 +18,28 @@
 #ifndef _LIBIRT_RPF_
 #define _LIBIRT_RPF_
 
+int
+irt_rpf_1dim_drm_numParam(const int numDims, const int numOutcomes);
+
 void
-irt_rpf_1dim_drm_logprob(const double *restrict param,
-			 const double th, double *restrict out);
+irt_rpf_1dim_drm_logprob(const int numDims, const double *restrict param,
+			 const double *restrict th,
+			 const int numOutcomes, double *restrict out);
+
+int
+irt_rpf_mdim_drm_numParam(const int numDims, const int numOutcomes);
 
 void
 irt_rpf_mdim_drm_logprob(const int numDims, const double *restrict param,
-			 const double *restrict th, double *restrict out);
+			 const double *restrict th,
+			 const int numOutcomes, double *restrict out);
+
+int
+irt_rpf_1dim_gpcm_numParam(const int numDims, const int numOutcomes);
 
 void
-irt_rpf_1dim_gpcm_logprob(const int numOutcomes, const double *restrict param,
-			  const double th, double *restrict out);
-
+irt_rpf_1dim_gpcm_logprob(const int numDims, const double *restrict param,
+			  const double *restrict th,
+			  const int numOutcomes, double *restrict out);
 
 #endif
