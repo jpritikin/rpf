@@ -16,14 +16,8 @@
 }
 \description{
   This function instantiates a multiple-choice response
-  model. The discrimination prior defaults to the lognormal
-  distribution with \code{meanlog=0} and \code{sdlog=.5}.
-  The guessing prior is the beta distribution. See the
-  source code for details.
-}
-\details{
-  It is not yet possible to further customize the Bayesian
-  priors. The API will change before the 1.0 release.
+  model. Bayesian priors are only used to generate
+  plausible random parameters.
 }
 \author{
   Jonathan Weeks <weeksjp@gmail.com>

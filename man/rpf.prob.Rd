@@ -1,10 +1,8 @@
 \docType{methods}
 \name{rpf.prob}
 \alias{rpf.prob}
-\alias{rpf.prob,rpf.1dim.drm,numeric,numeric-method}
 \alias{rpf.prob,rpf.1dim.gpcm,numeric,numeric-method}
 \alias{rpf.prob,rpf.1dim.grm,numeric,numeric-method}
-\alias{rpf.prob,rpf.mdim.drm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.gpcm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.grm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.grm,numeric,numeric-method}
@@ -23,12 +21,12 @@ probability vector}
   a vector of probabilities. For dichotomous items,
   probabilities are returned in the order incorrect,
   correct. Although redundent, both incorrect and correct
-  probabilities are returned for API consistency with
-  polytomous item models.
+  probabilities are returned in the dichotomous case for
+  API consistency with polytomous item models.
 }
 \description{
-  Map an item model, item parameters, and person trait
-  score into a probability vector
+  This function is implemented in terms of
+  \code{\link{rpf.logprob}}.
 }
 \examples{
 i1 <- rpf.drm()

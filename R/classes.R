@@ -45,8 +45,26 @@ setClass("rpf.base",
                         dimensions="numeric",
                         "VIRTUAL"))
 
+##' The base class for 1 dimensional response probability functions.
+##' @name Class rpf.1dim
+##' @rdname rpf.1dim-class
+##' @aliases rpf.1dim-class
+##' @export
+setClass("rpf.1dim", contains='rpf.base',
+         representation("VIRTUAL"))
+
+##' The base class for multi-dimensional response probability functions.
+##' @name Class rpf.mdim
+##' @rdname rpf.mdim-class
+##' @aliases rpf.mdim-class
+##' @export
+setClass("rpf.mdim", contains='rpf.base',
+         representation("VIRTUAL"))
+
 ##' Map an item model, item parameters, and person trait score into a
 ##' probability vector
+##'
+##' This function is implemented in terms of \code{\link{rpf.logprob}}.
 ##'
 ##' @param m an item model
 ##' @param param item parameters
@@ -54,11 +72,10 @@ setClass("rpf.base",
 ##' @return a vector of probabilities. For dichotomous items,
 ##' probabilities are returned in the order incorrect, correct.
 ##' Although redundent, both incorrect and correct probabilities are
-##' returned for API consistency with polytomous item models.
+##' returned in the dichotomous case for API consistency with
+##' polytomous item models.
 ##' @docType methods
 ##' @aliases
-##' rpf.prob,rpf.1dim.drm,numeric,numeric-method
-##' rpf.prob,rpf.mdim.drm,numeric,matrix-method
 ##' rpf.prob,rpf.1dim.grm,numeric,numeric-method
 ##' rpf.prob,rpf.mdim.grm,numeric,numeric-method
 ##' rpf.prob,rpf.1dim.gpcm,numeric,numeric-method
@@ -74,7 +91,44 @@ setClass("rpf.base",
 ##' rpf.prob(i1, c(i1.p), c(0,1))    # average and high trait score
 setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 
-##' Turn a matrix of parameters into a vector for
+##' Map an item model, item parameters, and person trait score into a
+##' probability vector
+##'
+##' @param m an item model
+##' @param param item parameters
+##' @param theta the trait score(s)
+##' @return a vector of probabilities. For dichotomous items,
+##' probabilities are returned in the order incorrect, correct.
+##' Although redundent, both incorrect and correct probabilities are
+##' returned in the dichotomous case for API consistency with
+##' polytomous item models.
+##' @docType methods
+##' @aliases
+##' rpf.logprob,rpf.1dim.drm,numeric,numeric-method
+##' rpf.logprob,rpf.mdim.drm,numeric,matrix-method
+##' rpf.logprob,rpf.1dim.gpcm,numeric,numeric-method
+##' @export
+##' @examples
+##' i1 <- rpf.gpcm()
+##' i1.p <- rpf.rparam(i1)
+##' rpf.logprob(i1, c(i1.p), -1)   # low trait score
+##' rpf.logprob(i1, c(i1.p), c(0,1))    # average and high trait score
+setGeneric("rpf.logprob", function(m, param, theta) standardGeneric("rpf.logprob"))
+
+##' Adjust the shape of the arguments for
+##' \code{\link{rpf.logprob}}.
+##' 
+##' @name rpf.logprob wrapper3
+##' @rdname rpf.logprob.wrapper3
+##' @aliases rpf.logprob,rpf.1dim,numeric,matrix-method
+##' @docType methods
+setMethod("rpf.logprob", signature(m="rpf.1dim", param="numeric",
+                                theta="matrix"),
+          function(m, param, theta) {
+            rpf.logprob(m, param, as.numeric(theta))
+          })
+
+##' Adjust the shape of the arguments for
 ##' \code{\link{rpf.prob}}.
 ##' 
 ##' @name rpf.prob wrapper1
@@ -87,7 +141,7 @@ setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
             rpf.prob(m, as.numeric(param), theta)
           })
 
-##' Turn a matrix of parameters into a vector for
+##' Adjust the shape of the arguments for
 ##' \code{\link{rpf.prob}}.
 ##' 
 ##' @name rpf.prob wrapper2
@@ -98,6 +152,45 @@ setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
                                 theta="matrix"),
           function(m, param, theta) {
             rpf.prob(m, as.numeric(param), theta)
+          })
+
+##' Adjust the shape of the arguments for
+##' \code{\link{rpf.prob}}.
+##' 
+##' @name rpf.prob wrapper3
+##' @rdname rpf.prob.wrapper3
+##' @aliases rpf.prob,rpf.1dim,numeric,matrix-method
+##' @docType methods
+setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric",
+                                theta="matrix"),
+          function(m, param, theta) {
+            rpf.prob(m, param, as.numeric(theta))
+          })
+
+##' Implement rpf.prob in terms of
+##' \code{\link{rpf.logprob}}.
+##' 
+##' @name rpf.prob wrapper4
+##' @rdname rpf.prob.wrapper4
+##' @aliases rpf.prob,rpf.base,numeric,numeric-method
+##' @docType methods
+setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
+                                theta="numeric"),
+          function(m, param, theta) {
+            exp(rpf.logprob(m, param, theta))
+          })
+
+##' Implement rpf.prob in terms of
+##' \code{\link{rpf.logprob}}.
+##' 
+##' @name rpf.prob wrapper5
+##' @rdname rpf.prob.wrapper5
+##' @aliases rpf.prob,rpf.base,numeric,matrix-method
+##' @docType methods
+setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
+                                theta="matrix"),
+          function(m, param, theta) {
+            exp(rpf.logprob(m, param, theta))
           })
 
 ##' Map an item model, item parameters, and person trait score into a
@@ -197,15 +290,16 @@ setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLoca
 
 ##' The ogive constant
 ##'
-##' Models built on the logistic function take an argument \code{D}
-##' where you can pass in the ogive constant to obtain a response
-##' curve very similar to the Normal cumulative distribution function
-##' (Haley, 1952).
-##' In recent years, the logistic has grown in favor, and therefore,
-##' \code{D} defaults to 1 in this package (Baker & Kim, 2004, pp. 14-18).
+##' The ogive constant can be multiplied by the discrimination
+##' parameter to obtain a response curve very similar to the Normal
+##' cumulative distribution function (Haley, 1952).  In recent years,
+##' the logistic has grown in favor, and therefore, this package does
+##' not offer any special support for this transformation (Baker &
+##' Kim, 2004, pp. 14-18).
 ##' 
 ##' @export
-##' @references Baker & Kim (2004). Item Response Theory: Parameter
+##' @references
+##' Baker & Kim (2004). Item Response Theory: Parameter
 ##' Estimation Techniques. Marcel Dekker, Inc.
 ##'
 ##' Haley, D. C. (1952). Estimation of the dosage mortality
@@ -214,22 +308,6 @@ setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLoca
 ##' Laboratory, Stanford, CA.
 ##' 
 rpf.ogive <- 1.702
-
-##' The base class for 1 dimensional response probability functions.
-##' @name Class rpf.1dim
-##' @rdname rpf.1dim-class
-##' @aliases rpf.1dim-class
-##' @export
-setClass("rpf.1dim", contains='rpf.base',
-         representation("VIRTUAL"))
-
-##' The base class for multi-dimensional response probability functions.
-##' @name Class rpf.mdim
-##' @rdname rpf.mdim-class
-##' @aliases rpf.mdim-class
-##' @export
-setClass("rpf.mdim", contains='rpf.base',
-         representation("VIRTUAL"))
 
 ##' The base class for 1 dimensional graded response probability functions.
 ##' 
@@ -263,8 +341,7 @@ setClass("rpf.mdim.graded", contains='rpf.mdim',
 ##' @rdname rpf.1dim.grm-class
 ##' @aliases rpf.1dim.grm-class
 setClass("rpf.1dim.grm", contains='rpf.1dim.graded',
-         representation(D="numeric",
-                        a.prior.meanlog="numeric",
+         representation(a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric"))
 
 ##' The unidimensional generalized partial credit item model.
@@ -274,8 +351,7 @@ setClass("rpf.1dim.grm", contains='rpf.1dim.graded',
 ##' @rdname rpf.1dim.gpcm-class
 ##' @aliases rpf.1dim.gpcm-class
 setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded',
-         representation(D="numeric",
-                        a.prior.meanlog="numeric",
+         representation(a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric"))
 
 ##' Unidimensional dichotomous item models (1PL, 2PL, and 3PL).
@@ -285,8 +361,7 @@ setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded',
 ##' @rdname rpf.1dim.drm-class
 ##' @aliases rpf.1dim.drm-class
 setClass("rpf.1dim.drm", contains='rpf.1dim',
-         representation(D="numeric",
-                        guessing="numeric",
+         representation(guessing="numeric",
                         a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric",
                         c.prior.alpha="numeric",
@@ -299,8 +374,7 @@ setClass("rpf.1dim.drm", contains='rpf.1dim',
 ##' @rdname rpf.mdim.drm-class
 ##' @aliases rpf.mdim.drm-class
 setClass("rpf.mdim.drm", contains='rpf.mdim',
-         representation(D="numeric",
-                        guessing="numeric",
+         representation(guessing="numeric",
                         a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric",
                         c.prior.alpha="numeric",
@@ -313,8 +387,7 @@ setClass("rpf.mdim.drm", contains='rpf.mdim',
 ##' @rdname rpf.mdim.grm-class
 ##' @aliases rpf.mdim.grm-class
 setClass("rpf.mdim.grm", contains='rpf.mdim.graded',
-         representation(D="numeric",
-                        a.prior.meanlog="numeric",
+         representation(a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric"))
 
 ##' The multidimensional generalized partial credit item model.
@@ -324,8 +397,7 @@ setClass("rpf.mdim.grm", contains='rpf.mdim.graded',
 ##' @rdname rpf.mdim.gpcm-class
 ##' @aliases rpf.mdim.gpcm-class
 setClass("rpf.mdim.gpcm", contains='rpf.mdim.graded',
-         representation(D="numeric",
-                        a.prior.meanlog="numeric",
+         representation(a.prior.meanlog="numeric",
                         a.prior.sdlog="numeric"))
 
 ##' The nominal response item model (both unidimensional and
@@ -351,49 +423,3 @@ setClass("rpf.mdim.mcm", contains='rpf.mdim',
                         a.prior.sdlog="numeric",
                         c.prior.alpha="numeric",
                         c.prior.beta="numeric"))
-
-##' Randomly sample response patterns given a list of items
-##'
-##' Returns a random sample of response patterns given
-##' a list of unidimensional item models and parameters.
-##'
-##' @name rpf.sample
-##' @usage
-##' rpf.sample(theta, items, params)
-##' @param theta either a vector of trait abilities or
-##' the number of abilities to draw from N(0,1)
-##' @param items a list of item models
-##' @param params a list of item parameters. If omitted, random item
-##' parameters are generated for each item model.
-##' @return Returns a matrix of response patterns
-##' @export
-##' @examples
-##' i1 <- rpf.drm()
-##' i1.p <- rpf.rparam(i1)
-##' i2 <- rpf.gpcm(numOutcomes=3)
-##' i2.p <- rpf.rparam(i2)
-##' rpf.sample(5, list(i1,i2), list(i1.p, i2.p))
-##' @seealso \code{\link{sample}}
-rpf.sample <- function(theta, items, params) {
-  if (max(vapply(items, function(i) i@dimensions, 0)) > 1) {
-    stop("Can only sample unidimensional items")
-  }
-  if (length(theta) == 1) {
-    theta <- rnorm(theta)
-  }
-  numPeople <- length(theta)
-  numItems <- length(items)
-  if (missing(params)) {
-    params <- lapply(items, rpf.rparam)
-  }
-  outcomes <- vapply(items, function(i) i@numOutcomes, 0)
-  
-  ret <- array(dim=c(numPeople, numItems))
-  for (ix in 1:numItems) {
-    i <- items[[ix]]
-    param <- params[[ix]]
-    P <- rpf.prob(i, param, theta)
-    ret[,ix] <- apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F)
-  }
-  return(ret)
-}

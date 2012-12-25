@@ -1,11 +1,7 @@
 ##' Create a nominal response model and associated hyperparameters.
 ##'
-##' This function instantiates a nominal response model. The
-##' discrimination prior defaults to the lognormal distribution with
-##' \code{meanlog=0} and \code{sdlog=.5}.
-##' 
-##' It is not yet possible to further customize the Bayesian
-##' priors. The API will change before the 1.0 release.
+##' This function instantiates a nominal response model. Bayesian
+##' priors are only used to generate plausible random parameters.
 ##' 
 ##' @param numOutcomes The number of choices available
 ##' @param dimensions the number of dimensions

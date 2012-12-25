@@ -1,27 +1,22 @@
 ##' Create a graded response model and associated hyperparameters.
 ##'
-##' This function instantiates a graded response model. The
-##' discrimination prior defaults to the lognormal distribution with
-##' \code{meanlog=0} and \code{sdlog=.5}.
-##'
-##' It is not yet possible to further customize the Bayesian
-##' priors. The API will change before the 1.0 release.
+##' This function instantiates a graded response model. Bayesian
+##' priors are only used to generate plausible random parameters.
 ##'
 ##' The graded response model was designed for a item with a series of
 ##' dependent parts where a higher score implies that easier parts of
-##' the item were surmounted. If your polytomous item has a number of
-##' independent parts then consider \code{\link{rpf.gpcm}}.
+##' the item were surmounted. If there is any chance your polytomous
+##' item has independent parts then consider \code{\link{rpf.gpcm}}.
 ##' 
 ##' @param numOutcomes The number of choices available
 ##' @param dimensions the number of dimensions
-##' @param D defaults to 1 or pass in \code{\link{rpf.ogive}}
 ##' @param multidimensional whether to use a multidimensional model.
 ##' Defaults to \code{TRUE} when \code{dimensions>1} and
 ##' \code{FALSE} when \code{dimensions==1}.
 ##' @return an item model
 ##' @export
 ##' @author Jonathan Weeks <weeksjp@@gmail.com>
-rpf.grm <- function(numOutcomes=2, dimensions=1, D=1, multidimensional) {
+rpf.grm <- function(numOutcomes=2, dimensions=1, multidimensional) {
   if (missing(multidimensional)) {
     multidimensional <- dimensions > 1
   }
@@ -29,13 +24,13 @@ rpf.grm <- function(numOutcomes=2, dimensions=1, D=1, multidimensional) {
     stop("More than 1 dimension must use a multidimensional model")
   }
   if (!multidimensional) {
-    new("rpf.1dim.grm", numOutcomes=numOutcomes, D=D,
+    new("rpf.1dim.grm", numOutcomes=numOutcomes,
         dimensions=1,
         numParam=numOutcomes,
         a.prior.meanlog=0,
         a.prior.sdlog=.5)
   } else {
-    new("rpf.mdim.grm", numOutcomes=numOutcomes, D=D,
+    new("rpf.mdim.grm", numOutcomes=numOutcomes,
         dimensions=dimensions,
         numParam=dimensions + numOutcomes - 1,
         a.prior.meanlog=0,
@@ -48,7 +43,7 @@ rpf.grm <- function(numOutcomes=2, dimensions=1, D=1, multidimensional) {
 setMethod("rpf.prob", signature(m="rpf.1dim.grm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
-            a <- param[1] * m@D
+            a <- param[1]
             b <- param[-1]
 
             ct <- m@numOutcomes - 1
@@ -73,7 +68,7 @@ setMethod("rpf.prob", signature(m="rpf.1dim.grm", param="numeric",
 setMethod("rpf.prob", signature(m="rpf.mdim.grm", param="numeric",
                                 theta="matrix"),
           function(m, param, theta) {
-            a <- param[1:m@dimensions] * m@D
+            a <- param[1:m@dimensions]
             b <- param[-1:-m@dimensions]
 
             ct <- m@numOutcomes - 1

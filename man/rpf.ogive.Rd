@@ -7,12 +7,12 @@
   rpf.ogive
 }
 \description{
-  Models built on the logistic function take an argument
-  \code{D} where you can pass in the ogive constant to
-  obtain a response curve very similar to the Normal
-  cumulative distribution function (Haley, 1952). In recent
-  years, the logistic has grown in favor, and therefore,
-  \code{D} defaults to 1 in this package (Baker & Kim,
+  The ogive constant can be multiplied by the
+  discrimination parameter to obtain a response curve very
+  similar to the Normal cumulative distribution function
+  (Haley, 1952).  In recent years, the logistic has grown
+  in favor, and therefore, this package does not offer any
+  special support for this transformation (Baker & Kim,
   2004, pp. 14-18).
 }
 \references{
