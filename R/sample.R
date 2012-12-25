@@ -6,12 +6,13 @@
 ##' @name rpf.sample
 ##' @usage
 ##' rpf.sample(theta, items, params, design)
-##' @param theta either a vector of trait abilities or
-##' the number of abilities to draw from N(0,1)
+##' @param theta either a vector (for 1 dimension) or a matrix (for >1
+##' dimension) of person abilities or the number of response patterns
+##' to generate randomly
 ##' @param items a list of item models
 ##' @param params a list of item parameters. If omitted, random item
 ##' parameters are generated for each item model.
-##' @param design assigns person abilities to item dimensions
+##' @param design a matrix assigning person abilities to item dimensions
 ##' @return Returns a matrix of response patterns
 ##' @export
 ##' @examples

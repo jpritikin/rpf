@@ -76,6 +76,11 @@ setClass("rpf.mdim", contains='rpf.base',
 ##' polytomous item models.
 ##' @docType methods
 ##' @aliases
+##' rpf.prob,rpf.base,numeric,numeric-method
+##' rpf.prob,rpf.base,numeric,matrix-method
+##' rpf.prob,rpf.base,matrix,numeric-method
+##' rpf.prob,rpf.base,matrix,matrix-method
+##' rpf.prob,rpf.1dim,numeric,matrix-method
 ##' rpf.prob,rpf.1dim.grm,numeric,numeric-method
 ##' rpf.prob,rpf.mdim.grm,numeric,numeric-method
 ##' rpf.prob,rpf.1dim.gpcm,numeric,numeric-method
@@ -104,6 +109,7 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' polytomous item models.
 ##' @docType methods
 ##' @aliases
+##' rpf.logprob,rpf.1dim,numeric,matrix-method
 ##' rpf.logprob,rpf.1dim.drm,numeric,numeric-method
 ##' rpf.logprob,rpf.mdim.drm,numeric,matrix-method
 ##' rpf.logprob,rpf.1dim.gpcm,numeric,numeric-method
@@ -118,78 +124,36 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf.logprob(i1, c(i1.p), c(0,1))    # average and high trait score
 setGeneric("rpf.logprob", function(m, param, theta) standardGeneric("rpf.logprob"))
 
-##' Adjust the shape of the arguments for
-##' \code{\link{rpf.logprob}}.
-##' 
-##' @name rpf.logprob wrapper3
-##' @rdname rpf.logprob.wrapper3
-##' @aliases rpf.logprob,rpf.1dim,numeric,matrix-method
-##' @docType methods
 setMethod("rpf.logprob", signature(m="rpf.1dim", param="numeric",
                                 theta="matrix"),
           function(m, param, theta) {
             rpf.logprob(m, param, as.numeric(theta))
           })
 
-##' Adjust the shape of the arguments for
-##' \code{\link{rpf.prob}}.
-##' 
-##' @name rpf.prob wrapper1
-##' @rdname rpf.prob.wrapper1
-##' @aliases rpf.prob,rpf.base,matrix,numeric-method
-##' @docType methods
 setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
                                 theta="numeric"),
           function(m, param, theta) {
             rpf.prob(m, as.numeric(param), theta)
           })
 
-##' Adjust the shape of the arguments for
-##' \code{\link{rpf.prob}}.
-##' 
-##' @name rpf.prob wrapper2
-##' @rdname rpf.prob.wrapper2
-##' @aliases rpf.prob,rpf.base,matrix,matrix-method
-##' @docType methods
 setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
                                 theta="matrix"),
           function(m, param, theta) {
             rpf.prob(m, as.numeric(param), theta)
           })
 
-##' Adjust the shape of the arguments for
-##' \code{\link{rpf.prob}}.
-##' 
-##' @name rpf.prob wrapper3
-##' @rdname rpf.prob.wrapper3
-##' @aliases rpf.prob,rpf.1dim,numeric,matrix-method
-##' @docType methods
 setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric",
                                 theta="matrix"),
           function(m, param, theta) {
             rpf.prob(m, param, as.numeric(theta))
           })
 
-##' Implement rpf.prob in terms of
-##' \code{\link{rpf.logprob}}.
-##' 
-##' @name rpf.prob wrapper4
-##' @rdname rpf.prob.wrapper4
-##' @aliases rpf.prob,rpf.base,numeric,numeric-method
-##' @docType methods
 setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
             exp(rpf.logprob(m, param, theta))
           })
 
-##' Implement rpf.prob in terms of
-##' \code{\link{rpf.logprob}}.
-##' 
-##' @name rpf.prob wrapper5
-##' @rdname rpf.prob.wrapper5
-##' @aliases rpf.prob,rpf.base,numeric,matrix-method
-##' @docType methods
 setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
                                 theta="matrix"),
           function(m, param, theta) {
@@ -258,6 +222,8 @@ setGeneric("rpf.startingParam", function(m) standardGeneric("rpf.startingParam")
 
 ##' Extract location related item parameters
 ##'
+##' Experimental. This method may disappear.
+##' 
 ##' @param m an item model
 ##' @param param item parameters
 ##' @return location related item parameters
@@ -275,6 +241,8 @@ setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation
 
 ##' Set location related item parameters
 ##'
+##' Experimental. This method may disappear.
+##' 
 ##' @param m an item model
 ##' @param param item parameters
 ##' @param loc location parameters, typically from \code{\link{rpf.getLocation}}
