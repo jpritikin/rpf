@@ -3,3 +3,5 @@
 /NAMESPACE
 *.o
 *.so
+/*.tar.gz
+/rpf.Rcheck

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+if [ ! -e ./inst/buildtest ]; then
+  echo "$0 must be run from the top of the project tree"
+  exit
+fi
+
+cran=--as-cran
+
+rm -f rpf_*.tar.gz
+./inst/rox
+R CMD build . && R CMD check rpf_*.tar.gz
