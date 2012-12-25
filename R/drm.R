@@ -44,7 +44,7 @@ rpf.drm <- function(numChoices=5, dimensions=1, multidimensional) {
 setMethod("rpf.logprob", signature(m="rpf.1dim.drm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
-            t(.Call("rpf_1dim_drm_logprob_wrapper", param, theta))
+            t(.Call(rpf_1dim_drm_logprob_wrapper, param, theta))
           })
 
 ##' @references
@@ -89,7 +89,7 @@ setMethod("rpf.setLocation", signature(m="rpf.1dim.drm", param="numeric", loc="n
 setMethod("rpf.logprob", signature(m="rpf.mdim.drm", param="numeric",
                                    theta="matrix"),
           function(m, param, theta) {
-            t(.Call("rpf_mdim_drm_logprob_wrapper", m@dimensions, param, t(theta)))
+            t(.Call(rpf_mdim_drm_logprob_wrapper, m@dimensions, param, t(theta)))
           })
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),

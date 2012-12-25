@@ -1,6 +1,5 @@
 .Rhistory
 /man
-/NAMESPACE
 *.o
 *.so
 /*.tar.gz

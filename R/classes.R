@@ -107,6 +107,9 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf.logprob,rpf.1dim.drm,numeric,numeric-method
 ##' rpf.logprob,rpf.mdim.drm,numeric,matrix-method
 ##' rpf.logprob,rpf.1dim.gpcm,numeric,numeric-method
+##' rpf_1dim_drm_logprob_wrapper
+##' rpf_1dim_gpcm_logprob_wrapper
+##' rpf_mdim_drm_logprob_wrapper
 ##' @export
 ##' @examples
 ##' i1 <- rpf.gpcm()

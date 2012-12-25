@@ -39,7 +39,7 @@ rpf.gpcm <- function(numOutcomes=2, dimensions=1, multidimensional) {
 setMethod("rpf.logprob", signature(m="rpf.1dim.gpcm", param="numeric",
                                 theta="numeric"),
           function(m, param, theta) {
-            t(.Call("rpf_1dim_gpcm_logprob_wrapper",
+            t(.Call(rpf_1dim_gpcm_logprob_wrapper,
                     m@numOutcomes, param, theta))
           })
 

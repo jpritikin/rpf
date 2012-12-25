@@ -1,8 +1,10 @@
 #include <R.h>
 #include <Rinternals.h>
+#include <R_ext/Rdynload.h>
 #include "libirt-rpf.h"
 
-SEXP rpf_1dim_drm_logprob_wrapper(SEXP r_param, SEXP r_theta)
+static SEXP
+rpf_1dim_drm_logprob_wrapper(SEXP r_param, SEXP r_theta)
 {
   if (length(r_param) != 3) error("Wrong parameter length");
 
@@ -34,8 +36,9 @@ getMatrixDims(SEXP r_theta, int *rows, int *cols)
     UNPROTECT(1);
 }
 
-SEXP rpf_mdim_drm_logprob_wrapper(SEXP r_numDims,
-				  SEXP r_param, SEXP r_theta)
+static SEXP
+rpf_mdim_drm_logprob_wrapper(SEXP r_numDims,
+			     SEXP r_param, SEXP r_theta)
 {
   int numDims = asInteger(r_numDims);
 
@@ -61,8 +64,9 @@ SEXP rpf_mdim_drm_logprob_wrapper(SEXP r_numDims,
   return outsxp;
 }
 
-SEXP rpf_1dim_gpcm_logprob_wrapper(SEXP r_numOutcomes,
-				   SEXP r_param, SEXP r_theta)
+static SEXP
+rpf_1dim_gpcm_logprob_wrapper(SEXP r_numOutcomes,
+			      SEXP r_param, SEXP r_theta)
 {
   int numOutcomes = asInteger(r_numOutcomes);
 
@@ -82,4 +86,15 @@ SEXP rpf_1dim_gpcm_logprob_wrapper(SEXP r_numOutcomes,
 
   UNPROTECT(1);
   return outsxp;
+}
+
+static R_CallMethodDef flist[] = {
+  {"rpf_1dim_drm_logprob_wrapper", (DL_FUNC) rpf_1dim_drm_logprob_wrapper, 2},
+  {"rpf_mdim_drm_logprob_wrapper", (DL_FUNC) rpf_mdim_drm_logprob_wrapper, 3},
+  {"rpf_1dim_gpcm_logprob_wrapper", (DL_FUNC) rpf_1dim_gpcm_logprob_wrapper, 3},
+  {NULL, NULL, 0}
+};
+
+void R_init_rpf(DllInfo *info) {
+  R_registerRoutines(info, NULL, flist, NULL, NULL);
 }
