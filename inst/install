@@ -4,17 +4,14 @@ set -o errexit
 set -o nounset
 set -o noclobber
 
-if [ ! -e ./inst/buildtest ]; then
+if [ ! -e ./inst/install ]; then
   echo "$0 must be run from the top of the project tree"
   exit
 fi
 
-cran=--as-cran
 pkg=rpf
 
 rm -f ${pkg}_*.tar.gz
 ./inst/rox
 R CMD build .
-R CMD check ${pkg}_*.tar.gz
-cat ${pkg}.Rcheck/00install.out
-echo Manual is here, ${pkg}.Rcheck/${pkg}-manual.pdf
+R CMD INSTALL ${pkg}_*.tar.gz
