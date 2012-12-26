@@ -43,16 +43,17 @@
 ##' rpf.sample(10, items, correct, design)
 ##' @seealso \code{\link{sample}}
 rpf.sample <- function(theta, items, params, design) {
+  numItems <- length(items)
   maxDim <- max(vapply(items, function(i) i@dimensions, 0))
   if (missing(design)) {
     if (maxDim > 1) {
-      stop("The design matrix must be provided for multidimensional item models")
+      design <- matrix(rep(1:maxDim, numItems), nrow=maxDim)
+    } else {
+      design <- 1
     }
-    design <- 1
   }
   maxAbilities <- max(design, na.rm=TRUE)
 
-  numItems <- length(items)
   if (maxDim > 1 && any(dim(design) != c(maxDim,numItems))) {
     stop(paste("The design matrix must have", maxDim, "rows and ",numItems,"columns"))
   }
