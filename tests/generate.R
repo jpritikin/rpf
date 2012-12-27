@@ -36,7 +36,7 @@ design <- matrix(c(1, 1, 1, 1,
 data <- rpf.sample(3, items, correct, design)
 checkEqualsNumeric(c(data), c(1, 1, 1, 2, 2, 2, 2, 1, 2, 1, 1, 2))
 
-### mulltidimension, no design
+### multidimension, no design
 
 numItems <- 3
 items <- vector("list", numItems)
@@ -50,3 +50,29 @@ for (ix in 1:numItems) {
 
 data <- rpf.sample(3, items, correct)
 checkEqualsNumeric(c(data), c(1, 2, 1, 1, 2, 2, 1, 1, 1))
+
+### uneven 2d design
+
+numItems <- 5
+numPersons <- 3
+maxDim <- 2
+
+items <- vector("list", numItems)
+correct <- vector("list", numItems)
+for (ix in 1:numItems) {
+	items[[ix]] <- rpf.drm(dimensions=min(ix,maxDim),
+                               multidimensional=TRUE)
+	correct[[ix]] <- rpf.rparam(items[[ix]])
+	correct[[ix]][[4]] <- 0   # no guessing, for now
+}
+
+maxParam <- max(vapply(items, function(i) i@numParam, 0))
+maxOutcomes <- max(vapply(items, function(i) i@numOutcomes, 0))
+
+design <- matrix(c(1, 1,1,1,2,
+		   NA,2,2,2,1), byrow=TRUE, nrow=2)
+
+data <- rpf.sample(numPersons, items, correct, design)
+
+checkEqualsNumeric(c(data),
+                   c(1L, 2L, 2L, 2L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L))

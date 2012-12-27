@@ -60,6 +60,7 @@ rpf.sample <- function(theta, items, params, design) {
 
   numPeople <- NA
   if (is.numeric(theta) && length(theta) == 1) {
+    if (theta <= 1) stop("Request at least 2 samples")
     numPeople <- theta
     theta <- array(rnorm(numPeople * maxAbilities),
                    dim=c(numPeople, maxAbilities))
@@ -81,12 +82,12 @@ rpf.sample <- function(theta, items, params, design) {
     param <- params[[ix]]
     P <- NA
     if (maxDim==1) {
-      P <- rpf.prob(i, param, theta)
+      P <- rpf.prob(i, param[1:i@numParam], theta)
     } else {
       cols <- design[,ix]
       cols <- cols[!is.na(cols)]
       i.theta <- as.matrix(theta[,cols])
-      P <- rpf.prob(i, param, i.theta)
+      P <- rpf.prob(i, param[1:i@numParam], i.theta)
     }
     ret[,ix] <- apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F)
   }
