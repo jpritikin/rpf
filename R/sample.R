@@ -4,8 +4,6 @@
 ##' a list of item models and parameters.
 ##'
 ##' @name rpf.sample
-##' @usage
-##' rpf.sample(theta, items, params, design)
 ##' @param theta either a vector (for 1 dimension) or a matrix (for >1
 ##' dimension) of person abilities or the number of response patterns
 ##' to generate randomly
@@ -13,7 +11,8 @@
 ##' @param params a list of item parameters. If omitted, random item
 ##' parameters are generated for each item model.
 ##' @param design a matrix assigning person abilities to item dimensions
-##' @return Returns a matrix of response patterns
+##' @param prefix prefix for column label (optional)
+##' @return Returns a data frame of response patterns
 ##' @export
 ##' @examples
 ##' # 1 dimensional items
@@ -42,7 +41,7 @@
 ##'                    2, 2, 3, NA), nrow=2, byrow=TRUE)
 ##' rpf.sample(10, items, correct, design)
 ##' @seealso \code{\link{sample}}
-rpf.sample <- function(theta, items, params, design) {
+rpf.sample <- function(theta, items, params, design, prefix="i") {
   numItems <- length(items)
   maxDim <- max(vapply(items, function(i) i@dimensions, 0))
   if (missing(design)) {
@@ -76,7 +75,7 @@ rpf.sample <- function(theta, items, params, design) {
   }
   outcomes <- vapply(items, function(i) i@numOutcomes, 0)
   
-  ret <- array(dim=c(numPeople, numItems))
+  ret <- list()
   for (ix in 1:numItems) {
     i <- items[[ix]]
     param <- params[[ix]]
@@ -89,7 +88,9 @@ rpf.sample <- function(theta, items, params, design) {
       i.theta <- as.matrix(theta[,cols])
       P <- rpf.prob(i, param[1:i@numParam], i.theta)
     }
-    ret[,ix] <- apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F)
+    ret[[ix]] <- as.factor(apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F))
   }
+  ret <- as.data.frame(ret)
+  colnames(ret) <- paste0(prefix,1:numItems)
   return(ret)
 }

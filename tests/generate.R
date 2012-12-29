@@ -1,6 +1,27 @@
 library(RUnit)
 library(rpf)
 
+unfactor <- function(data) {
+  for(s in ls(data)) {
+    if (is.factor(data[[s]])) {
+      data[[s]] <- unclass(data[[s]])
+    }
+  }
+}
+
+compare.df <- function(df1, df2) {
+  df1 <- unfactor(df1)
+  df2 <- unfactor(df2)
+  if (!all(dim(df1) == dim(df2))) {
+    stop(paste(paste(df1,collapse=' '),"and",paste(df2,collapse=' '),"are of different dimensions"))
+  }
+  if (!all(df1 == df2)) {
+    stop(paste(paste(df1,collapse=' '),"is not equal to",paste(df2,collapse=' '),
+               "details",paste(df1==df2, collapse=' ')))
+  }
+  cat("OK\n")
+}
+
 set.seed(1)
 
 ### 1 dimensional items
@@ -10,10 +31,10 @@ i1.p <- rpf.rparam(i1)
 i2 <- rpf.gpcm(numOutcomes=3)
 i2.p <- rpf.rparam(i2)
 data <- rpf.sample(3, list(i1,i2), list(i1.p, i2.p))
-checkEqualsNumeric(c(data), c(2, 1, 1, 3, 3, 3))
+compare.df(unclass(data), data.frame(i1=c(2,1,1), i2=c(3,3,3)))
 
 data <- rpf.sample(runif(3), list(i1,i2), list(i1.p, i2.p))
-checkEqualsNumeric(c(data), c(2, 1, 2, 2, 2, 2))
+compare.df(unclass(data), data.frame(i1=c(2,1,2), i2=c(3,2,3)))
 
 ### multidimensional items
 
@@ -34,7 +55,8 @@ correct[[4]] <- rpf.rparam(i2)
 design <- matrix(c(1, 1, 1, 1,
                    2, 2, 3, NA), nrow=2, byrow=TRUE)
 data <- rpf.sample(3, items, correct, design)
-checkEqualsNumeric(c(data), c(1, 1, 1, 2, 2, 2, 2, 1, 2, 1, 1, 2))
+compare.df(unclass(data),
+            data.frame(i1=c(1,1,1), i2=c(2,2,2), i3=c(2,1,2), i4=c(1,1,2)))
 
 ### multidimension, no design
 
@@ -49,7 +71,7 @@ for (ix in 1:numItems) {
 }
 
 data <- rpf.sample(3, items, correct)
-checkEqualsNumeric(c(data), c(1, 2, 1, 1, 2, 2, 1, 1, 1))
+checkEquals(c(simplify2array(data)), as.character(c(1, 2, 1, 1, 2, 2, 1, 1, 1)))
 
 ### uneven 2d design
 
@@ -74,5 +96,6 @@ design <- matrix(c(1, 1,1,1,2,
 
 data <- rpf.sample(numPersons, items, correct, design)
 
-checkEqualsNumeric(c(data),
-                   c(1L, 2L, 2L, 2L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L))
+compare.df(unclass(data),
+           data.frame(i1=c(1,2,2), i2=c(2,1,2), i3=c(2,2,2), i4=c(2,2,2),
+                      i5=c(2,2,2)))
