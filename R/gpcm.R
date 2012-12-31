@@ -12,6 +12,13 @@
 ##' @export
 ##' @references Baker & Kim (2004). Item Response Theory: Parameter
 ##' Estimation Techniques. Marcel Dekker, Inc.
+##'
+##' Masters, G. N. (1982). A rasch model for partial credit scoring.
+##' Psychometrika, 47(2), 149-174.
+##'
+##' Muraki, Eiji. (1992). A generalized partial credit model:
+##' Application of an EM algorithm. Applied Psychological Measurement,
+##' 16, 159-176. doi:10.1177/014662169201600206
 rpf.gpcm <- function(numOutcomes=2, dimensions=1, multidimensional) {
   if (missing(multidimensional)) {
     multidimensional <- dimensions > 1
