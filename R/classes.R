@@ -170,12 +170,16 @@ setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
 ##' @docType methods
 ##' @aliases
 ##' rpf.info,rpf.1dim.drm,numeric,numeric-method
+##' rpf.info,rpf.1dim.graded,numeric,numeric-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
 ##' i1.p <- c(.6,1,.1)
 ##' theta <- seq(0,3,.05)
 ##' plot(theta, rpf.info(i1, i1.p, theta), type="l")
+##' @references
+##' Muraki, E. (1993) Information functions of the generalized partial credit model.
+##' Applied Psychological Measurement, 17(4), 351-363.
 setGeneric("rpf.info", function(m, param, theta) standardGeneric("rpf.info"))
 
 ##' Generates item parameters

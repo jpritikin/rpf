@@ -20,7 +20,8 @@ Suggests:
     RUnit,
     roxygen2,
     ggplot2,
-    reshape2
+    reshape2,
+    gridExtra
 Depends:
     methods
 Collate:
@@ -32,4 +33,5 @@ Collate:
     'graded.R'
     'grm.R'
     'sample.R'
+    'diag.R'
 URL: https://gitorious.org/rpf

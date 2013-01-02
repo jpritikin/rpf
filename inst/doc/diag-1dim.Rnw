@@ -15,21 +15,37 @@ Here's how to create an item characteristic curve plot for any 1
 dimensional item.
 
 <<fig.height=2.5>>=
-icc <- function(item, param, width=3) {
+plot.icc <- function(item, param, width=3) {
   pm <- rpf.prob(item, param, seq(-width, width, .1))
   icc <- as.data.frame(melt(pm, varnames=c("theta",'category')))
   icc$theta <- seq(-width, width, .1)
   icc$category <- as.factor(icc$category)
   ggplot(icc, aes(theta, value)) +
     geom_line(aes(color=category)) +
-      ylim(0,1) + xlim(-width,width) +
-      xlab("Trait")
+      ylim(0,1) + xlim(-width,width)
 }
 
 i1 <- rpf.gpcm(5)
+i1.p <- rpf.rparam(i1)
 i2 <- rpf.drm()
-grid.arrange(icc(i1, rpf.rparam(i1)),
-             icc(i2, rpf.rparam(i2)), ncol=2)
+i2.p <- rpf.rparam(i2)
+grid.arrange(plot.icc(i1, i1.p),
+             plot.icc(i2, i2.p), ncol=2)
+@ 
+
+Let's look at the information curves for the same items.
+
+<<fig.height=2.5>>=
+plot.info <- function(item, param, width=3) {
+  grid <- seq(-width, width, .1)
+  df <- as.data.frame(cbind(theta=grid,
+                            info=rpf.info(item, param, grid)))
+  ggplot(df, aes(theta, info)) +
+    geom_line() +
+      xlim(-width,width)
+}
+grid.arrange(plot.info(i1, i1.p),
+             plot.info(i2, i2.p), ncol=2)
 @ 
 
 \end{document} 
