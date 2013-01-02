@@ -88,7 +88,7 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
       i.theta <- as.matrix(theta[,cols])
       P <- rpf.prob(i, param[1:i@numParam], i.theta)
     }
-    ret[[ix]] <- as.factor(apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F))
+    ret[[ix]] <- as.ordered(apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F))
   }
   ret <- as.data.frame(ret)
   colnames(ret) <- paste0(prefix,1:numItems)
