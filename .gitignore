@@ -4,3 +4,8 @@
 *.so
 /*.tar.gz
 /rpf.Rcheck
+*.aux
+*.log
+*.tex
+*.pdf
+/inst/doc/figure

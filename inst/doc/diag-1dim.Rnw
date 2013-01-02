@@ -1,0 +1,35 @@
+\documentclass{article}
+%\VignetteIndexEntry{How to perform common IRT diagnostics}
+\begin{document}
+
+<<setup, cache=FALSE, include=FALSE>>=
+library(rpf)
+library(ggplot2)
+library(reshape2)
+library(gridExtra)
+@ 
+
+\section{How to perform common IRT diagnostics}
+
+Here's how to create an item characteristic curve plot for any 1
+dimensional item.
+
+<<fig.height=2.5>>=
+icc <- function(item, param, width=3) {
+  pm <- rpf.prob(item, param, seq(-width, width, .1))
+  icc <- as.data.frame(melt(pm, varnames=c("theta",'category')))
+  icc$theta <- seq(-width, width, .1)
+  icc$category <- as.factor(icc$category)
+  ggplot(icc, aes(theta, value)) +
+    geom_line(aes(color=category)) +
+      ylim(0,1) + xlim(-width,width) +
+      xlab("Trait")
+}
+
+i1 <- rpf.gpcm(5)
+i2 <- rpf.drm()
+grid.arrange(icc(i1, rpf.rparam(i1)),
+             icc(i2, rpf.rparam(i2)), ncol=2)
+@ 
+
+\end{document} 
