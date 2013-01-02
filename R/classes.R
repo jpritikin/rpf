@@ -22,8 +22,9 @@
 ##' This package could also accrete functions to support plotting (but
 ##' not the actual plot functions).
 ##'
-##' @section Warning:
-##' The API is not stable at this time. You have been warned.
+##' @section Warning: The API is not stable at this time. You have
+##' been warned. In particular, I anticipating transposing some of the
+##' input and output matrices.
 ##' 
 ##' @docType package
 ##' @rdname rpf.introduction
@@ -77,6 +78,7 @@ setClass("rpf.mdim", contains='rpf.base',
 ##' @docType methods
 ##' @aliases
 ##' rpf.prob,rpf.base,numeric,numeric-method
+##' rpf.prob,rpf.base,data.frame,numeric-method
 ##' rpf.prob,rpf.base,numeric,matrix-method
 ##' rpf.prob,rpf.base,matrix,numeric-method
 ##' rpf.prob,rpf.base,matrix,matrix-method
@@ -124,40 +126,39 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf.logprob(i1, c(i1.p), c(0,1))    # average and high trait score
 setGeneric("rpf.logprob", function(m, param, theta) standardGeneric("rpf.logprob"))
 
-setMethod("rpf.logprob", signature(m="rpf.1dim", param="numeric",
-                                theta="matrix"),
+setMethod("rpf.logprob", signature(m="rpf.1dim", param="numeric", theta="matrix"),
           function(m, param, theta) {
             rpf.logprob(m, param, as.numeric(theta))
           })
 
-setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
-                                theta="numeric"),
+setMethod("rpf.prob", signature(m="rpf.base", param="numeric", theta="numeric"),
+          function(m, param, theta) {
+            exp(rpf.logprob(m, param, theta))
+          })
+
+setMethod("rpf.prob", signature(m="rpf.base", param="data.frame", theta="numeric"),
+          function(m, param, theta) {
+            exp(rpf.logprob(m, as.numeric(param), theta))
+          })
+
+setMethod("rpf.prob", signature(m="rpf.base", param="numeric", theta="matrix"),
+          function(m, param, theta) {
+            exp(rpf.logprob(m, param, theta))
+          })
+
+setMethod("rpf.prob", signature(m="rpf.base", param="matrix", theta="numeric"),
           function(m, param, theta) {
             rpf.prob(m, as.numeric(param), theta)
           })
 
-setMethod("rpf.prob", signature(m="rpf.base", param="matrix",
-                                theta="matrix"),
+setMethod("rpf.prob", signature(m="rpf.base", param="matrix", theta="matrix"),
           function(m, param, theta) {
             rpf.prob(m, as.numeric(param), theta)
           })
 
-setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric",
-                                theta="matrix"),
+setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric", theta="matrix"),
           function(m, param, theta) {
             rpf.prob(m, param, as.numeric(theta))
-          })
-
-setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
-                                theta="numeric"),
-          function(m, param, theta) {
-            exp(rpf.logprob(m, param, theta))
-          })
-
-setMethod("rpf.prob", signature(m="rpf.base", param="numeric",
-                                theta="matrix"),
-          function(m, param, theta) {
-            exp(rpf.logprob(m, param, theta))
           })
 
 ##' Map an item model, item parameters, and person trait score into a
