@@ -17,7 +17,7 @@ Description: The purpose of this package is to factor out logic and math common
 License: GPL (>= 3)
 Suggests:
     plink,
-    RUnit,
+    testthat,
     roxygen2,
     ggplot2,
     reshape2,
@@ -33,5 +33,5 @@ Collate:
     'graded.R'
     'grm.R'
     'sample.R'
-    'diag.R'
+    'diagnose.R'
 URL: https://gitorious.org/rpf

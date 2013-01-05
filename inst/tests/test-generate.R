@@ -1,4 +1,4 @@
-library(RUnit)
+library(testthat)
 library(rpf)
 
 unfactor <- function(data) {
@@ -12,14 +12,8 @@ unfactor <- function(data) {
 compare.df <- function(df1, df2) {
   df1 <- unfactor(df1)
   df2 <- unfactor(df2)
-  if (!all(dim(df1) == dim(df2))) {
-    stop(paste(paste(df1,collapse=' '),"and",paste(df2,collapse=' '),"are of different dimensions"))
-  }
-  if (!all(df1 == df2)) {
-    stop(paste(paste(df1,collapse=' '),"is not equal to",paste(df2,collapse=' '),
-               "details",paste(df1==df2, collapse=' ')))
-  }
-  cat("OK\n")
+  expect_identical(dim(df1), dim(df2))
+  expect_identical(df1, df2)
 }
 
 set.seed(1)
@@ -71,7 +65,7 @@ for (ix in 1:numItems) {
 }
 
 data <- rpf.sample(3, items, correct)
-checkEquals(c(simplify2array(data)), as.character(c(1, 2, 1, 1, 2, 2, 1, 1, 1)))
+expect_identical(c(simplify2array(data)), as.character(c(1, 2, 1, 1, 2, 2, 1, 1, 1)))
 
 ### uneven 2d design
 
