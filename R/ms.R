@@ -2,10 +2,10 @@
 ##'
 ##' These data are from Pritikin & Schmidt (2013, March).
 ##' 
-##' Items were fit to the Generalized Partial Credit Model (GPCM) with
-##' standard Gauss-Hermite quadrature of 30 points and a lognormal
-##' prior for the discrimination parameters using Parscale 4.1.2328.4,
-##' -2 log likelihood = 20816.14.
+##' All items were fit to a 5 category Generalized Partial Credit
+##' Model (GPCM) with standard Gauss-Hermite quadrature of 30 points
+##' and a lognormal prior for the discrimination parameters using
+##' Parscale 4.1.2328.4, -2 log likelihood = 20816.14.
 ##'
 ##' @docType data
 ##' @keywords datasets

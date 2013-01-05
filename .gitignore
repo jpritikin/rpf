@@ -9,3 +9,4 @@
 *.tex
 *.pdf
 /inst/doc/figure
+/inst/doc/cache
