@@ -1,7 +1,10 @@
 ##' Randomly sample response patterns given a list of items
 ##'
-##' Returns a random sample of response patterns given
-##' a list of item models and parameters.
+##' Returns a random sample of response patterns given a list of item
+##' models and parameters.
+##'
+##' The design matrix can accomodate more person abilities than item
+##' dimension. Refer to Cai (2010) for design matrix examples.
 ##'
 ##' @name rpf.sample
 ##' @param theta either a vector (for 1 dimension) or a matrix (for >1
@@ -41,6 +44,9 @@
 ##'                    2, 2, 3, NA), nrow=2, byrow=TRUE)
 ##' rpf.sample(10, items, correct, design)
 ##' @seealso \code{\link{sample}}
+##' @references
+##' Cai, L. (2010). A two-tier full-information item factor analysis
+##' model with applications. Psychometrika, 75, 581-612.
 rpf.sample <- function(theta, items, params, design, prefix="i") {
   numItems <- length(items)
   maxDim <- max(vapply(items, function(i) i@dimensions, 0))
