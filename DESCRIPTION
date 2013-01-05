@@ -14,6 +14,8 @@ Description: The purpose of this package is to factor out logic and math common
     envisioned as core support code suitable for more specialized IRT packages
     to build upon. Version 1.0 will offer most of the functionality as a C
     library as well as from this R package.
+LazyData: yes
+LazyDataCompression: bzip2
 License: GPL (>= 3)
 Suggests:
     plink,
@@ -34,4 +36,5 @@ Collate:
     'grm.R'
     'sample.R'
     'diagnose.R'
+    'ms.R'
 URL: https://gitorious.org/rpf
