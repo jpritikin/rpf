@@ -131,4 +131,32 @@ data.vs.model(spec[[item.x]], param,ms.people , name, data.bins=12) +
   labs(title = paste0(name, ", slope = ",param[1]))
 @ 
 
+Let's take another dataset and look at item fit. This will show the
+most overfitting and underfitting items.
+
+<<>>=
+data(science.items)
+data(science.people)
+
+scores <- science.people$trait
+params <- cbind(1, science.items[,c(paste0('b',1:2))])
+rownames(params) <- as.character(science.items$name)
+items<-list()
+items[1:25] <- rpf.gpcm(3)
+responses <- science.people[,as.character(science.items$name)]
+rownames(responses) <- science.people$name
+fit <- rpf.1dim.fit(items, params, responses, scores, 2)
+head(fit[order(-fit$outfit),])
+tail(fit[order(-fit$outfit),])
+@ 
+
+And we can do the same with people.
+
+<<>>=
+fit <- rpf.1dim.fit(items, params, responses, scores, 1)
+head(fit[order(-fit$outfit),])
+tail(fit[order(-fit$outfit),])
+@ 
+
+
 \end{document} 

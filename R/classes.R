@@ -30,6 +30,8 @@
 ##' @rdname rpf.introduction
 ##' @name An introduction
 ##' @useDynLib rpf
+##' @references Thissen, D. and Steinberg, L. (1986). A taxonomy of
+##' item response models. \emph{Psychometrika 51}(4), 567-577.
 ##' @seealso
 ##' See \code{\link{rpf.rparam}} and \code{\link{rpf.startingParam}}
 ##' to create item parameters.
@@ -65,7 +67,7 @@ setClass("rpf.mdim", contains='rpf.base',
 ##' Map an item model, item parameters, and person trait score into a
 ##' probability vector
 ##'
-##' This function is implemented in terms of \code{\link{rpf.logprob}}.
+##' In some cases, this function is implemented in terms of \code{\link{rpf.logprob}}.
 ##'
 ##' @param m an item model
 ##' @param param item parameters
@@ -214,6 +216,8 @@ setGeneric("rpf.rparam", function(m) standardGeneric("rpf.rparam"))
 ##'
 ##' This function generates item parameters suitable for use as
 ##' initial starting values in an IRT fitting algorithm.
+##'
+##' Experimental. This function is likely to disappear.
 ##' 
 ##' @param m an item model
 ##' @return item parameters
@@ -281,8 +285,8 @@ setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLoca
 ##' 
 ##' @export
 ##' @references
-##' Baker & Kim (2004). Item Response Theory: Parameter
-##' Estimation Techniques. Marcel Dekker, Inc.
+##' Baker & Kim (2004). \emph{Item Response Theory: Parameter
+##' Estimation Techniques.} Marcel Dekker, Inc.
 ##'
 ##' Haley, D. C. (1952). Estimation of the dosage mortality
 ##' relationship when the dose is subject to error (Technical Report

@@ -46,7 +46,7 @@
 ##' @seealso \code{\link{sample}}
 ##' @references
 ##' Cai, L. (2010). A two-tier full-information item factor analysis
-##' model with applications. Psychometrika, 75, 581-612.
+##' model with applications. \emph{Psychometrika, 75}, 581-612.
 rpf.sample <- function(theta, items, params, design, prefix="i") {
   numItems <- length(items)
   maxDim <- max(vapply(items, function(i) i@dimensions, 0))
@@ -67,6 +67,7 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
   if (is.numeric(theta) && length(theta) == 1) {
     if (theta <= 1) stop("Request at least 2 samples")
     numPeople <- theta
+    # mean & covariance TODO
     theta <- array(rnorm(numPeople * maxAbilities),
                    dim=c(numPeople, maxAbilities))
   } else if (maxDim == 1 && is.vector(theta)) {
