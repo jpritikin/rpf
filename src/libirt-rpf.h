@@ -20,26 +20,38 @@
 
 int
 irt_rpf_1dim_drm_numParam(const int numDims, const int numOutcomes);
-
 void
 irt_rpf_1dim_drm_logprob(const int numDims, const double *restrict param,
 			 const double *restrict th,
 			 const int numOutcomes, double *restrict out);
+double irt_rpf_1dim_drm_prior(const int numDims, const int numOutcomes,
+			      const double *restrict param);
+void irt_rpf_1dim_drm_gradient(const int numDims, const int numOutcomes,
+			       const double *restrict param, const int *paramMask,
+			       const double *where, const double *weight, double *out);
 
 int
 irt_rpf_mdim_drm_numParam(const int numDims, const int numOutcomes);
-
 void
 irt_rpf_mdim_drm_logprob(const int numDims, const double *restrict param,
 			 const double *restrict th,
 			 const int numOutcomes, double *restrict out);
+double irt_rpf_mdim_drm_prior(const int numDims, const int numOutcomes,
+			      const double *restrict param);
+void irt_rpf_mdim_drm_gradient(const int numDims, const int numOutcomes,
+			       const double *restrict param, const int *paramMask,
+			       const double *where, const double *weight, double *out);
 
 int
 irt_rpf_1dim_gpcm_numParam(const int numDims, const int numOutcomes);
-
 void
 irt_rpf_1dim_gpcm_logprob(const int numDims, const double *restrict param,
 			  const double *restrict th,
 			  const int numOutcomes, double *restrict out);
+double irt_rpf_1dim_gpcm_prior(const int numDims, const int numOutcomes,
+			       const double *restrict param);
+void irt_rpf_1dim_gpcm_gradient(const int numDims, const int numOutcomes,
+				const double *restrict param, const int *paramMask,
+				const double *where, const double *weight, double *out);
 
 #endif

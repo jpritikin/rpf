@@ -7,6 +7,8 @@
 ##' dependent parts where a higher score implies that easier parts of
 ##' the item were surmounted. If there is any chance your polytomous
 ##' item has independent parts then consider \code{\link{rpf.gpcm}}.
+##' If your categories cannot cross then the graded response model
+##' provides a little more information than the GPCM.
 ##' 
 ##' @param numOutcomes The number of choices available
 ##' @param dimensions the number of dimensions
