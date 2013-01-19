@@ -26,16 +26,16 @@ rpf.grm <- function(numOutcomes=2, dimensions=1, multidimensional) {
     stop("More than 1 dimension must use a multidimensional model")
   }
   if (!multidimensional) {
-    new("rpf.1dim.grm", numOutcomes=numOutcomes,
+    new("rpf.1dim.grm",
+        numOutcomes=numOutcomes,
         dimensions=1,
         numParam=numOutcomes,
-        a.prior.meanlog=0,
         a.prior.sdlog=.5)
   } else {
-    new("rpf.mdim.grm", numOutcomes=numOutcomes,
+    new("rpf.mdim.grm",
+        numOutcomes=numOutcomes,
         dimensions=dimensions,
         numParam=dimensions + numOutcomes - 1,
-        a.prior.meanlog=0,
         a.prior.sdlog=.5)
   }
 }

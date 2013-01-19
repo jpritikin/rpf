@@ -13,8 +13,7 @@ setMethod("rpf.info", signature(m="rpf.1dim.graded", param="numeric", theta="num
 
 setMethod("rpf.rparam", signature(m="rpf.1dim.graded"),
           function(m) {
-              a <- rlnorm(1, meanlog=m@a.prior.meanlog,
-                          sdlog=m@a.prior.sdlog)
+              a <- rlnorm(1, meanlog=0, sdlog=m@a.prior.sdlog)
               b <- sort(rnorm(m@numOutcomes-1))
               c(a=a,b=b)
           })
@@ -39,8 +38,7 @@ setMethod("rpf.setLocation", signature(m="rpf.1dim.graded", param="numeric", loc
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.graded"),
           function(m) {
-              a <- rlnorm(m@dimensions, meanlog=m@a.prior.meanlog,
-                          sdlog=m@a.prior.sdlog)
+              a <- rlnorm(m@dimensions, meanlog=0, sdlog=m@a.prior.sdlog)
               b <- sort(rnorm(m@numOutcomes-1))
               c(a=a,b=b)
           })
