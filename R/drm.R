@@ -67,22 +67,6 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
               c=1/(1+exp(-rnorm(n, mean=m@c.prior.logit, sd=m@c.prior.sd))))
           })
 
-setMethod("rpf.startingParam", signature(m="rpf.1dim.drm"),
-          function(m) {
-            c(a=1, b=0, c=0)
-          })
-
-setMethod("rpf.getLocation", signature(m="rpf.1dim.drm", param="numeric"),
-          function(m, param) {
-              param[2]
-          })
-
-setMethod("rpf.setLocation", signature(m="rpf.1dim.drm", param="numeric", loc="numeric"),
-          function(m, param, loc) {
-              param[2] <- loc
-              param
-          })
-
 ### mdim
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
@@ -90,21 +74,4 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
             c(a=rlnorm(m@dimensions, meanlog=0, sdlog=m@a.prior.sdlog),
               b=rnorm(1),
               c=1/(1+exp(-rnorm(1, mean=m@c.prior.logit, sd=m@c.prior.sd))))
-          })
-
-setMethod("rpf.startingParam", signature(m="rpf.mdim.drm"),
-          function(m) {
-            c(a=rep(1,m@dimensions), b=0, c=0)
-          })
-
-setMethod("rpf.getLocation", signature(m="rpf.mdim.drm", param="numeric"),
-          function(m, param) {
-            param[m@dimensions+1]
-          })
-
-setMethod("rpf.setLocation", signature(m="rpf.mdim.drm", param="numeric",
-                                       loc="numeric"),
-          function(m, param, loc) {
-            param[m@dimensions+1] <- loc
-            param
           })

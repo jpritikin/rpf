@@ -33,8 +33,7 @@
 ##' @references Thissen, D. and Steinberg, L. (1986). A taxonomy of
 ##' item response models. \emph{Psychometrika 51}(4), 567-577.
 ##' @seealso
-##' See \code{\link{rpf.rparam}} and \code{\link{rpf.startingParam}}
-##' to create item parameters.
+##' See \code{\link{rpf.rparam}} to create item parameters.
 NULL
 
 ##' The base class for response probability functions.
@@ -265,68 +264,6 @@ setMethod("rpf.info", signature(m="rpf.base", param="data.frame", theta="numeric
 ##' i1 <- rpf.drm()
 ##' rpf.rparam(i1)
 setGeneric("rpf.rparam", function(m) standardGeneric("rpf.rparam"))
-
-##' Initial item parameters
-##'
-##' This function generates item parameters suitable for use as
-##' initial starting values in an IRT fitting algorithm.
-##'
-##' Experimental. This function is likely to disappear.
-##' 
-##' @param m an item model
-##' @return item parameters
-##' @docType methods
-##' @aliases
-##' rpf.startingParam,rpf.1dim.drm-method
-##' rpf.startingParam,rpf.mdim.drm-method
-##' rpf.startingParam,rpf.1dim.graded-method
-##' rpf.startingParam,rpf.mdim.graded-method
-##' rpf.startingParam,rpf.mdim.nrm-method
-##' rpf.startingParam,rpf.mdim.mcm-method
-##' @export
-##' @examples
-##' i1 <- rpf.drm()
-##' rpf.startingParam(i1)
-setGeneric("rpf.startingParam", function(m) standardGeneric("rpf.startingParam"))
-
-##' Extract location related item parameters
-##'
-##' Experimental. This method may disappear.
-##' 
-##' @param m an item model
-##' @param param item parameters
-##' @return location related item parameters
-##' @docType methods
-##' @aliases
-##' rpf.getLocation,rpf.1dim.drm,numeric-method
-##' rpf.getLocation,rpf.mdim.drm,numeric-method
-##' rpf.getLocation,rpf.1dim.graded,numeric-method
-##' rpf.getLocation,rpf.mdim.graded,numeric-method
-##' rpf.getLocation,rpf.mdim.nrm,numeric-method
-##' rpf.getLocation,rpf.mdim.mcm,numeric-method
-##' @export
-##' @seealso \code{\link{rpf.setLocation}}
-setGeneric("rpf.getLocation", function(m,param) standardGeneric("rpf.getLocation"))
-
-##' Set location related item parameters
-##'
-##' Experimental. This method may disappear.
-##' 
-##' @param m an item model
-##' @param param item parameters
-##' @param loc location parameters, typically from \code{\link{rpf.getLocation}}
-##' @return updated item parameters
-##' @docType methods
-##' @aliases
-##' rpf.setLocation,rpf.1dim.drm,numeric,numeric-method
-##' rpf.setLocation,rpf.mdim.drm,numeric,numeric-method
-##' rpf.setLocation,rpf.1dim.graded,numeric,numeric-method
-##' rpf.setLocation,rpf.mdim.graded,numeric,numeric-method
-##' rpf.setLocation,rpf.mdim.nrm,numeric,numeric-method
-##' rpf.setLocation,rpf.mdim.mcm,numeric,numeric-method
-##' @export
-##' @seealso \code{\link{rpf.getLocation}}
-setGeneric("rpf.setLocation", function(m,param,loc) standardGeneric("rpf.setLocation"))
 
 ##' The ogive constant
 ##'

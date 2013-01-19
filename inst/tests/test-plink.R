@@ -13,7 +13,8 @@ theta.2d <- array(dim=c(3,2), data=rnorm(6))
 
 checkDim <- function(item, param) {
     expect_equal(length(param), item@numParam, class(item))
-    expect_equal(length(rpf.startingParam(item)), item@numParam, class(item))
+    expect_equal(length(rpf.rparam(item)), item@numParam, class(item))
+    expect_equal(item@numParam, rpf.numParam(item))
 }
 
 i1 <- rpf.drm()

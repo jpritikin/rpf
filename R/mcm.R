@@ -68,23 +68,3 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.mcm"),
                          shape2=m@c.prior.beta-2)
               c(a=a,b=b,c=c)
           })
-
-setMethod("rpf.startingParam", signature(m="rpf.mdim.mcm"),
-          function(m) {
-            c(a=rep(1,m@numOutcomes * m@dimensions),
-              b=rep(0, m@numOutcomes),
-              c=rep(0, m@numOutcomes-1))
-          })
-
-setMethod("rpf.getLocation", signature(m="rpf.mdim.mcm", param="numeric"),
-          function(m, param) {
-            param[(m@dimensions*m@numOutcomes+1):
-                  ((m@dimensions+1)*m@numOutcomes)]
-          })
-
-setMethod("rpf.setLocation", signature(m="rpf.mdim.mcm", param="numeric", loc="numeric"),
-          function(m, param, loc) {
-            param[(m@dimensions*m@numOutcomes+1):
-                  ((m@dimensions+1)*m@numOutcomes)] <- loc
-            param
-          })
