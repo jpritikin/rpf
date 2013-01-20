@@ -47,8 +47,9 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 
 ##' Calculate item and person fit statistics
 ##'
-##' For details on the calculation, see Embretson & Reise (2000, pp. 237-238)
-##' or Wright & Masters (1982, p. 100).
+##' Exact distributional properties of these statistics are unknown
+##' (Masters & Wright, 1997, p. 112).  For details on the calculation,
+##' refer to Wright & Masters (1982, p. 100).
 ##'
 ##' The Wilson-Hilferty transformation is biased for less than 25 items.
 ##' To adjust Z scores for fewer items use wh.exact=FALSE.
@@ -60,9 +61,11 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' @param margin for people 1, for items 2
 ##' @param na.rm remove NAs (default TRUE)
 ##' @param wh.exact whether to use the exact Wilson-Hilferty transformation (default TRUE)
-##' @references Embretson, S. E. & Reise S. P. (2000) \emph{Item response
-##' theory for psychologists.} Lawrence Erlbaum.
-##'
+##' @references Masters, G. N. & Wright, B. D. (1997). The Partial
+##' Credit Model. In W. van der Linden & R. K. Kambleton (Eds.),
+##' \emph{Handbook of modern item response theory}
+##' (pp. 101-121). Springer.
+##' 
 ##' Wilson, E. B., & Hilferty, M. M. (1931). The distribution of
 ##' chi-square. \emph{Proceedings of the National Academy of Sciences of the
 ##' United States of America,} 17, 684-688.
