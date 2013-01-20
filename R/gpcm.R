@@ -1,8 +1,5 @@
 ##' Create a generalized partial credit model and associated hyperparameters.
 ##'
-##' Bayesian priors are only used to generate plausible random
-##' parameters.
-##' 
 ##' @param numOutcomes The number of choices available
 ##' @param dimensions the number of dimensions
 ##' @param multidimensional whether to use a multidimensional model.

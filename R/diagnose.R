@@ -25,7 +25,7 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
 ##'
 ##' @param spec list of item models
 ##' @param params data frame of item parameters, 1 per row
-##' @param responses persons in rows and spec in columns
+##' @param responses persons in rows and items in columns
 ##' @param scores model derived person scores
 ##' @return standardized residuals
 ##' @docType methods
@@ -50,14 +50,14 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' For details on the calculation, see Embretson & Reise (2000, pp. 237-238)
 ##' or Wright & Masters (1982, p. 100).
 ##'
-##' The Wilson-Hilferty transformation is biased for less than 25 spec.
-##' To adjust Z scores for fewer spec use wh.exact=FALSE.
+##' The Wilson-Hilferty transformation is biased for less than 25 items.
+##' To adjust Z scores for fewer items use wh.exact=FALSE.
 ##'
 ##' @param spec list of item models
 ##' @param params data frame of item parameters, 1 per row
-##' @param responses persons in rows and spec in columns
+##' @param responses persons in rows and items in columns
 ##' @param scores model derived person scores
-##' @param margin for people 1, for spec 2
+##' @param margin for people 1, for items 2
 ##' @param na.rm remove NAs (default TRUE)
 ##' @param wh.exact whether to use the exact Wilson-Hilferty transformation (default TRUE)
 ##' @references Embretson, S. E. & Reise S. P. (2000) \emph{Item response

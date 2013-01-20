@@ -12,8 +12,8 @@ Authors@R: c(person("Joshua",family="Pritikin",
 Description: The purpose of this package is to factor out logic and math common
     to Item Response Theory fitting, diagnostics, and analysis. It is
     envisioned as core support code suitable for more specialized IRT packages
-    to build upon. Version 1.0 will offer most of the functionality as a C
-    library as well as from this R package.
+    to build upon. Complete access to optimized C functions are made available
+    with R_RegisterCCallable.
 LazyData: yes
 LazyDataCompression: bzip2
 License: GPL (>= 3)
