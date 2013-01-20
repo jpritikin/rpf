@@ -94,6 +94,43 @@ setMethod("rpf.numParam", signature(m="rpf.base"),
             }
           })
 
+##' Log likelihood of the item model parameters given the Bayesian prior
+##' @aliases
+##' rpf.prior,rpf.base,numeric-method
+##' rpf_prior_wrapper
+setGeneric("rpf.prior", function(m, param) standardGeneric("rpf.prior"))
+
+setMethod("rpf.prior", signature(m="rpf.base", param="numeric"),
+          function(m, param) {
+            if (length(m@spec)==0) {
+              stop("Not implemented")
+            } else {
+              .Call(rpf_prior_wrapper, m@spec, param)
+            }
+          })
+
+##' Item parameter gradients
+##'
+##' Evaluate the partial derivatives of the log likelihood of the item
+##' model with respect to each parameter at \code{where} with
+##' \code{weight}.
+##' 
+##' @aliases
+##' rpf.gradient,rpf.base,numeric,integer,numeric,numeric-method
+##' rpf_gradient_wrapper
+setGeneric("rpf.gradient", function(m, param, paramMask, where, weight) standardGeneric("rpf.gradient"))
+
+setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
+                                    paramMask="integer", where="numeric",
+                                    weight="numeric"),
+          function(m, param, paramMask, where, weight) {
+            if (length(m@spec)==0) {
+              stop("Not implemented")
+            } else {
+              .Call(rpf_gradient_wrapper, m@spec, param, paramMask, where, weight)
+            }
+          })
+
 ##' Map an item model, item parameters, and person trait score into a
 ##' probability vector
 ##'
