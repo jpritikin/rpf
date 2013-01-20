@@ -2,6 +2,8 @@
 \name{rpf.info}
 \alias{rpf.info}
 \alias{rpf.info,rpf.1dim.drm,numeric,numeric-method}
+\alias{rpf.info,rpf.1dim.graded,numeric,numeric-method}
+\alias{rpf.info,rpf.base,data.frame,numeric-method}
 \title{Map an item model, item parameters, and person trait score into a
 information vector}
 \arguments{
@@ -23,5 +25,10 @@ i1 <- rpf.drm()
 i1.p <- c(.6,1,.1)
 theta <- seq(0,3,.05)
 plot(theta, rpf.info(i1, i1.p, theta), type="l")
+}
+\references{
+  Muraki, E. (1993) Information functions of the
+  generalized partial credit model. Applied Psychological
+  Measurement, 17(4), 351-363.
 }
 

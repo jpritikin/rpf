@@ -1,9 +1,10 @@
 \docType{methods}
 \name{rpf.logprob}
 \alias{rpf.logprob}
-\alias{rpf.logprob,rpf.1dim.drm,numeric,numeric-method}
-\alias{rpf.logprob,rpf.1dim.gpcm,numeric,numeric-method}
-\alias{rpf.logprob,rpf.mdim.drm,numeric,matrix-method}
+\alias{rpf.logprob,rpf.1dim,numeric,matrix-method}
+\alias{rpf.logprob,rpf.1dim,numeric,numeric-method}
+\alias{rpf.logprob,rpf.mdim,numeric,matrix-method}
+\alias{rpf_logprob_wrapper}
 \title{Map an item model, item parameters, and person trait score into a
 probability vector}
 \arguments{

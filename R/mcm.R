@@ -16,7 +16,6 @@ rpf.mcm <- function(numOutcomes=2, numChoices=5, dimensions=1) {
   new("rpf.mdim.mcm",
       numOutcomes=numOutcomes, dimensions=dimensions,
       numParam=numOutcomes * (dimensions + 2) - 1,
-      a.prior.meanlog=0,
       a.prior.sdlog=.5,
       c.prior.alpha=guess.weight*guessing+1,
       c.prior.beta=guess.weight*(1-guessing)+1)
@@ -63,30 +62,9 @@ setMethod("rpf.prob", signature(m="rpf.mdim.mcm", param="numeric",
 setMethod("rpf.rparam", signature(m="rpf.mdim.mcm"),
           function(m) {
               a <- rlnorm(m@numOutcomes * m@dimensions,
-                          meanlog=m@a.prior.meanlog,
-                          sdlog=m@a.prior.sdlog)
+                          meanlog=0, sdlog=m@a.prior.sdlog)
               b <- sort(rnorm(m@numOutcomes))
               c <- rbeta(m@numOutcomes-1, shape1=m@c.prior.alpha-2,
                          shape2=m@c.prior.beta-2)
               c(a=a,b=b,c=c)
-          })
-
-setMethod("rpf.startingParam", signature(m="rpf.mdim.mcm"),
-          function(m) {
-            c(a=rep(1,m@numOutcomes * m@dimensions),
-              b=rep(0, m@numOutcomes),
-              c=rep(0, m@numOutcomes-1))
-          })
-
-setMethod("rpf.getLocation", signature(m="rpf.mdim.mcm", param="numeric"),
-          function(m, param) {
-            param[(m@dimensions*m@numOutcomes+1):
-                  ((m@dimensions+1)*m@numOutcomes)]
-          })
-
-setMethod("rpf.setLocation", signature(m="rpf.mdim.mcm", param="numeric", loc="numeric"),
-          function(m, param, loc) {
-            param[(m@dimensions*m@numOutcomes+1):
-                  ((m@dimensions+1)*m@numOutcomes)] <- loc
-            param
           })

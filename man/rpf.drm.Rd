@@ -17,12 +17,12 @@
   an item model
 }
 \description{
-  Bayesian priors are only used to generate plausible
-  random parameters. For discussion on the choice of these
-  priors see Baker & Kim (2004, pp. 187-188).
+  For discussion on the choice of priors see Cai, Yang, and
+  Hansen (2011, p. 246).
 }
 \references{
-  Baker & Kim (2004). Item Response Theory: Parameter
-  Estimation Techniques. Marcel Dekker, Inc.
+  Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
+  Full-Information Item Bifactor Analysis.
+  \emph{Psychological Methods, 16}(3), 221-248.
 }
 

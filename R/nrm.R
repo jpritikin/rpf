@@ -12,7 +12,6 @@ rpf.nrm <- function(numOutcomes=2, dimensions=1) {
     new("rpf.mdim.nrm",
         numOutcomes=numOutcomes, dimensions=dimensions,
         numParam=(1 + dimensions) * numOutcomes,
-        a.prior.meanlog=0,
         a.prior.sdlog=.5)
 }
 
@@ -53,25 +52,7 @@ setMethod("rpf.prob", signature(m="rpf.mdim.nrm", param="numeric",
 setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
           function(m) {
               a <- rlnorm(m@numOutcomes * m@dimensions,
-                          meanlog=m@a.prior.meanlog,
-                          sdlog=m@a.prior.sdlog)
+                          meanlog=0, sdlog=m@a.prior.sdlog)
               b <- sort(rnorm(m@numOutcomes))
               c(a=a,b=b)
-          })
-
-setMethod("rpf.startingParam", signature(m="rpf.mdim.nrm"),
-          function(m) {
-            c(a=rep(1,m@numOutcomes * m@dimensions),
-              b=rep(0, m@numOutcomes))
-          })
-
-setMethod("rpf.getLocation", signature(m="rpf.mdim.nrm", param="numeric"),
-          function(m, param) {
-            param[-1:-m@numOutcomes * m@dimensions]
-          })
-
-setMethod("rpf.setLocation", signature(m="rpf.mdim.nrm", param="numeric", loc="numeric"),
-          function(m, param, loc) {
-            param[-1:-m@numOutcomes * m@dimensions] <- loc
-            param
           })

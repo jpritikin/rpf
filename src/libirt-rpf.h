@@ -1,5 +1,5 @@
 /*
-  Copyright 2012 Joshua Nathaniel Pritikin and contributors
+  Copyright 2012-2013 Joshua Nathaniel Pritikin and contributors
 
   libirt-rpf is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,17 +18,35 @@
 #ifndef _LIBIRT_RPF_
 #define _LIBIRT_RPF_
 
-void
-irt_rpf_1dim_drm_logprob(const double *restrict param,
-			 const double th, double *restrict out);
+enum RPF_ISpec {
+	RPF_ISpecID,
+	RPF_ISpecOutcomes,
+	RPF_ISpecDims,
+	RPF_ISpecCount
+};
 
-void
-irt_rpf_mdim_drm_logprob(const int numDims, const double *restrict param,
-			 const double *restrict th, double *restrict out);
+typedef int (*rpf_numSpec_t)(const double *spec);
+typedef int (*rpf_numParam_t)(const double *spec);
+typedef void (*rpf_prob_t)(const double *spec,
+			   const double *restrict param, const double *restrict th,
+			   double *restrict out);
+typedef double (*rpf_prior_t)(const double *spec,
+			      const double *restrict param);
+typedef void (*rpf_gradient_t)(const double *spec,
+			       const double *restrict param, const int *paramMask,
+			       const double *where, const double *weight, double *out);
 
-void
-irt_rpf_1dim_gpcm_logprob(const int numOutcomes, const double *restrict param,
-			  const double th, double *restrict out);
+struct rpf {
+	const char name[8];
+	rpf_numSpec_t numSpec;
+	rpf_numParam_t numParam;
+	rpf_prob_t prob;
+	rpf_prob_t logprob;
+	rpf_prior_t prior;
+	rpf_gradient_t gradient;
+};
 
+extern const struct rpf librpf_model[];
+extern const int librpf_numModels;
 
 #endif

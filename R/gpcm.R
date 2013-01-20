@@ -1,8 +1,5 @@
 ##' Create a generalized partial credit model and associated hyperparameters.
 ##'
-##' Bayesian priors are only used to generate plausible random
-##' parameters.
-##' 
 ##' @param numOutcomes The number of choices available
 ##' @param dimensions the number of dimensions
 ##' @param multidimensional whether to use a multidimensional model.
@@ -10,8 +7,15 @@
 ##' \code{FALSE} when \code{dimensions==1}.
 ##' @return an item model
 ##' @export
-##' @references Baker & Kim (2004). Item Response Theory: Parameter
-##' Estimation Techniques. Marcel Dekker, Inc.
+##' @references Baker & Kim (2004). \emph{Item Response Theory: Parameter
+##' Estimation Techniques.} Marcel Dekker, Inc.
+##'
+##' Masters, G. N. (1982). A rasch model for partial credit scoring.
+##' \emph{Psychometrika, 47}(2), 149-174.
+##'
+##' Muraki, Eiji. (1992). A generalized partial credit model:
+##' Application of an EM algorithm. \emph{Applied Psychological Measurement,
+##' 16}, 159-176. doi:10.1177/014662169201600206
 rpf.gpcm <- function(numOutcomes=2, dimensions=1, multidimensional) {
   if (missing(multidimensional)) {
     multidimensional <- dimensions > 1
@@ -20,28 +24,23 @@ rpf.gpcm <- function(numOutcomes=2, dimensions=1, multidimensional) {
     stop("More than 1 dimension must use a multidimensional model")
   }
   if (!multidimensional) {
-    new("rpf.1dim.gpcm", numOutcomes=numOutcomes,
+    m <- new("rpf.1dim.gpcm",
+        numOutcomes=numOutcomes,
         dimensions=1,
         numParam=numOutcomes,
-        a.prior.meanlog=0,
         a.prior.sdlog=.5)
+    m@spec <- c(rpf.id_of('gpcm1'), m@numOutcomes, m@dimensions, m@a.prior.sdlog)
+    m
   } else {
-    new("rpf.mdim.gpcm", numOutcomes=numOutcomes,
+    new("rpf.mdim.gpcm",
+        numOutcomes=numOutcomes,
         dimensions=dimensions,
         numParam=dimensions + numOutcomes - 1,
-        a.prior.meanlog=0,
         a.prior.sdlog=.5)
   }
 }
 
 ### 1dim
-
-setMethod("rpf.logprob", signature(m="rpf.1dim.gpcm", param="numeric",
-                                theta="numeric"),
-          function(m, param, theta) {
-            t(.Call("rpf_1dim_gpcm_logprob_wrapper",
-                    m@numOutcomes, param, theta))
-          })
 
 ### mdim
 

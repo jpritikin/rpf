@@ -1,0 +1,23 @@
+\docType{methods}
+\name{rpf.1dim.stdresidual}
+\alias{rpf.1dim.stdresidual}
+\title{Calculate standardized residuals}
+\usage{
+  rpf.1dim.stdresidual(spec, params, responses, scores)
+}
+\arguments{
+  \item{spec}{list of item models}
+
+  \item{params}{data frame of item parameters, 1 per row}
+
+  \item{responses}{persons in rows and items in columns}
+
+  \item{scores}{model derived person scores}
+}
+\value{
+  standardized residuals
+}
+\description{
+  Calculate standardized residuals
+}
+

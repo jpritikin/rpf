@@ -1,18 +1,21 @@
 ##' Randomly sample response patterns given a list of items
 ##'
-##' Returns a random sample of response patterns given
-##' a list of item models and parameters.
+##' Returns a random sample of response patterns given a list of item
+##' models and parameters.
+##'
+##' The design matrix can accomodate more person abilities than item
+##' dimension. Refer to Cai (2010) for design matrix examples.
 ##'
 ##' @name rpf.sample
-##' @usage
-##' rpf.sample(theta, items, params, design)
-##' @param theta either a vector of trait abilities or
-##' the number of abilities to draw from N(0,1)
+##' @param theta either a vector (for 1 dimension) or a matrix (for >1
+##' dimension) of person abilities or the number of response patterns
+##' to generate randomly
 ##' @param items a list of item models
 ##' @param params a list of item parameters. If omitted, random item
 ##' parameters are generated for each item model.
-##' @param design assigns person abilities to item dimensions
-##' @return Returns a matrix of response patterns
+##' @param design a matrix assigning person abilities to item dimensions
+##' @param prefix prefix for column label (optional)
+##' @return Returns a data frame of response patterns
 ##' @export
 ##' @examples
 ##' # 1 dimensional items
@@ -41,24 +44,31 @@
 ##'                    2, 2, 3, NA), nrow=2, byrow=TRUE)
 ##' rpf.sample(10, items, correct, design)
 ##' @seealso \code{\link{sample}}
-rpf.sample <- function(theta, items, params, design) {
+##' @references
+##' Cai, L. (2010). A two-tier full-information item factor analysis
+##' model with applications. \emph{Psychometrika, 75}, 581-612.
+rpf.sample <- function(theta, items, params, design, prefix="i") {
+  numItems <- length(items)
   maxDim <- max(vapply(items, function(i) i@dimensions, 0))
   if (missing(design)) {
     if (maxDim > 1) {
-      stop("The design matrix must be provided for multidimensional item models")
+      design <- matrix(rep(1:maxDim, numItems), nrow=maxDim)
+      design[sapply(items, function(i) 1:maxDim > i@dimensions)] <- NA
+    } else {
+      design <- matrix(rep(1, numItems), nrow=1)
     }
-    design <- 1
   }
   maxAbilities <- max(design, na.rm=TRUE)
 
-  numItems <- length(items)
   if (maxDim > 1 && any(dim(design) != c(maxDim,numItems))) {
     stop(paste("The design matrix must have", maxDim, "rows and ",numItems,"columns"))
   }
 
   numPeople <- NA
   if (is.numeric(theta) && length(theta) == 1) {
+    if (theta <= 1) stop("Request at least 2 samples")
     numPeople <- theta
+    # mean & covariance TODO
     theta <- array(rnorm(numPeople * maxAbilities),
                    dim=c(numPeople, maxAbilities))
   } else if (maxDim == 1 && is.vector(theta)) {
@@ -73,20 +83,17 @@ rpf.sample <- function(theta, items, params, design) {
   }
   outcomes <- vapply(items, function(i) i@numOutcomes, 0)
   
-  ret <- array(dim=c(numPeople, numItems))
+  ret <- list()
   for (ix in 1:numItems) {
     i <- items[[ix]]
     param <- params[[ix]]
-    P <- NA
-    if (maxDim==1) {
-      P <- rpf.prob(i, param, theta)
-    } else {
-      cols <- design[,ix]
-      cols <- cols[!is.na(cols)]
-      i.theta <- as.matrix(theta[,cols])
-      P <- rpf.prob(i, param, i.theta)
-    }
-    ret[,ix] <- apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F)
+    cols <- design[,ix]
+    cols <- cols[!is.na(cols)]
+    i.theta <- as.matrix(theta[,cols])
+    P <- rpf.prob(i, param[1:i@numParam], i.theta)
+    ret[[ix]] <- as.ordered(apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F))
   }
+  ret <- as.data.frame(ret)
+  colnames(ret) <- paste0(prefix,1:numItems)
   return(ret)
 }

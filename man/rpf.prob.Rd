@@ -1,13 +1,19 @@
 \docType{methods}
 \name{rpf.prob}
 \alias{rpf.prob}
-\alias{rpf.prob,rpf.1dim.gpcm,numeric,numeric-method}
 \alias{rpf.prob,rpf.1dim.grm,numeric,numeric-method}
+\alias{rpf.prob,rpf.1dim,numeric,matrix-method}
+\alias{rpf.prob,rpf.1dim,numeric,numeric-method}
+\alias{rpf.prob,rpf.base,data.frame,numeric-method}
+\alias{rpf.prob,rpf.base,matrix,matrix-method}
+\alias{rpf.prob,rpf.base,matrix,numeric-method}
 \alias{rpf.prob,rpf.mdim.gpcm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.grm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.grm,numeric,numeric-method}
 \alias{rpf.prob,rpf.mdim.mcm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.nrm,numeric,matrix-method}
+\alias{rpf.prob,rpf.mdim,numeric,matrix-method}
+\alias{rpf_prob_wrapper}
 \title{Map an item model, item parameters, and person trait score into a
 probability vector}
 \arguments{
@@ -25,7 +31,7 @@ probability vector}
   API consistency with polytomous item models.
 }
 \description{
-  This function is implemented in terms of
+  In some cases, this function is implemented in terms of
   \code{\link{rpf.logprob}}.
 }
 \examples{

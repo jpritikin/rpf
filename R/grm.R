@@ -7,6 +7,10 @@
 ##' dependent parts where a higher score implies that easier parts of
 ##' the item were surmounted. If there is any chance your polytomous
 ##' item has independent parts then consider \code{\link{rpf.gpcm}}.
+##' If your categories cannot cross then the graded response model
+##' provides a little more information than the GPCM. Stronger a
+##' priori assumptions offer provide more power at the cost of
+##' flexibility.
 ##' 
 ##' @param numOutcomes The number of choices available
 ##' @param dimensions the number of dimensions
@@ -24,16 +28,16 @@ rpf.grm <- function(numOutcomes=2, dimensions=1, multidimensional) {
     stop("More than 1 dimension must use a multidimensional model")
   }
   if (!multidimensional) {
-    new("rpf.1dim.grm", numOutcomes=numOutcomes,
+    new("rpf.1dim.grm",
+        numOutcomes=numOutcomes,
         dimensions=1,
         numParam=numOutcomes,
-        a.prior.meanlog=0,
         a.prior.sdlog=.5)
   } else {
-    new("rpf.mdim.grm", numOutcomes=numOutcomes,
+    new("rpf.mdim.grm",
+        numOutcomes=numOutcomes,
         dimensions=dimensions,
         numParam=dimensions + numOutcomes - 1,
-        a.prior.meanlog=0,
         a.prior.sdlog=.5)
   }
 }

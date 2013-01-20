@@ -18,11 +18,19 @@
   an item model
 }
 \description{
-  Bayesian priors are only used to generate plausible
-  random parameters.
+  Create a generalized partial credit model and associated
+  hyperparameters.
 }
 \references{
-  Baker & Kim (2004). Item Response Theory: Parameter
-  Estimation Techniques. Marcel Dekker, Inc.
+  Baker & Kim (2004). \emph{Item Response Theory: Parameter
+  Estimation Techniques.} Marcel Dekker, Inc.
+
+  Masters, G. N. (1982). A rasch model for partial credit
+  scoring. \emph{Psychometrika, 47}(2), 149-174.
+
+  Muraki, Eiji. (1992). A generalized partial credit model:
+  Application of an EM algorithm. \emph{Applied
+  Psychological Measurement, 16}, 159-176.
+  doi:10.1177/014662169201600206
 }
 

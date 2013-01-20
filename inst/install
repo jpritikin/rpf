@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -o errexit
+set -o nounset
+set -o noclobber
+
+if [ ! -e ./inst/install ]; then
+  echo "$0 must be run from the top of the project tree"
+  exit
+fi
+
+pkg=rpf
+
+rm -f ${pkg}_*.tar.gz
+./inst/rox
+R CMD build .
+R CMD INSTALL ${pkg}_*.tar.gz

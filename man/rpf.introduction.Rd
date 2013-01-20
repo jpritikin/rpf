@@ -30,10 +30,14 @@
 }
 \section{Warning}{
   The API is not stable at this time. You have been warned.
+  In particular, I anticipating transposing some of the
+  input and output matrices.
+}
+\references{
+  Thissen, D. and Steinberg, L. (1986). A taxonomy of item
+  response models. \emph{Psychometrika 51}(4), 567-577.
 }
 \seealso{
-  See \code{\link{rpf.rparam}} and
-  \code{\link{rpf.startingParam}} to create item
-  parameters.
+  See \code{\link{rpf.rparam}} to create item parameters.
 }
 
