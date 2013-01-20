@@ -306,21 +306,24 @@ setGeneric("rpf.rparam", function(m) standardGeneric("rpf.rparam"))
 ##'
 ##' The ogive constant can be multiplied by the discrimination
 ##' parameter to obtain a response curve very similar to the Normal
-##' cumulative distribution function (Haley, 1952).  In recent years,
-##' the logistic has grown in favor, and therefore, this package does
-##' not offer any special support for this transformation (Baker &
-##' Kim, 2004, pp. 14-18).
+##' cumulative distribution function (Haley, 1952; Molenaar, 1974).
+##' In recent years, the logistic has grown in favor, and therefore,
+##' this package does not offer any special support for this
+##' transformation (Baker & Kim, 2004, pp. 14-18).
 ##' 
 ##' @export
 ##' @references
 ##' Baker & Kim (2004). \emph{Item Response Theory: Parameter
 ##' Estimation Techniques.} Marcel Dekker, Inc.
 ##'
-##' Haley, D. C. (1952). Estimation of the dosage mortality
-##' relationship when the dose is subject to error (Technical Report
+##' Haley, D. C. (1952). \emph{Estimation of the dosage mortality
+##' relationship when the dose is subject to error} (Technical Report
 ##' No. 15). Stanford University Applied Mathematics and Statistics
 ##' Laboratory, Stanford, CA.
-##' 
+##'
+##' Molenaar, W. (1974). De logistische en de normale kromme [The
+##' logistic and the normal curve]. \emph{Nederlands Tijdschrift voor de
+##' Psychologie} 29, 415-420.
 rpf.ogive <- 1.702
 
 ##' The base class for 1 dimensional graded response probability functions.
