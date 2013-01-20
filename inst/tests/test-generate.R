@@ -93,3 +93,15 @@ data <- rpf.sample(numPersons, items, correct, design)
 compare.df(unclass(data),
            data.frame(i1=c(1,2,2), i2=c(2,1,2), i3=c(2,2,2), i4=c(2,2,2),
                       i5=c(2,2,2)))
+
+### 1d and 2d
+
+numItems <- 4
+i1 <- rpf.drm(numChoices=2)
+i2 <- rpf.drm(numChoices=2, dimensions=2)
+items <- vector("list", numItems)
+for (ix in seq(1,numItems,2)) items[[ix]] <- i1
+for (ix in seq(2,numItems,2)) items[[ix]] <- i2
+correct <- lapply(items, rpf.rparam)
+data <- rpf.sample(4, items, correct)
+expect_true(all(dim(data) == c(4,4)))

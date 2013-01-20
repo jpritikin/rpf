@@ -53,8 +53,9 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
   if (missing(design)) {
     if (maxDim > 1) {
       design <- matrix(rep(1:maxDim, numItems), nrow=maxDim)
+      design[sapply(items, function(i) 1:maxDim > i@dimensions)] <- NA
     } else {
-      design <- 1
+      design <- matrix(rep(1, numItems), nrow=1)
     }
   }
   maxAbilities <- max(design, na.rm=TRUE)
@@ -86,15 +87,10 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
   for (ix in 1:numItems) {
     i <- items[[ix]]
     param <- params[[ix]]
-    P <- NA
-    if (maxDim==1) {
-      P <- rpf.prob(i, param[1:i@numParam], theta)
-    } else {
-      cols <- design[,ix]
-      cols <- cols[!is.na(cols)]
-      i.theta <- as.matrix(theta[,cols])
-      P <- rpf.prob(i, param[1:i@numParam], i.theta)
-    }
+    cols <- design[,ix]
+    cols <- cols[!is.na(cols)]
+    i.theta <- as.matrix(theta[,cols])
+    P <- rpf.prob(i, param[1:i@numParam], i.theta)
     ret[[ix]] <- as.ordered(apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F))
   }
   ret <- as.data.frame(ret)
