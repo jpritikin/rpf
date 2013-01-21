@@ -46,6 +46,10 @@ struct rpf {
 	rpf_gradient_t gradient;
 };
 
+/* R_GetCCallable */
+typedef void (*get_librpf_t)(int *numModels, const struct rpf **model);
+
+/* or link against libirt-rpf directly */
 extern const struct rpf librpf_model[];
 extern const int librpf_numModels;
 

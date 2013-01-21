@@ -16,7 +16,7 @@
 */
 
 #include <math.h>
-#include "libirt-rpf.h"
+#include "../inst/include/libirt-rpf.h"
 
 #ifndef M_LN2
 #define M_LN2           0.693147180559945309417232121458        /* ln(2) */
