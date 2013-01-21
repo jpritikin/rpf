@@ -21,6 +21,29 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
   out
 }
 
+##' Calculate residuals
+##'
+##' @param spec list of item models
+##' @param params data frame of item parameters, 1 per row
+##' @param responses persons in rows and items in columns
+##' @param scores model derived person scores
+##' @return residuals
+##' @docType methods
+##' @export
+rpf.1dim.residual <- function(spec, params, responses, scores) {
+  Zscore <- array(dim=c(length(scores), length(spec)))
+  for (ix in 1:length(spec)) {
+    i <- spec[[ix]]
+    prob <- rpf.prob(i, params[ix,], scores)
+    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@numOutcomes-1)))
+    data <- responses[,ix]
+    if (!is.ordered(data)) { stop(paste("Column",ix,"is not an ordered factor")) }
+    data <- unclass(data) - 1
+    Zscore[,ix] <- data - Escore
+  }
+  Zscore
+}
+
 ##' Calculate standardized residuals
 ##'
 ##' @param spec list of item models
@@ -31,18 +54,9 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
 ##' @docType methods
 ##' @export
 rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
-  Zscore <- array(dim=c(length(scores), length(spec)))
+  res <- rpf.1dim.residual(spec, params, responses, scores)
   variance <- rpf.1dim.moment(spec, params, scores, 2)
-  for (ix in 1:length(spec)) {
-    i <- spec[[ix]]
-    prob <- rpf.prob(i, params[ix,], scores)
-    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@numOutcomes-1)))
-    data <- responses[,ix]
-    if (!is.ordered(data)) { stop(paste("Column",ix,"is not an ordered factor")) }
-    data <- unclass(data) - 1
-    Zscore[,ix] <- (data - Escore) / sqrt(variance[,ix])
-  }
-  Zscore
+  res / sqrt(variance)
 }
 
 ##' Calculate item and person fit statistics

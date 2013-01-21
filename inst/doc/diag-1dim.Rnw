@@ -40,9 +40,7 @@ Now let us look at some real data.
 data(ms.items)
 
 spec <- list()
-for (ix in 1:10) {
-  spec[[ix]] <- rpf.gpcm(5)
-}
+spec[1:10] <- rpf.gpcm(5)
 
 plot.info <- function(spec, param, i.name, width=3) {
   if (missing(i.name)) {
@@ -129,6 +127,17 @@ item.x <- match(name,ms.items$name)
 param <- ms.items[item.x, c('slope',paste0('b',1:4))]
 data.vs.model(spec[[item.x]], param,ms.people , name, data.bins=12) +
   labs(title = paste0(name, ", slope = ",param[1]))
+@ 
+
+Item-wise covariance of residuals can be informative.
+
+<<>>=
+param <- ms.items[, c('slope',paste0('b',1:4))]
+res <- rpf.1dim.residual(spec, param, ms.people[,ms.items$name], ms.people$score)
+res <- res[!apply(is.na(res), 1, any),]
+res.cov <- cov(res)
+dimnames(res.cov) <- list(ms.items$id, ms.items$id)
+round(cov(res.cov),1)
 @ 
 
 Let's take another dataset and look at item fit. This will show the
