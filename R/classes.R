@@ -17,7 +17,14 @@
 ##' Item model parameters are passed around as a numeric vector. A 1D
 ##' matrix is also acceptable. Regardless of model, parameters are
 ##' always ordered as follows: discrimination ("a"), difficulty ("b"),
-##' and guessing ("c").
+##' and guessing ("c"). If person ability ranges from low negative to
+##' high positive then probabilities are output from incorrect to
+##' correct. That is, a low ability person (e.g., ability = -2) will
+##' be more likely to get an item incorrect than correct. For example,
+##' a dichotomous model that returns [.25, .75] indicates a
+##' probability of .25 for incorrect and .75 for correct.  A
+##' polytomous model will have the most incorrect probability at index
+##' 1 and the most correct probability at the maximum index.
 ##'
 ##' This package could also accrete functions to support plotting (but
 ##' not the actual plot functions).
