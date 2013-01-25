@@ -25,7 +25,8 @@ Suggests:
     reshape2,
     gridExtra
 Depends:
-    methods
+    methods,
+    R (>= 2.15.0)
 Collate:
     'classes.R'
     'drm.R'
