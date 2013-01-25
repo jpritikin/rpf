@@ -21,6 +21,29 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
   out
 }
 
+##' Calculate residuals
+##'
+##' @param spec list of item models
+##' @param params data frame of item parameters, 1 per row
+##' @param responses persons in rows and items in columns
+##' @param scores model derived person scores
+##' @return residuals
+##' @docType methods
+##' @export
+rpf.1dim.residual <- function(spec, params, responses, scores) {
+  Zscore <- array(dim=c(length(scores), length(spec)))
+  for (ix in 1:length(spec)) {
+    i <- spec[[ix]]
+    prob <- rpf.prob(i, params[ix,], scores)
+    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@numOutcomes-1)))
+    data <- responses[,ix]
+    if (!is.ordered(data)) { stop(paste("Column",ix,"is not an ordered factor")) }
+    data <- unclass(data) - 1
+    Zscore[,ix] <- data - Escore
+  }
+  Zscore
+}
+
 ##' Calculate standardized residuals
 ##'
 ##' @param spec list of item models
@@ -31,24 +54,16 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
 ##' @docType methods
 ##' @export
 rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
-  Zscore <- array(dim=c(length(scores), length(spec)))
+  res <- rpf.1dim.residual(spec, params, responses, scores)
   variance <- rpf.1dim.moment(spec, params, scores, 2)
-  for (ix in 1:length(spec)) {
-    i <- spec[[ix]]
-    prob <- rpf.prob(i, params[ix,], scores)
-    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@numOutcomes-1)))
-    data <- responses[,ix]
-    if (!is.ordered(data)) { stop(paste("Column",ix,"is not an ordered factor")) }
-    data <- unclass(data) - 1
-    Zscore[,ix] <- (data - Escore) / sqrt(variance[,ix])
-  }
-  Zscore
+  res / sqrt(variance)
 }
 
 ##' Calculate item and person fit statistics
 ##'
-##' For details on the calculation, see Embretson & Reise (2000, pp. 237-238)
-##' or Wright & Masters (1982, p. 100).
+##' Exact distributional properties of these statistics are unknown
+##' (Masters & Wright, 1997, p. 112).  For details on the calculation,
+##' refer to Wright & Masters (1982, p. 100).
 ##'
 ##' The Wilson-Hilferty transformation is biased for less than 25 items.
 ##' To adjust Z scores for fewer items use wh.exact=FALSE.
@@ -60,9 +75,11 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' @param margin for people 1, for items 2
 ##' @param na.rm remove NAs (default TRUE)
 ##' @param wh.exact whether to use the exact Wilson-Hilferty transformation (default TRUE)
-##' @references Embretson, S. E. & Reise S. P. (2000) \emph{Item response
-##' theory for psychologists.} Lawrence Erlbaum.
-##'
+##' @references Masters, G. N. & Wright, B. D. (1997). The Partial
+##' Credit Model. In W. van der Linden & R. K. Kambleton (Eds.),
+##' \emph{Handbook of modern item response theory}
+##' (pp. 101-121). Springer.
+##' 
 ##' Wilson, E. B., & Hilferty, M. M. (1931). The distribution of
 ##' chi-square. \emph{Proceedings of the National Academy of Sciences of the
 ##' United States of America,} 17, 684-688.

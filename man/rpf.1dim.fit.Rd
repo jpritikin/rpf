@@ -22,8 +22,10 @@
   transformation (default TRUE)}
 }
 \description{
-  For details on the calculation, see Embretson & Reise
-  (2000, pp. 237-238) or Wright & Masters (1982, p. 100).
+  Exact distributional properties of these statistics are
+  unknown (Masters & Wright, 1997, p. 112).  For details on
+  the calculation, refer to Wright & Masters (1982, p.
+  100).
 }
 \details{
   The Wilson-Hilferty transformation is biased for less
@@ -31,8 +33,10 @@
   wh.exact=FALSE.
 }
 \references{
-  Embretson, S. E. & Reise S. P. (2000) \emph{Item response
-  theory for psychologists.} Lawrence Erlbaum.
+  Masters, G. N. & Wright, B. D. (1997). The Partial Credit
+  Model. In W. van der Linden & R. K. Kambleton (Eds.),
+  \emph{Handbook of modern item response theory} (pp.
+  101-121). Springer.
 
   Wilson, E. B., & Hilferty, M. M. (1931). The distribution
   of chi-square. \emph{Proceedings of the National Academy

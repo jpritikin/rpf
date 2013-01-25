@@ -1,0 +1,23 @@
+\docType{methods}
+\name{rpf.1dim.residual}
+\alias{rpf.1dim.residual}
+\title{Calculate residuals}
+\usage{
+  rpf.1dim.residual(spec, params, responses, scores)
+}
+\arguments{
+  \item{spec}{list of item models}
+
+  \item{params}{data frame of item parameters, 1 per row}
+
+  \item{responses}{persons in rows and items in columns}
+
+  \item{scores}{model derived person scores}
+}
+\value{
+  residuals
+}
+\description{
+  Calculate residuals
+}
+

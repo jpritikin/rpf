@@ -1,7 +1,7 @@
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
-#include "libirt-rpf.h"
+#include "../inst/include/libirt-rpf.h"
 
 static SEXP
 get_model_names(SEXP name)
