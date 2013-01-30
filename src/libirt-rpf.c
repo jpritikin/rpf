@@ -222,7 +222,7 @@ irt_rpf_mdim_drm_prior(const double *spec,
 	const double *prior = spec + RPF_ISpecCount;
 	double ll=0;
 	for (int dx=0; dx < numDims; dx++) {
-		ll += lognormal_pdf(param[dx], prior[0]);
+	  if (param[dx] > 0) ll += lognormal_pdf(param[dx], prior[0]);
 	}
 	double cc = param[numDims+1];
 	if (cc > 0) {
@@ -253,22 +253,18 @@ irt_rpf_mdim_drm_gradient(const double *spec,
 	double cc = param[numDims+1];
 	if (!where) {
 		if (cc < 0 || cc >= 1) {
-			out[0] = FP_NAN;
-			out[1] = FP_NAN;
-			out[2] = FP_NAN;
-			return;
+		  for (int ox=0; ox <= numDims+1; ox++) out[ox] = FP_NAN;
+		  return;
 		}
 		for (int dx=0; dx < numDims; dx++) {
-			if (aa[dx] <= 0) {
-				out[0] = FP_NAN;
-				out[1] = FP_NAN;
-				out[2] = FP_NAN;
-				return;
+			if (aa[dx] < 0) {
+			  for (int ox=0; ox <= numDims+1; ox++) out[ox] = FP_NAN;
+			  return;
 			}
 		}
 		const double *prior = spec + RPF_ISpecCount;
 		for (int dx=0; dx < numDims; dx++) {
-			if (paramMask[dx] >= 0) {
+			if (paramMask[dx] > 0) {
 				out[dx] += lognormal_gradient(aa[dx], prior[0]);
 			}
 		}
