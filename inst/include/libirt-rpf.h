@@ -19,10 +19,10 @@
 #define _LIBIRT_RPF_
 
 enum RPF_ISpec {
-	RPF_ISpecID,
-	RPF_ISpecOutcomes,
-	RPF_ISpecDims,
-	RPF_ISpecCount
+  RPF_ISpecID,
+  RPF_ISpecOutcomes,
+  RPF_ISpecDims,
+  RPF_ISpecCount
 };
 
 typedef int (*rpf_numSpec_t)(const double *spec);
@@ -37,13 +37,13 @@ typedef void (*rpf_gradient_t)(const double *spec,
 			       const double *where, const double *weight, double *out);
 
 struct rpf {
-	const char name[8];
-	rpf_numSpec_t numSpec;
-	rpf_numParam_t numParam;
-	rpf_prob_t prob;
-	rpf_prob_t logprob;
-	rpf_prior_t prior;
-	rpf_gradient_t gradient;
+  const char name[8];
+  rpf_numSpec_t numSpec;
+  rpf_numParam_t numParam;
+  rpf_prob_t prob;
+  rpf_prob_t logprob;
+  rpf_prior_t prior;
+  rpf_gradient_t gradient;
 };
 
 /* R_GetCCallable */

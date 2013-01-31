@@ -35,12 +35,12 @@ irt_rpf_logprob_adapter(const double *spec,
 			const double *restrict param, const double *restrict th,
 			double *restrict out)
 {
-	(*librpf_model[(int) spec[RPF_ISpecID]].prob)(spec, param, th, out);
+  (*librpf_model[(int) spec[RPF_ISpecID]].prob)(spec, param, th, out);
 
-	int numOutcomes = spec[RPF_ISpecOutcomes];
-	for (int ox=0; ox < numOutcomes; ox++) {
-		out[ox] = log(out[ox]);
-	}
+  int numOutcomes = spec[RPF_ISpecOutcomes];
+  for (int ox=0; ox < numOutcomes; ox++) {
+    out[ox] = log(out[ox]);
+  }
 }
 
 static double
@@ -59,9 +59,9 @@ dotprod(const double *v1, const double *v2, const int len)
  */
 static double lognormal_pdf(double aa, double sd)
 {
-	double sd2 = sd*sd;
-	double loga = log(aa);
-	return -loga*loga/(2*sd2) - loga - log(sd) - M_LN_SQRT_PI - M_LN2/2;
+  double sd2 = sd*sd;
+  double loga = log(aa);
+  return -loga*loga/(2*sd2) - loga - log(sd) - M_LN_SQRT_PI - M_LN2/2;
 }
 
 /**
@@ -69,13 +69,13 @@ static double lognormal_pdf(double aa, double sd)
  */
 static double lognormal_gradient(double aa, double sd)
 {
-	double sd2 = sd*sd;
-	return -log(aa)/(aa * sd2) - 1/aa;
+  double sd2 = sd*sd;
+  return -log(aa)/(aa * sd2) - 1/aa;
 }
 
 static double logit(double prob)
 {
-	return log(prob/(1-prob));
+  return log(prob/(1-prob));
 }
 
 // TODO Cai, Yang & Hansen (2011, p. 246)
@@ -86,9 +86,9 @@ static double logit(double prob)
  */
 static double logitnormal_pdf(double cc, double mean, double sd)
 {
-	double sd2 = sd * sd;
-	double offset = logit(cc) - mean;
-	return -(offset*offset)/(2*sd2) - log(sd) - M_LN_SQRT_PI - M_LN2/2;
+  double sd2 = sd * sd;
+  double offset = logit(cc) - mean;
+  return -(offset*offset)/(2*sd2) - log(sd) - M_LN_SQRT_PI - M_LN2/2;
 }
 
 /**
@@ -96,8 +96,8 @@ static double logitnormal_pdf(double cc, double mean, double sd)
  */
 static double logitnormal_gradient(double cc, double mean, double sd)
 {
-	double sd2 = sd * sd;
-	return (logit(cc) - mean) / (sd2 * (cc-1) * cc);
+  double sd2 = sd * sd;
+  return (logit(cc) - mean) / (sd2 * (cc-1) * cc);
 }
 
 static int
@@ -123,13 +123,13 @@ static double
 irt_rpf_1dim_drm_prior(const double *spec,
 		       const double *restrict param)
 {
-	const double *prior = spec + RPF_ISpecCount;
-	double ll = lognormal_pdf(param[0], prior[0]);
-	double cc = param[2];
-	if (cc > 0) {
-		ll += logitnormal_pdf(cc, prior[1], prior[2]);
-	}
-	return ll;
+  const double *prior = spec + RPF_ISpecCount;
+  double ll = lognormal_pdf(param[0], prior[0]);
+  double cc = param[2];
+  if (cc > 0) {
+    ll += logitnormal_pdf(cc, prior[1], prior[2]);
+  }
+  return ll;
 }
 
 /**
@@ -146,50 +146,50 @@ irt_rpf_1dim_drm_gradient(const double *spec,
 			  const double *restrict param, const int *paramMask,
 			  const double *where, const double *weight, double *out)
 {
-	double aa = param[0];
-	double bb = param[1];
-	double cc = param[2];
-	if (!where) {
-		const double *prior = spec + RPF_ISpecCount;
-		if (aa <= 0 || cc < 0 || cc >= 1) {
-			out[0] = FP_NAN;
-			out[1] = FP_NAN;
-			out[2] = FP_NAN;
-			return;
-		}
-		if (paramMask[0] >= 0) {
-			out[0] *= (1-cc);
-			out[0] += lognormal_gradient(aa, prior[0]);
-		}
-		if (paramMask[1] >= 0) {
-			out[1] *= aa * (1-cc);
-		}
-		if (paramMask[2] >= 0) {
-			if (cc == 0) { out[2] = FP_NAN; }
-			else {
-				out[2] += logitnormal_gradient(cc, prior[1], prior[2]);
-			}
-		}
-		return;
-	}
-	double th = where[0];
-	double Eathb = exp(-aa * (th - bb));
-	double Eathb2 = (Eathb+1)*(Eathb+1);
-	double w0 = Eathb2 * (-(1-cc)/(Eathb+1) - cc + 1);
-	double w1 = Eathb2 * ((1-cc)/(Eathb+1) + cc);
-	if (paramMask[0] >= 0) {
-		out[0] = (weight[0] * (bb-th)*Eathb / w0 +
-			  weight[1] * -(bb-th)*Eathb / w1);
-	}
-	if (paramMask[1] >= 0) {
-		out[1] = (weight[0] * Eathb / w0 +
-			  weight[1] * -Eathb / w1);
-	}
-	if (paramMask[2] >= 0) {
-		double ratio = (1-(1/(Eathb+1))) / ((1-cc)/(Eathb+1) + cc);
-		out[2] = (weight[0] * (1/(cc-1)) +
-			  weight[1] * ratio);
-	}
+  double aa = param[0];
+  double bb = param[1];
+  double cc = param[2];
+  if (!where) {
+    const double *prior = spec + RPF_ISpecCount;
+    if (aa <= 0 || cc < 0 || cc >= 1) {
+      out[0] = FP_NAN;
+      out[1] = FP_NAN;
+      out[2] = FP_NAN;
+      return;
+    }
+    if (paramMask[0] >= 0) {
+      out[0] *= (1-cc);
+      out[0] += lognormal_gradient(aa, prior[0]);
+    }
+    if (paramMask[1] >= 0) {
+      out[1] *= aa * (1-cc);
+    }
+    if (paramMask[2] >= 0) {
+      if (cc == 0) { out[2] = FP_NAN; }
+      else {
+	out[2] += logitnormal_gradient(cc, prior[1], prior[2]);
+      }
+    }
+    return;
+  }
+  double th = where[0];
+  double Eathb = exp(-aa * (th - bb));
+  double Eathb2 = (Eathb+1)*(Eathb+1);
+  double w0 = Eathb2 * (-(1-cc)/(Eathb+1) - cc + 1);
+  double w1 = Eathb2 * ((1-cc)/(Eathb+1) + cc);
+  if (paramMask[0] >= 0) {
+    out[0] = (weight[0] * (bb-th)*Eathb / w0 +
+	      weight[1] * -(bb-th)*Eathb / w1);
+  }
+  if (paramMask[1] >= 0) {
+    out[1] = (weight[0] * Eathb / w0 +
+	      weight[1] * -Eathb / w1);
+  }
+  if (paramMask[2] >= 0) {
+    double ratio = (1-(1/(Eathb+1))) / ((1-cc)/(Eathb+1) + cc);
+    out[2] = (weight[0] * (1/(cc-1)) +
+	      weight[1] * ratio);
+  }
 }
 
 static int
@@ -218,17 +218,17 @@ static double
 irt_rpf_mdim_drm_prior(const double *spec,
 		       const double *restrict param)
 {
-	int numDims = spec[RPF_ISpecDims];
-	const double *prior = spec + RPF_ISpecCount;
-	double ll=0;
-	for (int dx=0; dx < numDims; dx++) {
-	  if (param[dx] > 0) ll += lognormal_pdf(param[dx], prior[0]);
-	}
-	double cc = param[numDims+1];
-	if (cc > 0) {
-		ll += logitnormal_pdf(cc, prior[1], prior[2]);
-	}
-	return ll;
+  int numDims = spec[RPF_ISpecDims];
+  const double *prior = spec + RPF_ISpecCount;
+  double ll=0;
+  for (int dx=0; dx < numDims; dx++) {
+    if (param[dx] > 0) ll += lognormal_pdf(param[dx], prior[0]);
+  }
+  double cc = param[numDims+1];
+  if (cc > 0) {
+    ll += logitnormal_pdf(cc, prior[1], prior[2]);
+  }
+  return ll;
 }
 
 /**
@@ -247,53 +247,53 @@ irt_rpf_mdim_drm_gradient(const double *spec,
 			  const double *restrict param, const int *paramMask,
 			  const double *where, const double *weight, double *out)
 {
-	int numDims = spec[RPF_ISpecDims];
-	const double *aa = param;
-	double bb = param[numDims];
-	double cc = param[numDims+1];
-	if (!where) {
-		if (cc < 0 || cc >= 1) {
-		  for (int ox=0; ox <= numDims+1; ox++) out[ox] = FP_NAN;
-		  return;
-		}
-		for (int dx=0; dx < numDims; dx++) {
-			if (aa[dx] < 0) {
-			  for (int ox=0; ox <= numDims+1; ox++) out[ox] = FP_NAN;
-			  return;
-			}
-		}
-		const double *prior = spec + RPF_ISpecCount;
-		for (int dx=0; dx < numDims; dx++) {
-			if (paramMask[dx] > 0) {
-				out[dx] += lognormal_gradient(aa[dx], prior[0]);
-			}
-		}
-		if (paramMask[numDims] >= 0) {
-			// OK
-		}
-		if (paramMask[numDims+1] >= 0) {
-			if (cc == 0) { out[numDims+1] = FP_NAN; }
-			else {
-				out[numDims+1] += logitnormal_gradient(cc, prior[1], prior[2]);
-			}
-		}
-		return;
-	}
-	double Eathb = exp(dotprod(aa, where, numDims) + bb);
-	for (int dx=0; dx < numDims; dx++) {
-		if (paramMask[dx] >= 0) {
-			out[dx] = (weight[0] * (where[dx]/(Eathb+1) - where[dx]) +
-				   weight[1] * (where[dx]/(Eathb+1) - cc * where[dx] / (Eathb+cc)));
-		}
-	}
-	if (paramMask[numDims] >= 0) {
-		out[numDims] = (weight[0] * (1/(Eathb+1) - 1) +
-				weight[1] * (-((cc-1)*Eathb)/((Eathb+1)*(Eathb+cc))));
-	}
-	if (paramMask[numDims+1] >= 0) {
-		out[numDims+1] = (weight[0] * (1/(cc-1)) +
-				  weight[1] * (1/(Eathb+cc)));
-	}
+  int numDims = spec[RPF_ISpecDims];
+  const double *aa = param;
+  double bb = param[numDims];
+  double cc = param[numDims+1];
+  if (!where) {
+    if (cc < 0 || cc >= 1) {
+      for (int ox=0; ox <= numDims+1; ox++) out[ox] = FP_NAN;
+      return;
+    }
+    for (int dx=0; dx < numDims; dx++) {
+      if (aa[dx] < 0) {
+	for (int ox=0; ox <= numDims+1; ox++) out[ox] = FP_NAN;
+	return;
+      }
+    }
+    const double *prior = spec + RPF_ISpecCount;
+    for (int dx=0; dx < numDims; dx++) {
+      if (paramMask[dx] > 0) {
+	out[dx] += lognormal_gradient(aa[dx], prior[0]);
+      }
+    }
+    if (paramMask[numDims] >= 0) {
+      // OK
+    }
+    if (paramMask[numDims+1] >= 0) {
+      if (cc == 0) { out[numDims+1] = FP_NAN; }
+      else {
+	out[numDims+1] += logitnormal_gradient(cc, prior[1], prior[2]);
+      }
+    }
+    return;
+  }
+  double Eathb = exp(dotprod(aa, where, numDims) + bb);
+  for (int dx=0; dx < numDims; dx++) {
+    if (paramMask[dx] >= 0) {
+      out[dx] = (weight[0] * (where[dx]/(Eathb+1) - where[dx]) +
+		 weight[1] * (where[dx]/(Eathb+1) - cc * where[dx] / (Eathb+cc)));
+    }
+  }
+  if (paramMask[numDims] >= 0) {
+    out[numDims] = (weight[0] * (1/(Eathb+1) - 1) +
+		    weight[1] * (-((cc-1)*Eathb)/((Eathb+1)*(Eathb+cc))));
+  }
+  if (paramMask[numDims+1] >= 0) {
+    out[numDims+1] = (weight[0] * (1/(cc-1)) +
+		      weight[1] * (1/(Eathb+cc)));
+  }
 }
 
 static int
@@ -355,7 +355,7 @@ irt_rpf_1dim_gpcm_prob(const double *spec,
     denom += exp(sum);
   }
   for (int tx=0; tx < numOutcomes; tx++) {
-	  out[tx] = exp(term2[tx]) / denom;
+    out[tx] = exp(term2[tx]) / denom;
   }
 }
 
@@ -363,8 +363,8 @@ static double
 irt_rpf_1dim_gpcm_prior(const double *spec,
 			const double *restrict param)
 {
-	const double *prior = spec + RPF_ISpecCount;
-	return lognormal_pdf(param[0], prior[0]);
+  const double *prior = spec + RPF_ISpecCount;
+  return lognormal_pdf(param[0], prior[0]);
 }
 
 /**
@@ -402,83 +402,83 @@ irt_rpf_1dim_gpcm_gradient(const double *spec,
 			   const double *restrict param, const int *paramMask,
 			   const double *where, const double *weight, double *out)
 {
-	int numOutcomes = spec[RPF_ISpecOutcomes];
-	double aa = param[0];
-	if (!where) {
-		if (aa <= 0) {
-			out[0] = FP_NAN;
-			out[1] = FP_NAN;
-			out[2] = FP_NAN;
-			return;
-		}
-		const double *prior = spec + RPF_ISpecCount;
-		if (paramMask[0] >= 0) {
-			out[0] /= aa;
-			out[0] += lognormal_gradient(aa, prior[0]);
-		}
-		for (int bx=1; bx < numOutcomes; bx++) {
-			if (paramMask[bx] >= 0) {
-				out[bx] *= aa;
-			}
-		}
-		return;
-	}
-	double pout[numOutcomes];
-	irt_rpf_1dim_gpcm_prob(spec, param, where, pout);
+  int numOutcomes = spec[RPF_ISpecOutcomes];
+  double aa = param[0];
+  if (!where) {
+    if (aa <= 0) {
+      out[0] = FP_NAN;
+      out[1] = FP_NAN;
+      out[2] = FP_NAN;
+      return;
+    }
+    const double *prior = spec + RPF_ISpecCount;
+    if (paramMask[0] >= 0) {
+      out[0] /= aa;
+      out[0] += lognormal_gradient(aa, prior[0]);
+    }
+    for (int bx=1; bx < numOutcomes; bx++) {
+      if (paramMask[bx] >= 0) {
+	out[bx] *= aa;
+      }
+    }
+    return;
+  }
+  double pout[numOutcomes];
+  irt_rpf_1dim_gpcm_prob(spec, param, where, pout);
 
-	double th = where[0];
+  double th = where[0];
 
-	if (paramMask[0] >= 0) {
-		double grad=0;
-		for (int kx=1; kx <= numOutcomes; kx++) {
-			double sum=0;
-			for (int cc=1; cc <= numOutcomes; cc++) {
-				sum += _1dim_gpcm_z(cc, param, th) * pout[cc-1];
-			}
-			grad += weight[kx-1] * (_1dim_gpcm_z(kx, param, th) - sum);
-		}
-		out[0] = grad;
-	}
-	double total_weight=0;
-	for (int cc=0; cc < numOutcomes; cc++) {
-		total_weight += weight[cc];
-	}
-	for (int bx=1; bx < numOutcomes; bx++) {
-		if (paramMask[bx] >= 0) {
-			double grad = 0;
-			for (int kx=0; kx <= bx-1; kx++) {
-				grad += weight[kx] - pout[kx] * total_weight;
-			}
-			out[bx] = grad;
-		}
-	}
+  if (paramMask[0] >= 0) {
+    double grad=0;
+    for (int kx=1; kx <= numOutcomes; kx++) {
+      double sum=0;
+      for (int cc=1; cc <= numOutcomes; cc++) {
+	sum += _1dim_gpcm_z(cc, param, th) * pout[cc-1];
+      }
+      grad += weight[kx-1] * (_1dim_gpcm_z(kx, param, th) - sum);
+    }
+    out[0] = grad;
+  }
+  double total_weight=0;
+  for (int cc=0; cc < numOutcomes; cc++) {
+    total_weight += weight[cc];
+  }
+  for (int bx=1; bx < numOutcomes; bx++) {
+    if (paramMask[bx] >= 0) {
+      double grad = 0;
+      for (int kx=0; kx <= bx-1; kx++) {
+	grad += weight[kx] - pout[kx] * total_weight;
+      }
+      out[bx] = grad;
+    }
+  }
 }
 
 const struct rpf librpf_model[] = {
-	{ "drm1",
-	  irt_rpf_1dim_drm_numSpec,
-	  irt_rpf_1dim_drm_numParam,
-	  irt_rpf_1dim_drm_prob,
-	  irt_rpf_logprob_adapter,
-	  irt_rpf_1dim_drm_prior,
-	  irt_rpf_1dim_drm_gradient,
-	},
-	{ "drm",
-	  irt_rpf_mdim_drm_numSpec,
-	  irt_rpf_mdim_drm_numParam,
-	  irt_rpf_mdim_drm_prob,
-	  irt_rpf_logprob_adapter,
-	  irt_rpf_mdim_drm_prior,
-	  irt_rpf_mdim_drm_gradient,
-	},
-	{ "gpcm1",
-	  irt_rpf_1dim_gpcm_numSpec,
-	  irt_rpf_1dim_gpcm_numParam,
-	  irt_rpf_1dim_gpcm_prob,
-	  irt_rpf_1dim_gpcm_logprob,
-	  irt_rpf_1dim_gpcm_prior,
-	  irt_rpf_1dim_gpcm_gradient,
-	}
+  { "drm1",
+    irt_rpf_1dim_drm_numSpec,
+    irt_rpf_1dim_drm_numParam,
+    irt_rpf_1dim_drm_prob,
+    irt_rpf_logprob_adapter,
+    irt_rpf_1dim_drm_prior,
+    irt_rpf_1dim_drm_gradient,
+  },
+  { "drm",
+    irt_rpf_mdim_drm_numSpec,
+    irt_rpf_mdim_drm_numParam,
+    irt_rpf_mdim_drm_prob,
+    irt_rpf_logprob_adapter,
+    irt_rpf_mdim_drm_prior,
+    irt_rpf_mdim_drm_gradient,
+  },
+  { "gpcm1",
+    irt_rpf_1dim_gpcm_numSpec,
+    irt_rpf_1dim_gpcm_numParam,
+    irt_rpf_1dim_gpcm_prob,
+    irt_rpf_1dim_gpcm_logprob,
+    irt_rpf_1dim_gpcm_prior,
+    irt_rpf_1dim_gpcm_gradient,
+  }
 };
 
 const int librpf_numModels = (sizeof(librpf_model) / sizeof(struct rpf));
