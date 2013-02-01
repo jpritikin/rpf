@@ -124,6 +124,7 @@ setMethod("rpf.prior", signature(m="rpf.base", param="numeric"),
 ##' 
 ##' @aliases
 ##' rpf.gradient,rpf.base,numeric,integer,numeric,numeric-method
+##' rpf.gradient,rpf.base,numeric,numeric,numeric,numeric-method
 ##' rpf_gradient_wrapper
 setGeneric("rpf.gradient", function(m, param, paramMask, where, weight) standardGeneric("rpf.gradient"))
 
@@ -136,6 +137,13 @@ setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
             } else {
               .Call(rpf_gradient_wrapper, m@spec, param, paramMask, where, weight)
             }
+          })
+
+setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
+                                    paramMask="numeric", where="numeric",
+                                    weight="numeric"),
+          function(m, param, paramMask, where, weight) {
+            rpf.gradient(m, param, as.integer(paramMask), where, weight)
           })
 
 ##' Map an item model, item parameters, and person trait score into a
