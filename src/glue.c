@@ -1,7 +1,4 @@
-#include <R.h>
-#include <Rinternals.h>
-#include <R_ext/Rdynload.h>
-#include "../inst/include/libirt-rpf.h"
+#include "rpf.h"
 
 static SEXP
 get_model_names(SEXP name)
@@ -19,8 +16,7 @@ get_model_names(SEXP name)
   return ret;
 }
 
-static void
-getMatrixDims(SEXP r_theta, int *rows, int *cols)
+void getMatrixDims(SEXP r_theta, int *rows, int *cols)
 {
     SEXP matrixDims;
     PROTECT(matrixDims = getAttrib(r_theta, R_DimSymbol));
@@ -246,6 +242,9 @@ static R_CallMethodDef flist[] = {
   {"rpf_logprob_wrapper", (DL_FUNC) rpf_logprob_wrapper, 3},
   {"rpf_prior_wrapper", (DL_FUNC) rpf_prior_wrapper, 2},
   {"rpf_gradient_wrapper", (DL_FUNC) rpf_gradient_wrapper, 5},
+  {"orlando_thissen_2000_wrapper", (DL_FUNC) orlando_thissen_2000, 5},
+  {"sumscore_observed", (DL_FUNC) sumscore_observed, 4},
+  {"rpf_GaussHermiteData", (DL_FUNC) omxGaussHermiteData, 1},
   {NULL, NULL, 0}
 };
 
