@@ -75,3 +75,12 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
               b=rnorm(1),
               c=1/(1+exp(-rnorm(1, mean=m@c.prior.logit, sd=m@c.prior.sd))))
           })
+
+# Not sure if this is correct because of rotation
+## as.loadings <- function(m, param) {
+##   loading <- vector(mode="numeric", m@dimensions)
+##   for (d in 1:m@dimensions) {
+##     loading[d] <- param[d] / sqrt(1+sum(param[d:m@dimensions]^2))
+##   }
+##   loading
+## }
