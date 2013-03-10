@@ -385,8 +385,7 @@ setClass("rpf.1dim.grm", contains='rpf.1dim.graded',
 ##' @name Class rpf.1dim.gpcm
 ##' @rdname rpf.1dim.gpcm-class
 ##' @aliases rpf.1dim.gpcm-class
-setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded',
-         representation(a.prior.sdlog="numeric"))
+setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded')
 
 ##' Unidimensional dichotomous item models (1PL, 2PL, and 3PL).
 ##'
@@ -395,10 +394,7 @@ setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded',
 ##' @rdname rpf.1dim.drm-class
 ##' @aliases rpf.1dim.drm-class
 setClass("rpf.1dim.drm", contains='rpf.1dim',
-         representation(guessing="numeric",
-                        a.prior.sdlog="numeric",
-                        c.prior.logit="numeric",
-                        c.prior.sd="numeric"))
+         representation(c.prior.logit="numeric"))
 
 ##' Multidimensional dichotomous item models (M1PL, M2PL, and M3PL).
 ##'
@@ -407,10 +403,7 @@ setClass("rpf.1dim.drm", contains='rpf.1dim',
 ##' @rdname rpf.mdim.drm-class
 ##' @aliases rpf.mdim.drm-class
 setClass("rpf.mdim.drm", contains='rpf.mdim',
-         representation(guessing="numeric",
-                        a.prior.sdlog="numeric",
-                        c.prior.logit="numeric",
-                        c.prior.sd="numeric"))
+         representation(c.prior.logit="numeric"))
 
 ##' The multidimensional graded response item model.
 ##'
@@ -427,8 +420,7 @@ setClass("rpf.mdim.grm", contains='rpf.mdim.graded',
 ##' @name Class rpf.mdim.gpcm
 ##' @rdname rpf.mdim.gpcm-class
 ##' @aliases rpf.mdim.gpcm-class
-setClass("rpf.mdim.gpcm", contains='rpf.mdim.graded',
-         representation(a.prior.sdlog="numeric"))
+setClass("rpf.mdim.gpcm", contains='rpf.mdim.graded')
 
 ##' The nominal response item model (both unidimensional and
 ##' multidimensional models have the same parameterization).
