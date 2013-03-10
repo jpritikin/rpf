@@ -27,8 +27,13 @@
                                                                    == log(pi)/2 */
 #endif
 
-//static const double DiscriminationSDLog = .5;
-//static const double LowerAsymptoteSD = .5;
+static const double EXP_STABLE_DOMAIN = 35;
+
+// This is far away from the item's difficulty so it is less
+// interesting for estimation and the gradient becomes numerically
+// unstable as athb < -25. For symmetry, it is necessary to clamp at
+// 25 as well.
+static const double GRADIENT_STABLE_DOMAIN = 25;
 
 static void
 irt_rpf_logprob_adapter(const double *spec,
@@ -78,7 +83,7 @@ static double logit(double prob)
   return log(prob/(1-prob));
 }
 
-// TODO Cai, Yang & Hansen (2011, p. 246)
+// Prior for the lower asymptote parameter (Cai, Yang & Hansen, 2011, p. 246)
 
 /**
  * normal(x,mean,sd) := (sd*sqrt(2*%pi))^-1 * exp(-((x - mean)^2)/(2*sd^2))
@@ -114,7 +119,10 @@ irt_rpf_1dim_drm_prob(const double *spec,
 		      double *restrict out)
 {
   double guessing = param[2];
-  double pp = guessing + (1-guessing) / (1 + exp(-param[0] * (th[0] - param[1])));
+  double athb = -param[0] * (th[0] - param[1]);
+  if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
+  else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
+  double pp = guessing + (1-guessing) / (1 + exp(athb));
   out[0] = 1-pp;
   out[1] = pp;
 }
@@ -124,12 +132,20 @@ irt_rpf_1dim_drm_prior(const double *spec,
 		       const double *restrict param)
 {
   const double *prior = spec + RPF_ISpecCount;
-  double ll = lognormal_pdf(param[0], prior[0]);
+  double ll = 0; //lognormal_pdf(param[0], prior[0]);
   double cc = param[2];
   if (cc > 0) {
     ll += logitnormal_pdf(cc, prior[1], prior[2]);
   }
   return ll;
+}
+
+static void
+set_gradient_nan(const int numParam, const int *paramMask, double *out)
+{
+  for (int px=0; px < numParam; px++) {
+    if (paramMask[px] >= 0) out[paramMask[px]] = FP_NAN;
+  }
 }
 
 /**
@@ -152,43 +168,46 @@ irt_rpf_1dim_drm_gradient(const double *spec,
   if (!where) {
     const double *prior = spec + RPF_ISpecCount;
     if (aa <= 0 || cc < 0 || cc >= 1) {
-      out[0] = FP_NAN;
-      out[1] = FP_NAN;
-      out[2] = FP_NAN;
+      set_gradient_nan(3, paramMask, out);
       return;
     }
     if (paramMask[0] >= 0) {
-      out[0] *= (1-cc);
-      out[0] += lognormal_gradient(aa, prior[0]);
+      out[paramMask[0]] *= (1-cc);
+      //out[paramMask[0]] += lognormal_gradient(aa, prior[0]);
     }
     if (paramMask[1] >= 0) {
-      out[1] *= aa * (1-cc);
+      out[paramMask[1]] *= aa * (1-cc);
     }
     if (paramMask[2] >= 0) {
-      if (cc == 0) { out[2] = FP_NAN; }
+      if (cc == 0) { out[paramMask[2]] = FP_NAN; }
       else {
-	out[2] += logitnormal_gradient(cc, prior[1], prior[2]);
+	out[paramMask[2]] += logitnormal_gradient(cc, prior[1], prior[2]);
       }
     }
     return;
   }
   double th = where[0];
-  double Eathb = exp(-aa * (th - bb));
+  double athb = -aa * (th - bb);
+
+  if (athb < -GRADIENT_STABLE_DOMAIN) athb = -GRADIENT_STABLE_DOMAIN;
+  else if (athb > GRADIENT_STABLE_DOMAIN) athb = GRADIENT_STABLE_DOMAIN;
+
+  double Eathb = exp(athb);
   double Eathb2 = (Eathb+1)*(Eathb+1);
   double w0 = Eathb2 * (-(1-cc)/(Eathb+1) - cc + 1);
   double w1 = Eathb2 * ((1-cc)/(Eathb+1) + cc);
   if (paramMask[0] >= 0) {
-    out[0] = (weight[0] * (bb-th)*Eathb / w0 +
-	      weight[1] * -(bb-th)*Eathb / w1);
+    out[paramMask[0]] = (weight[0] * (bb-th)*Eathb / w0 +
+			 weight[1] * -(bb-th)*Eathb / w1);
   }
   if (paramMask[1] >= 0) {
-    out[1] = (weight[0] * Eathb / w0 +
-	      weight[1] * -Eathb / w1);
+    out[paramMask[1]] = (weight[0] * Eathb / w0 +
+			 weight[1] * -Eathb / w1);
   }
   if (paramMask[2] >= 0) {
     double ratio = (1-(1/(Eathb+1))) / ((1-cc)/(Eathb+1) + cc);
-    out[2] = (weight[0] * (1/(cc-1)) +
-	      weight[1] * ratio);
+    out[paramMask[2]] = (weight[0] * (1/(cc-1)) +
+			 weight[1] * ratio);
   }
 }
 
@@ -209,7 +228,10 @@ irt_rpf_mdim_drm_prob(const double *spec,
   double dprod = dotprod(param, th, numDims);
   double diff = param[numDims];
   double guessing = param[numDims+1];
-  double tmp = guessing + (1-guessing) / (1 + exp(-(dprod + diff)));
+  double athb = -(dprod + diff);
+  if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
+  else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
+  double tmp = guessing + (1-guessing) / (1 + exp(athb));
   out[0] = 1-tmp;
   out[1] = tmp;
 }
@@ -222,7 +244,7 @@ irt_rpf_mdim_drm_prior(const double *spec,
   const double *prior = spec + RPF_ISpecCount;
   double ll=0;
   for (int dx=0; dx < numDims; dx++) {
-    if (param[dx] > 0) ll += lognormal_pdf(param[dx], prior[0]);
+    //if (param[dx] > 0) ll += lognormal_pdf(param[dx], prior[0]);
   }
   double cc = param[numDims+1];
   if (cc > 0) {
@@ -253,52 +275,59 @@ irt_rpf_mdim_drm_gradient(const double *spec,
   double cc = param[numDims+1];
   if (!where) {
     if (cc < 0 || cc >= 1) {
-      for (int ox=0; ox <= numDims+1; ox++) out[ox] = FP_NAN;
+      set_gradient_nan(numDims+1, paramMask, out);
       return;
     }
     for (int dx=0; dx < numDims; dx++) {
       if (aa[dx] < 0) {
-	for (int ox=0; ox <= numDims+1; ox++) out[ox] = FP_NAN;
+	set_gradient_nan(numDims+1, paramMask, out);
 	return;
       }
     }
     const double *prior = spec + RPF_ISpecCount;
     for (int dx=0; dx < numDims; dx++) {
       if (paramMask[dx] > 0) {
-	out[dx] += lognormal_gradient(aa[dx], prior[0]);
+	//out[paramMask[dx]] += lognormal_gradient(aa[dx], prior[0]);
       }
     }
     if (paramMask[numDims] >= 0) {
       // OK
     }
     if (paramMask[numDims+1] >= 0) {
-      if (cc == 0) { out[numDims+1] = FP_NAN; }
+      if (cc == 0) {
+	out[paramMask[numDims+1]] = FP_NAN;
+      }
       else {
-	out[numDims+1] += logitnormal_gradient(cc, prior[1], prior[2]);
+	out[paramMask[numDims+1]] += logitnormal_gradient(cc, prior[1], prior[2]);
       }
     }
     return;
   }
-  double Eathb = exp(dotprod(aa, where, numDims) + bb);
+
+  double athb = dotprod(aa, where, numDims) + bb;
+  if (athb < -GRADIENT_STABLE_DOMAIN) athb = -GRADIENT_STABLE_DOMAIN;
+  else if (athb > GRADIENT_STABLE_DOMAIN) athb = GRADIENT_STABLE_DOMAIN;
+
+  double Eathb = exp(athb);
   for (int dx=0; dx < numDims; dx++) {
     if (paramMask[dx] >= 0) {
-      out[dx] = (weight[0] * (where[dx]/(Eathb+1) - where[dx]) +
-		 weight[1] * (where[dx]/(Eathb+1) - cc * where[dx] / (Eathb+cc)));
+      out[paramMask[dx]] = (weight[0] * (where[dx]/(Eathb+1) - where[dx]) +
+			    weight[1] * (where[dx]/(Eathb+1) - cc * where[dx] / (Eathb+cc)));
     }
   }
   if (paramMask[numDims] >= 0) {
-    out[numDims] = (weight[0] * (1/(Eathb+1) - 1) +
-		    weight[1] * (-((cc-1)*Eathb)/((Eathb+1)*(Eathb+cc))));
+    out[paramMask[numDims]] = (weight[0] * (1/(Eathb+1) - 1) +
+			       weight[1] * (-((cc-1)*Eathb)/((Eathb+1)*(Eathb+cc))));
   }
   if (paramMask[numDims+1] >= 0) {
-    out[numDims+1] = (weight[0] * (1/(cc-1)) +
-		      weight[1] * (1/(Eathb+cc)));
+    out[paramMask[numDims+1]] = (weight[0] * (1/(cc-1)) +
+				 weight[1] * (1/(Eathb+cc)));
   }
 }
 
 static int
 irt_rpf_1dim_gpcm_numSpec(const double *spec)
-{ return RPF_ISpecCount + 1; }
+{ return RPF_ISpecCount; }
 
 static int
 irt_rpf_1dim_gpcm_numParam(const double *spec)
@@ -351,8 +380,12 @@ irt_rpf_1dim_gpcm_prob(const double *spec,
   double term2[numOutcomes];
   for (int tx=numOutcomes-1; tx >= 0; tx--) {
     sum += term1[tx];
-    term2[tx] = sum;
-    denom += exp(sum);
+    double safe_sum;
+    if (sum < -EXP_STABLE_DOMAIN) safe_sum = -EXP_STABLE_DOMAIN;
+    else if (sum > EXP_STABLE_DOMAIN) safe_sum = EXP_STABLE_DOMAIN;
+    else safe_sum = sum;
+    term2[tx] = safe_sum;
+    denom += exp(safe_sum);
   }
   for (int tx=0; tx < numOutcomes; tx++) {
     out[tx] = exp(term2[tx]) / denom;
@@ -364,7 +397,7 @@ irt_rpf_1dim_gpcm_prior(const double *spec,
 			const double *restrict param)
 {
   const double *prior = spec + RPF_ISpecCount;
-  return lognormal_pdf(param[0], prior[0]);
+  return 0; //lognormal_pdf(param[0], prior[0]);
 }
 
 /**
@@ -406,19 +439,17 @@ irt_rpf_1dim_gpcm_gradient(const double *spec,
   double aa = param[0];
   if (!where) {
     if (aa <= 0) {
-      out[0] = FP_NAN;
-      out[1] = FP_NAN;
-      out[2] = FP_NAN;
+      set_gradient_nan(3, paramMask, out);
       return;
     }
     const double *prior = spec + RPF_ISpecCount;
     if (paramMask[0] >= 0) {
-      out[0] /= aa;
-      out[0] += lognormal_gradient(aa, prior[0]);
+      out[paramMask[0]] /= aa;
+      //out[paramMask[0]] += lognormal_gradient(aa, prior[0]);
     }
     for (int bx=1; bx < numOutcomes; bx++) {
       if (paramMask[bx] >= 0) {
-	out[bx] *= aa;
+	out[paramMask[bx]] *= aa;
       }
     }
     return;
@@ -437,7 +468,20 @@ irt_rpf_1dim_gpcm_gradient(const double *spec,
       }
       grad += weight[kx-1] * (_1dim_gpcm_z(kx, param, th) - sum);
     }
-    out[0] = grad;
+    out[paramMask[0]] = grad;
+  }
+  double total_weight=0;
+  for (int cc=0; cc < numOutcomes; cc++) {
+    total_weight += weight[cc];
+  }
+  for (int bx=1; bx < numOutcomes; bx++) {
+    if (paramMask[bx] >= 0) {
+      double grad = 0;
+      for (int kx=0; kx <= bx-1; kx++) {
+	grad += weight[kx] - pout[kx] * total_weight;
+      }
+      out[paramMask[bx]] = grad;
+    }
   }
   double total_weight=0;
   for (int cc=0; cc < numOutcomes; cc++) {

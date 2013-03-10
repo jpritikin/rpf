@@ -109,8 +109,23 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   double *theta = REAL(r_theta);
     
   for (int px=0; px < numPeople; px++) {
+    int skip=0;
+    for (int dx=0; dx < dims; dx++) {
+      if (!isfinite((theta+px*numAbilities)[dx])) {
+	warning("rpf.prob ignored NAs for person %d", px);
+	for (int ox=0; ox < numOutcomes; ox++) {
+	  out[px*numAbilities + ox] = nan("");
+	}
+	skip=1;
+	break;
+      }
+    }
+    if (skip) continue;
     (*librpf_model[id].prob)(spec, REAL(r_param), theta+px*numAbilities,
 				out+px*numOutcomes);
+    for (int ox=0; ox < numOutcomes; ox++) {
+      if (!isfinite(out[px*numOutcomes + ox])) error("Probability not finite");
+    }
   }
 
   UNPROTECT(1);
@@ -156,8 +171,25 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   double *theta = REAL(r_theta);
     
   for (int px=0; px < numPeople; px++) {
+    int skip=0;
+    for (int dx=0; dx < dims; dx++) {
+      if (!isfinite((theta+px*numAbilities)[dx])) {
+	warning("rpf.logprob ignored NAs for person %d", px);
+	for (int ox=0; ox < numOutcomes; ox++) {
+	  out[px*numAbilities + ox] = nan("");
+	}
+	skip=1;
+	break;
+      }
+    }
+    if (skip) continue;
     (*librpf_model[id].logprob)(spec, REAL(r_param), theta+px*numAbilities,
 				out+px*numOutcomes);
+    for (int ox=0; ox < numOutcomes; ox++) {
+      if (!isfinite(out[px*numOutcomes + ox])) {
+	error("Probability not finite for item model %d", id);
+      }
+    }
   }
 
   UNPROTECT(1);
@@ -187,12 +219,13 @@ rpf_prior_wrapper(SEXP r_spec, SEXP r_param)
   SEXP ret;
   PROTECT(ret = allocVector(REALSXP, 1));
   REAL(ret)[0] = (*librpf_model[id].prior)(spec, REAL(r_param));
+  if (!isfinite(REAL(ret)[0])) error("Prior not finite");
   UNPROTECT(1);
   return ret;
 }
 
 static SEXP
-rpf_gradient_wrapper(SEXP r_spec, SEXP r_param, SEXP r_paramMask,
+rpf_gradient_wrapper(SEXP r_spec, SEXP r_param,
 		     SEXP r_where, SEXP r_weight)
 {
   if (length(r_spec) < RPF_ISpecCount)
@@ -212,9 +245,8 @@ rpf_gradient_wrapper(SEXP r_spec, SEXP r_param, SEXP r_paramMask,
   if (length(r_param) < numParam)
     error("Item has %d parameters, only %d given", numParam, length(r_param));
 
-  if (length(r_paramMask) != numParam)
-    error("Item has %d parameters, but paramMask is of length %d",
-	  numParam, length(r_paramMask));
+  int mask[numParam];
+  for (int px=0; px < numParam; px++) mask[px] = px;
 
   int dims = spec[RPF_ISpecDims];
   if (length(r_where) != dims)
@@ -228,8 +260,16 @@ rpf_gradient_wrapper(SEXP r_spec, SEXP r_param, SEXP r_paramMask,
 
   SEXP ret;
   PROTECT(ret = allocVector(REALSXP, numParam));
-  (*librpf_model[id].gradient)(spec, REAL(r_param), INTEGER(r_paramMask),
+  (*librpf_model[id].gradient)(spec, REAL(r_param), mask,
 			       REAL(r_where), REAL(r_weight), REAL(ret));
+  for (int px=0; px < numParam; px++) {
+    if (!isfinite(REAL(ret)[px])) error("Gradient not finite at step 1");
+  }
+  (*librpf_model[id].gradient)(spec, REAL(r_param), mask,
+			       NULL, REAL(r_weight), REAL(ret));
+  for (int px=0; px < numParam; px++) {
+    if (!isfinite(REAL(ret)[px])) error("Gradient not finite at step 2");
+  }
   UNPROTECT(1);
   return ret;
 }
@@ -241,7 +281,7 @@ static R_CallMethodDef flist[] = {
   {"rpf_prob_wrapper", (DL_FUNC) rpf_prob_wrapper, 3},
   {"rpf_logprob_wrapper", (DL_FUNC) rpf_logprob_wrapper, 3},
   {"rpf_prior_wrapper", (DL_FUNC) rpf_prior_wrapper, 2},
-  {"rpf_gradient_wrapper", (DL_FUNC) rpf_gradient_wrapper, 5},
+  {"rpf_gradient_wrapper", (DL_FUNC) rpf_gradient_wrapper, 4},
   {"orlando_thissen_2000_wrapper", (DL_FUNC) orlando_thissen_2000, 5},
   {"sumscore_observed", (DL_FUNC) sumscore_observed, 4},
   {"rpf_GaussHermiteData", (DL_FUNC) omxGaussHermiteData, 1},

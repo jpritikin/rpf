@@ -127,32 +127,27 @@ setMethod("rpf.prior", signature(m="rpf.base", param="numeric"),
 
 ##' Item parameter gradients
 ##'
-##' Evaluate the partial derivatives of the log likelihood of the item
-##' model with respect to each parameter at \code{where} with
-##' \code{weight}.
-##' 
+##' Evaluate the partial derivatives of the log likelihood with
+##' respect to each parameter at \code{where} with \code{weight}.
+##'
+##' @param m item model
+##' @param param item parameters
+##' @param where location in the latent space
+##' @param weight per outcome weights (typically derived by observation)
+##' @return derivative of the log likelihood with respect to each parameter evaluated at \code{where}
 ##' @aliases
-##' rpf.gradient,rpf.base,numeric,integer,numeric,numeric-method
-##' rpf.gradient,rpf.base,numeric,numeric,numeric,numeric-method
+##' rpf.gradient,rpf.base,numeric,numeric,numeric-method
 ##' rpf_gradient_wrapper
-setGeneric("rpf.gradient", function(m, param, paramMask, where, weight) standardGeneric("rpf.gradient"))
+setGeneric("rpf.gradient", function(m, param, where, weight) standardGeneric("rpf.gradient"))
 
 setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
-                                    paramMask="integer", where="numeric",
-                                    weight="numeric"),
-          function(m, param, paramMask, where, weight) {
+                                    where="numeric", weight="numeric"),
+          function(m, param, where, weight) {
             if (length(m@spec)==0) {
               stop("Not implemented")
             } else {
-              .Call(rpf_gradient_wrapper, m@spec, param, paramMask, where, weight)
+              .Call(rpf_gradient_wrapper, m@spec, param, where, weight)
             }
-          })
-
-setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
-                                    paramMask="numeric", where="numeric",
-                                    weight="numeric"),
-          function(m, param, paramMask, where, weight) {
-            rpf.gradient(m, param, as.integer(paramMask), where, weight)
           })
 
 ##' Map an item model, item parameters, and person trait score into a
