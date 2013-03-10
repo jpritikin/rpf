@@ -25,6 +25,12 @@
 ##' probability of .25 for incorrect and .75 for correct.  A
 ##' polytomous model will have the most incorrect probability at index
 ##' 1 and the most correct probability at the maximum index.
+##' 
+##' All models are always in the logistic metric. To obtain normal
+##' ogive discrimination parameters, divide slope parameters by
+##' \code{\link{rpf.ogive}}. Item models are estimated in
+##' slope-intercept form unless the traditional parameterization is
+##' specifically requested.
 ##'
 ##' This package could also accrete functions to support plotting (but
 ##' not the actual plot functions).
@@ -44,6 +50,9 @@
 NULL
 
 ##' The base class for response probability functions.
+##'
+##' Item specifications should not be modified after creation.
+##' 
 ##' @name Class rpf.base
 ##' @rdname rpf.base-class
 ##' @aliases rpf.base-class

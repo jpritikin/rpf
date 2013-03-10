@@ -6,6 +6,9 @@
 ##' The design matrix can accomodate more person abilities than item
 ##' dimension. Refer to Cai (2010) for design matrix examples.
 ##'
+##' TODO: Add restrictions to design matrix to match restrictions
+##' imposed by Cai (2010).
+##'
 ##' @name rpf.sample
 ##' @param theta either a vector (for 1 dimension) or a matrix (for >1
 ##' dimension) of person abilities or the number of response patterns
