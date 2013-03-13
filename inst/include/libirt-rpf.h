@@ -35,6 +35,9 @@ typedef double (*rpf_prior_t)(const double *spec,
 typedef void (*rpf_gradient_t)(const double *spec,
 			       const double *restrict param, const int *paramMask,
 			       const double *where, const double *weight, double *out);
+typedef void (*rpf_rescale_t)(const double *spec, double *restrict param, const int *paramMask,
+			      const double *restrict mean, const double *restrict choleskyCov);
+typedef void (*rpf_transform_t)(double *spec, double *param);
 
 struct rpf {
   const char name[8];
@@ -44,12 +47,14 @@ struct rpf {
   rpf_prob_t logprob;
   rpf_prior_t prior;
   rpf_gradient_t gradient;
+  rpf_rescale_t rescale;
+  rpf_transform_t prefit;
+  rpf_transform_t postfit;
 };
 
 /* R_GetCCallable */
-typedef void (*get_librpf_t)(int *numModels, const struct rpf **model);
+typedef void (*get_librpf_t)(int *version, int *numModels, const struct rpf **model);
 
-/* or link against libirt-rpf directly */
 extern const struct rpf librpf_model[];
 extern const int librpf_numModels;
 

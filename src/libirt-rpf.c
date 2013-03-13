@@ -16,6 +16,7 @@
 */
 
 #include <math.h>
+#include <string.h>
 #include "../inst/include/libirt-rpf.h"
 
 #ifndef M_LN2
@@ -34,6 +35,15 @@ static const double EXP_STABLE_DOMAIN = 35;
 // unstable as athb < -25. For symmetry, it is necessary to clamp at
 // 25 as well.
 static const double GRADIENT_STABLE_DOMAIN = 25;
+
+static int
+model_name_to_id(const char *target)
+{
+  for (int sx=0; sx < librpf_numModels; sx++) {
+    if (strcmp(librpf_model[sx].name, target) == 0) return sx;
+  }
+  return -1;
+}
 
 static void
 irt_rpf_logprob_adapter(const double *spec,
@@ -211,6 +221,34 @@ irt_rpf_1dim_drm_gradient(const double *spec,
   }
 }
 
+static void
+irt_rpf_1dim_drm_rescale(const double *spec, double *restrict param, const int *paramMask,
+			 const double *restrict mean, const double *restrict choleskyCov)
+{
+  double thresh = param[1] * -param[0];
+  if (paramMask[0] >= 0) {
+    param[0] *= choleskyCov[0];
+  }
+  if (paramMask[1] >= 0) {
+    thresh += param[0] * mean[0];
+    param[1] = thresh / -param[0];
+  }
+}
+
+static void
+irt_rpf_1dim_drm_prefit(double *spec, double *restrict param)
+{
+  param[1] *= -param[0];
+  spec[RPF_ISpecID] = model_name_to_id("drm1+");
+}
+
+static void
+irt_rpf_1dim_drm_postfit(double *spec, double *restrict param)
+{
+  param[1] /= -param[0];
+  spec[RPF_ISpecID] = model_name_to_id("drm1");
+}
+
 static int
 irt_rpf_mdim_drm_numSpec(const double *spec)
 { return RPF_ISpecCount + 3; }
@@ -325,6 +363,22 @@ irt_rpf_mdim_drm_gradient(const double *spec,
   }
 }
 
+static void
+irt_rpf_mdim_drm_rescale(const double *spec, double *restrict param, const int *paramMask,
+			 const double *restrict mean, const double *restrict choleskyCov)
+{
+  int numDims = spec[RPF_ISpecDims];
+  for (int d1=0; d1 < numDims; d1++) {
+    if (paramMask[d1] < 0) continue;
+    double result=0;
+    for (int d2=d1; d2 < numDims; d2++) {
+      result += param[d2] * choleskyCov[d1 * numDims + d2];
+    }
+    param[d1] = result;
+    param[numDims] += result * mean[d1];
+  }
+}
+
 static int
 irt_rpf_1dim_gpcm_numSpec(const double *spec)
 { return RPF_ISpecCount; }
@@ -332,34 +386,6 @@ irt_rpf_1dim_gpcm_numSpec(const double *spec)
 static int
 irt_rpf_1dim_gpcm_numParam(const double *spec)
 { return spec[RPF_ISpecOutcomes]; }
-
-static void
-irt_rpf_1dim_gpcm_logprob(const double *spec,
-			  const double *restrict param, const double *restrict th,
-			  double *restrict out)
-{
-  int numOutcomes = spec[RPF_ISpecOutcomes];
-  double discr = param[0];
-  double term1[numOutcomes];
-
-  term1[numOutcomes - 1] = 0;
-
-  for (int tx=0; tx < numOutcomes-1; tx++) {
-    term1[tx] = -discr * (*th - param[tx+1]);
-  }
-  double sum = 0;
-  double denom = 0;
-  double term2[numOutcomes];
-  for (int tx=numOutcomes-1; tx >= 0; tx--) {
-    sum += term1[tx];
-    term2[tx] = sum;
-    denom += exp(sum);
-  }
-  denom = log(denom);
-  for (int tx=0; tx < numOutcomes; tx++) {
-    out[tx] = term2[tx] - denom;
-  }
-}
 
 static void
 irt_rpf_1dim_gpcm_prob(const double *spec,
@@ -483,29 +509,63 @@ irt_rpf_1dim_gpcm_gradient(const double *spec,
       out[paramMask[bx]] = grad;
     }
   }
-  double total_weight=0;
-  for (int cc=0; cc < numOutcomes; cc++) {
-    total_weight += weight[cc];
+}
+
+static void
+irt_rpf_1dim_gpcm_rescale(const double *spec, double *restrict param, const int *paramMask,
+			  const double *restrict mean, const double *restrict choleskyCov)
+{
+  int numOutcomes = spec[RPF_ISpecOutcomes];
+  double thresh[numOutcomes-1];
+  for (int tx=0; tx < numOutcomes-1; tx++) {
+    thresh[tx] = param[tx+1] * -param[0];
   }
-  for (int bx=1; bx < numOutcomes; bx++) {
-    if (paramMask[bx] >= 0) {
-      double grad = 0;
-      for (int kx=0; kx <= bx-1; kx++) {
-	grad += weight[kx] - pout[kx] * total_weight;
-      }
-      out[bx] = grad;
-    }
+  if (paramMask[0] >= 0) {
+    param[0] *= choleskyCov[0];
+  }
+  double shift = param[0] * mean[0];
+  for (int tx=0; tx < numOutcomes-1; tx++) {
+    if (paramMask[tx+1] < 0) continue;
+    thresh[tx] += shift;
+    param[tx+1] = thresh[tx] / -param[0];
   }
 }
 
+static void noop() {}
+
 const struct rpf librpf_model[] = {
-  { "drm1",
+  { "drm1-",
     irt_rpf_1dim_drm_numSpec,
     irt_rpf_1dim_drm_numParam,
     irt_rpf_1dim_drm_prob,
     irt_rpf_logprob_adapter,
     irt_rpf_1dim_drm_prior,
     irt_rpf_1dim_drm_gradient,
+    irt_rpf_1dim_drm_rescale,
+    noop,
+    noop,
+  },
+  { "drm1",
+    irt_rpf_1dim_drm_numSpec,
+    irt_rpf_1dim_drm_numParam,
+    irt_rpf_1dim_drm_prob,
+    irt_rpf_logprob_adapter,
+    0,
+    0,
+    0,
+    irt_rpf_1dim_drm_prefit,
+    noop,
+  },
+  { "drm1+",
+    irt_rpf_mdim_drm_numSpec,
+    irt_rpf_mdim_drm_numParam,
+    irt_rpf_mdim_drm_prob,
+    irt_rpf_logprob_adapter,
+    irt_rpf_mdim_drm_prior,
+    irt_rpf_mdim_drm_gradient,
+    irt_rpf_mdim_drm_rescale,
+    noop,
+    irt_rpf_1dim_drm_postfit,
   },
   { "drm",
     irt_rpf_mdim_drm_numSpec,
@@ -514,14 +574,20 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     irt_rpf_mdim_drm_prior,
     irt_rpf_mdim_drm_gradient,
+    irt_rpf_mdim_drm_rescale,
+    noop,
+    noop
   },
   { "gpcm1",
     irt_rpf_1dim_gpcm_numSpec,
     irt_rpf_1dim_gpcm_numParam,
     irt_rpf_1dim_gpcm_prob,
-    irt_rpf_1dim_gpcm_logprob,
+    irt_rpf_logprob_adapter,
     irt_rpf_1dim_gpcm_prior,
     irt_rpf_1dim_gpcm_gradient,
+    irt_rpf_1dim_gpcm_rescale,
+    noop,
+    noop
   }
 };
 
