@@ -166,6 +166,7 @@ setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
 ##' @docType methods
 ##' @aliases
 ##' rpf.prob,rpf.1dim,numeric,numeric-method
+##' rpf.prob,rpf.mdim,numeric,numeric-method
 ##' rpf.prob,rpf.mdim,numeric,matrix-method
 ##' rpf.prob,rpf.base,data.frame,numeric-method
 ##' rpf.prob,rpf.base,matrix,numeric-method
@@ -202,6 +203,7 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf.logprob,rpf.1dim,numeric,numeric-method
 ##' rpf.logprob,rpf.1dim,numeric,matrix-method
 ##' rpf.logprob,rpf.mdim,numeric,matrix-method
+##' rpf.logprob,rpf.mdim,numeric,numeric-method
 ##' rpf_logprob_wrapper
 ##' @export
 ##' @examples
@@ -227,6 +229,11 @@ setMethod("rpf.logprob", signature(m="rpf.mdim", param="numeric", theta="matrix"
             } else {
               t(.Call(rpf_logprob_wrapper, m@spec, param, t(theta)))
             }
+          })
+
+setMethod("rpf.logprob", signature(m="rpf.mdim", param="numeric", theta="numeric"),
+          function(m, param, theta) {
+            rpf.logprob(m, param, as.matrix(theta))
           })
 
 setMethod("rpf.logprob", signature(m="rpf.1dim", param="numeric", theta="matrix"),
@@ -272,6 +279,11 @@ setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric", theta="matrix"),
             rpf.prob(m, param, as.numeric(theta))
           })
 
+setMethod("rpf.prob", signature(m="rpf.mdim", param="numeric", theta="numeric"),
+          function(m, param, theta) {
+            rpf.prob(m, param, as.matrix(theta))
+          })
+
 ##' Map an item model, item parameters, and person trait score into a
 ##' information vector
 ##'
@@ -283,6 +295,7 @@ setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric", theta="matrix"),
 ##' @aliases
 ##' rpf.info,rpf.base,data.frame,numeric-method
 ##' rpf.info,rpf.1dim.drm,numeric,numeric-method
+##' rpf.info,rpf.mdim.drm,numeric,numeric-method
 ##' rpf.info,rpf.1dim.graded,numeric,numeric-method
 ##' @export
 ##' @examples

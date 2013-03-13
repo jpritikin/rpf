@@ -114,10 +114,9 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh
 
 ##' Find the point where an item provides mean maximum information
 ##'
-##' This is a point estimate of the mean difficulty of items that do
-##' not offer easily interpretable parameters such as the Generalized
-##' PCM. The information curve need not be unimodal, so it is
-##' necessary to integrate across the latent space.
+##' @param spec an item spec
+##' @param iparam an item parameter vector
+##' @param grain the step size for numerical integration (optional)
 rpf.mean.info1 <- function(spec, iparam, grain=.1) {
   range <- 9
   dim <- spec@dimensions
@@ -127,6 +126,16 @@ rpf.mean.info1 <- function(spec, iparam, grain=.1) {
   sum(info * grid) / sum(info)
 }
 
+##' Find the point where an item provides mean maximum information
+##'
+##' This is a point estimate of the mean difficulty of items that do
+##' not offer easily interpretable parameters such as the Generalized
+##' PCM. Since the information curve may not be unimodal, this
+##' function integrates across the latent space.
+##' 
+##' @param spec list of item specs
+##' @param param list or matrix of item parameters
+##' @param grain the step size for numerical integration (optional)
 rpf.mean.info <- function(spec, param, grain=.1) {
   ret <- list()
   for (ix in 1:length(spec)) {

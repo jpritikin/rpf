@@ -8,6 +8,9 @@
 ##' @param multidimensional whether to use a multidimensional model.
 ##' Defaults to \code{TRUE} when \code{dimensions>1} and
 ##' \code{FALSE} when \code{dimensions==1}.
+##' @param a.prior.sdlog under construction
+##' @param poor if TRUE, use the traditional parameterization of
+##' the 1d model instead of the slope-intercept parameterization
 ##' @return an item model
 ##' @export
 ##' @references Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
