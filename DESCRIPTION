@@ -1,8 +1,8 @@
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.7
-Date: 2013-01-25
+Version: 0.8
+Date: 2013-03-13
 Authors@R: c(person("Joshua",family="Pritikin",
     email="jpritikin@pobox.com",
     role=c('cre','aut')),
