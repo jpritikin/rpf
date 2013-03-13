@@ -112,6 +112,35 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh
   df
 }
 
+##' Find the point where an item provides mean maximum information
+##'
+##' This is a point estimate of the mean difficulty of items that do
+##' not offer easily interpretable parameters such as the Generalized
+##' PCM. The information curve need not be unimodal, so it is
+##' necessary to integrate across the latent space.
+rpf.mean.info1 <- function(spec, iparam, grain=.1) {
+  range <- 9
+  dim <- spec@dimensions
+  if (dim != 1) stop("Not implemented")
+  grid <- seq(-range, range, grain)
+  info <- rpf.info(spec, iparam, grid)
+  sum(info * grid) / sum(info)
+}
+
+rpf.mean.info <- function(spec, param, grain=.1) {
+  ret <- list()
+  for (ix in 1:length(spec)) {
+    iparam <- c()
+    if (is.list(param)) {
+      iparam <- param[[ix]]
+    } else {
+      iparam <- param[ix,]
+    }
+    ret[[ix]] <- rpf.mean.info1(spec[[ix]], iparam, grain)
+  }
+  ret
+}
+
 ##' Compute S-Chi-squared fit statistic for 1 item
 ##'
 ##' Implements the Kang & Chen (2007) polytomous extension to
