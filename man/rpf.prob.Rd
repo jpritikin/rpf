@@ -13,6 +13,7 @@
 \alias{rpf.prob,rpf.mdim.mcm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.nrm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim,numeric,matrix-method}
+\alias{rpf.prob,rpf.mdim,numeric,numeric-method}
 \alias{rpf_prob_wrapper}
 \title{Map an item model, item parameters, and person trait score into a
 probability vector}

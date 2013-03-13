@@ -17,7 +17,20 @@
 ##' Item model parameters are passed around as a numeric vector. A 1D
 ##' matrix is also acceptable. Regardless of model, parameters are
 ##' always ordered as follows: discrimination ("a"), difficulty ("b"),
-##' and guessing ("c").
+##' and guessing ("c"). If person ability ranges from low negative to
+##' high positive then probabilities are output from incorrect to
+##' correct. That is, a low ability person (e.g., ability = -2) will
+##' be more likely to get an item incorrect than correct. For example,
+##' a dichotomous model that returns [.25, .75] indicates a
+##' probability of .25 for incorrect and .75 for correct.  A
+##' polytomous model will have the most incorrect probability at index
+##' 1 and the most correct probability at the maximum index.
+##' 
+##' All models are always in the logistic metric. To obtain normal
+##' ogive discrimination parameters, divide slope parameters by
+##' \code{\link{rpf.ogive}}. Item models are estimated in
+##' slope-intercept form unless the traditional parameterization is
+##' specifically requested.
 ##'
 ##' This package could also accrete functions to support plotting (but
 ##' not the actual plot functions).
@@ -37,6 +50,9 @@
 NULL
 
 ##' The base class for response probability functions.
+##'
+##' Item specifications should not be modified after creation.
+##' 
 ##' @name Class rpf.base
 ##' @rdname rpf.base-class
 ##' @aliases rpf.base-class
@@ -111,23 +127,26 @@ setMethod("rpf.prior", signature(m="rpf.base", param="numeric"),
 
 ##' Item parameter gradients
 ##'
-##' Evaluate the partial derivatives of the log likelihood of the item
-##' model with respect to each parameter at \code{where} with
-##' \code{weight}.
-##' 
+##' Evaluate the partial derivatives of the log likelihood with
+##' respect to each parameter at \code{where} with \code{weight}.
+##'
+##' @param m item model
+##' @param param item parameters
+##' @param where location in the latent space
+##' @param weight per outcome weights (typically derived by observation)
+##' @return derivative of the log likelihood with respect to each parameter evaluated at \code{where}
 ##' @aliases
-##' rpf.gradient,rpf.base,numeric,integer,numeric,numeric-method
+##' rpf.gradient,rpf.base,numeric,numeric,numeric-method
 ##' rpf_gradient_wrapper
-setGeneric("rpf.gradient", function(m, param, paramMask, where, weight) standardGeneric("rpf.gradient"))
+setGeneric("rpf.gradient", function(m, param, where, weight) standardGeneric("rpf.gradient"))
 
 setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
-                                    paramMask="integer", where="numeric",
-                                    weight="numeric"),
-          function(m, param, paramMask, where, weight) {
+                                    where="numeric", weight="numeric"),
+          function(m, param, where, weight) {
             if (length(m@spec)==0) {
               stop("Not implemented")
             } else {
-              .Call(rpf_gradient_wrapper, m@spec, param, paramMask, where, weight)
+              .Call(rpf_gradient_wrapper, m@spec, param, where, weight)
             }
           })
 
@@ -147,6 +166,7 @@ setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
 ##' @docType methods
 ##' @aliases
 ##' rpf.prob,rpf.1dim,numeric,numeric-method
+##' rpf.prob,rpf.mdim,numeric,numeric-method
 ##' rpf.prob,rpf.mdim,numeric,matrix-method
 ##' rpf.prob,rpf.base,data.frame,numeric-method
 ##' rpf.prob,rpf.base,matrix,numeric-method
@@ -183,6 +203,7 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf.logprob,rpf.1dim,numeric,numeric-method
 ##' rpf.logprob,rpf.1dim,numeric,matrix-method
 ##' rpf.logprob,rpf.mdim,numeric,matrix-method
+##' rpf.logprob,rpf.mdim,numeric,numeric-method
 ##' rpf_logprob_wrapper
 ##' @export
 ##' @examples
@@ -208,6 +229,11 @@ setMethod("rpf.logprob", signature(m="rpf.mdim", param="numeric", theta="matrix"
             } else {
               t(.Call(rpf_logprob_wrapper, m@spec, param, t(theta)))
             }
+          })
+
+setMethod("rpf.logprob", signature(m="rpf.mdim", param="numeric", theta="numeric"),
+          function(m, param, theta) {
+            rpf.logprob(m, param, as.matrix(theta))
           })
 
 setMethod("rpf.logprob", signature(m="rpf.1dim", param="numeric", theta="matrix"),
@@ -253,6 +279,11 @@ setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric", theta="matrix"),
             rpf.prob(m, param, as.numeric(theta))
           })
 
+setMethod("rpf.prob", signature(m="rpf.mdim", param="numeric", theta="numeric"),
+          function(m, param, theta) {
+            rpf.prob(m, param, as.matrix(theta))
+          })
+
 ##' Map an item model, item parameters, and person trait score into a
 ##' information vector
 ##'
@@ -264,6 +295,7 @@ setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric", theta="matrix"),
 ##' @aliases
 ##' rpf.info,rpf.base,data.frame,numeric-method
 ##' rpf.info,rpf.1dim.drm,numeric,numeric-method
+##' rpf.info,rpf.mdim.drm,numeric,numeric-method
 ##' rpf.info,rpf.1dim.graded,numeric,numeric-method
 ##' @export
 ##' @examples
@@ -366,8 +398,7 @@ setClass("rpf.1dim.grm", contains='rpf.1dim.graded',
 ##' @name Class rpf.1dim.gpcm
 ##' @rdname rpf.1dim.gpcm-class
 ##' @aliases rpf.1dim.gpcm-class
-setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded',
-         representation(a.prior.sdlog="numeric"))
+setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded')
 
 ##' Unidimensional dichotomous item models (1PL, 2PL, and 3PL).
 ##'
@@ -376,10 +407,7 @@ setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded',
 ##' @rdname rpf.1dim.drm-class
 ##' @aliases rpf.1dim.drm-class
 setClass("rpf.1dim.drm", contains='rpf.1dim',
-         representation(guessing="numeric",
-                        a.prior.sdlog="numeric",
-                        c.prior.logit="numeric",
-                        c.prior.sd="numeric"))
+         representation(c.prior.logit="numeric"))
 
 ##' Multidimensional dichotomous item models (M1PL, M2PL, and M3PL).
 ##'
@@ -388,10 +416,7 @@ setClass("rpf.1dim.drm", contains='rpf.1dim',
 ##' @rdname rpf.mdim.drm-class
 ##' @aliases rpf.mdim.drm-class
 setClass("rpf.mdim.drm", contains='rpf.mdim',
-         representation(guessing="numeric",
-                        a.prior.sdlog="numeric",
-                        c.prior.logit="numeric",
-                        c.prior.sd="numeric"))
+         representation(c.prior.logit="numeric"))
 
 ##' The multidimensional graded response item model.
 ##'
@@ -408,8 +433,7 @@ setClass("rpf.mdim.grm", contains='rpf.mdim.graded',
 ##' @name Class rpf.mdim.gpcm
 ##' @rdname rpf.mdim.gpcm-class
 ##' @aliases rpf.mdim.gpcm-class
-setClass("rpf.mdim.gpcm", contains='rpf.mdim.graded',
-         representation(a.prior.sdlog="numeric"))
+setClass("rpf.mdim.gpcm", contains='rpf.mdim.graded')
 
 ##' The nominal response item model (both unidimensional and
 ##' multidimensional models have the same parameterization).

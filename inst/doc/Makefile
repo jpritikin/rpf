@@ -9,3 +9,6 @@ clean:
 
 %.pdf: %.Rnw
 	$(R_HOME)/bin/Rscript -e "library(knitr); knit2pdf('$*.Rnw')"
+
+%.R: %.Rnw
+	$(R_HOME)/bin/Rscript -e "library(knitr); knit('$*.Rnw', tangle=TRUE)"

@@ -6,12 +6,15 @@
 ##' The design matrix can accomodate more person abilities than item
 ##' dimension. Refer to Cai (2010) for design matrix examples.
 ##'
+##' TODO: Add restrictions to design matrix to match restrictions
+##' imposed by Cai (2010).
+##'
 ##' @name rpf.sample
 ##' @param theta either a vector (for 1 dimension) or a matrix (for >1
 ##' dimension) of person abilities or the number of response patterns
 ##' to generate randomly
 ##' @param items a list of item models
-##' @param params a list of item parameters. If omitted, random item
+##' @param params a list or matrix of item parameters. If omitted, random item
 ##' parameters are generated for each item model.
 ##' @param design a matrix assigning person abilities to item dimensions
 ##' @param prefix prefix for column label (optional)
@@ -86,11 +89,17 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
   ret <- list()
   for (ix in 1:numItems) {
     i <- items[[ix]]
-    param <- params[[ix]]
+    param <- c()
+    if (is.list(params)) {
+      param <- params[[ix]]
+    } else {
+      param <- params[,ix]  # item parameters are in columns
+    }
     cols <- design[,ix]
     cols <- cols[!is.na(cols)]
     i.theta <- as.matrix(theta[,cols])
     P <- rpf.prob(i, param[1:i@numParam], i.theta)
+#    if (any(is.na(P))) stop(paste("Item", i@spec, "with param", param," produced NAs"))
     ret[[ix]] <- as.ordered(apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F))
   }
   ret <- as.data.frame(ret)

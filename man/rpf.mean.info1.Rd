@@ -1,0 +1,19 @@
+\name{rpf.mean.info1}
+\alias{rpf.mean.info1}
+\title{Find the point where an item provides mean maximum information}
+\usage{
+  rpf.mean.info1(spec, iparam, grain = 0.1)
+}
+\arguments{
+  \item{spec}{an item spec}
+
+  \item{iparam}{an item parameter vector}
+
+  \item{grain}{the step size for numerical integration
+  (optional)}
+}
+\description{
+  Find the point where an item provides mean maximum
+  information
+}
+

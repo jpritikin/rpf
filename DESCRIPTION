@@ -1,12 +1,13 @@
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.7
-Date: 2013-01-25
+Version: 0.8
+Date: 2013-03-13
 Authors@R: c(person("Joshua",family="Pritikin",
         email="jpritikin@pobox.com", role=c('cre','aut')),
         person("Jonathan",family="Weeks", email="weeksjp@gmail.com",
-        role=c('ctb')))
+        role=c('ctb')), person("Alexander",family="Blocker",
+        email="ablocker@gmail.com", role=c('ctb')))
 Description: The purpose of this package is to factor out logic and
         math common to Item Response Theory fitting, diagnostics, and
         analysis. It is envisioned as core support code suitable for
@@ -21,8 +22,10 @@ Depends: methods, R (>= 2.15.0)
 Collate: 'classes.R' 'drm.R' 'gpcm.R' 'nrm.R' 'mcm.R' 'graded.R'
         'grm.R' 'sample.R' 'diagnose.R' 'ms.R' 'science.R'
 URL: https://gitorious.org/rpf
-Packaged: 2013-01-25 14:26:00 UTC; joshua
-Author: Joshua Pritikin [cre, aut], Jonathan Weeks [ctb]
+Packaged: 2013-03-13 18:05:57 UTC; joshua
+Author: Joshua Pritikin [cre, aut], Jonathan Weeks [ctb], Alexander
+        Blocker [ctb]
 Maintainer: Joshua Pritikin <jpritikin@pobox.com>
+NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2013-01-25 18:29:52
+Date/Publication: 2013-03-13 19:46:13

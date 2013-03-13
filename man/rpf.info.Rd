@@ -4,6 +4,7 @@
 \alias{rpf.info,rpf.1dim.drm,numeric,numeric-method}
 \alias{rpf.info,rpf.1dim.graded,numeric,numeric-method}
 \alias{rpf.info,rpf.base,data.frame,numeric-method}
+\alias{rpf.info,rpf.mdim.drm,numeric,numeric-method}
 \title{Map an item model, item parameters, and person trait score into a
 information vector}
 \arguments{

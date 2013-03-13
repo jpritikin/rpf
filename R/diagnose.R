@@ -111,3 +111,142 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh
   }
   df
 }
+
+##' Find the point where an item provides mean maximum information
+##'
+##' @param spec an item spec
+##' @param iparam an item parameter vector
+##' @param grain the step size for numerical integration (optional)
+rpf.mean.info1 <- function(spec, iparam, grain=.1) {
+  range <- 9
+  dim <- spec@dimensions
+  if (dim != 1) stop("Not implemented")
+  grid <- seq(-range, range, grain)
+  info <- rpf.info(spec, iparam, grid)
+  sum(info * grid) / sum(info)
+}
+
+##' Find the point where an item provides mean maximum information
+##'
+##' This is a point estimate of the mean difficulty of items that do
+##' not offer easily interpretable parameters such as the Generalized
+##' PCM. Since the information curve may not be unimodal, this
+##' function integrates across the latent space.
+##' 
+##' @param spec list of item specs
+##' @param param list or matrix of item parameters
+##' @param grain the step size for numerical integration (optional)
+rpf.mean.info <- function(spec, param, grain=.1) {
+  ret <- list()
+  for (ix in 1:length(spec)) {
+    iparam <- c()
+    if (is.list(param)) {
+      iparam <- param[[ix]]
+    } else {
+      iparam <- param[ix,]
+    }
+    ret[[ix]] <- rpf.mean.info1(spec[[ix]], iparam, grain)
+  }
+  ret
+}
+
+##' Compute S-Chi-squared fit statistic for 1 item
+##'
+##' Implements the Kang & Chen (2007) polytomous extension to
+##' S-Chi-squared statistic of Orlando & Thissen (2000). Fails in the
+##' presence of missing data.
+##'
+##' NOTE: IRTPRO 2.1 uses an equal interval quadrature rule by default.
+##'
+##' WARNING: The algorithm for collapsing low-count cells has not been
+##' tested thoroughly.
+##'
+##' @param spec a list of item specifications
+##' @param param item paramters
+##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
+##' @param item the item of interest
+##' @param observed a matrix of observed raw scores by the outcome of the item of interest
+##' @param quad the quadrature rule (default is G-H with 49 points)
+##'
+##' @references Kang, T. and Chen, T. T. (2007). An investigation of
+##' the performance of the generalized S-Chisq item-fit index for
+##' polytomous IRT models. ACT Research Report Series.
+##'
+##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
+##' Item-Fit Indices for Dichotomous Item Response Theory Models.
+##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
+rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
+  if (missing(quad)) quad <- rpf.GaussHermiteData(49)
+  c.spec <- lapply(spec, function(m) {
+    if (length(m@spec)==0) { stop("Not implemented") }
+    else { m@spec }
+  })
+
+  out <- .Call(orlando_thissen_2000_wrapper, c.spec, param, item, observed, quad)
+  observed <- c(out$observed)
+  expected <- c(out$expected)
+  mask <- expected!=0
+  out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+  out$df <- out$df - free;
+  out$p.value <- dchisq(out$statistic, out$df)
+  out
+}
+
+##' Compute S-Chi-squared fit statistic for a set of items
+##'
+##' Runs \code{\link{rpf.ot2000.chisq1}} for every item and accumulates
+##' the results.
+##'
+##' @param spec a list of item specifications
+##' @param param item paramters in columns
+##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
+##' @param data a data frame or matrix of response patterns, 1 per row
+##' @param quad the quadrature rule (default is G-H with 49 points)
+##' @return
+##' a list of output from \code{\link{rpf.ot2000.chisq1}}
+rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
+  if (missing(quad)) quad <- rpf.GaussHermiteData(49)
+  if (is.data.frame(data)) {
+    data <- sapply(data, unclass)
+  }
+  if (dim(data)[2] != length(spec)) stop("Dim mismatch between data and spec")
+  if (dim(param)[2] != length(spec)) stop("Dim mismatch between param and spec")
+  context <- 1:length(spec)
+  got = list()
+  for (interest in 1:length(spec)) {
+    if (0) {
+      # hard to persuade R to do this correctly
+      ob.table <- table(apply(data[,context[context != interest]], 1, sum), data[,interest])
+      sumscores <- (length(spec)-1):(sum(sapply(spec, function(m) slot(m,'numOutcomes'))) - spec[[interest]]@numOutcomes)
+      observed <- array(0, dim=c(length(sumscores), spec[[interest]]@numOutcomes))
+      rowmap <- match(sumscores, rownames(ob.table))
+      rowmap <- rowmap[!is.na(rowmap)]
+      observed[rowmap,] <- ob.table
+    } else {
+      observed <- .Call(sumscore_observed, sum(sapply(spec, function(m) slot(m,'numOutcomes'))),
+                        data, interest, spec[[interest]]@numOutcomes)
+    }
+    ot.out <- rpf.ot2000.chisq1(spec, param, sum(free[,interest]), interest, observed, quad)
+    got[[interest]] <- ot.out
+  }
+  got
+}
+
+##' Compute Gauss-Hermite quadrature rule
+##'
+##' Computes Gauss-Hermite quadrature rule of requested order using the
+##' Golub-Welsch algorithm. This is very fast and numerically
+##' stable. It can handle quadrature of order 1000+.
+##' @param
+##' n Order of Gauss-Hermite rule to compute (number of nodes)
+##' @return A list containing the node positions (x) and the
+##' quadrature weights (w) for the requested rule.
+##' @author
+##' Alexander W Blocker <ablocker@@gmail.com>
+##' @aliases
+##' rpf_GaussHermiteData
+##' @references
+##' Golub, G. H. and Welsch, J. H. (1969). Calculation of
+##' Gauss Quadrature Rules. Mathematics of Computation 23 (106):
+##' 221-230
+rpf.GaussHermiteData <- function(n) .Call(rpf_GaussHermiteData, n)

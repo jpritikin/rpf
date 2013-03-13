@@ -11,9 +11,9 @@
 
   \item{items}{a list of item models}
 
-  \item{params}{a list of item parameters. If omitted,
-  random item parameters are generated for each item
-  model.}
+  \item{params}{a list or matrix of item parameters. If
+  omitted, random item parameters are generated for each
+  item model.}
 
   \item{design}{a matrix assigning person abilities to item
   dimensions}
@@ -31,6 +31,9 @@
   The design matrix can accomodate more person abilities
   than item dimension. Refer to Cai (2010) for design
   matrix examples.
+
+  TODO: Add restrictions to design matrix to match
+  restrictions imposed by Cai (2010).
 }
 \examples{
 # 1 dimensional items
