@@ -59,7 +59,10 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
   res / sqrt(variance)
 }
 
-##' Calculate item and person fit statistics
+##' Calculate item and person Rasch fit statistics
+##'
+##' Note: These statistics are only appropriate if all discrimination
+##' parameters are fixed equal.
 ##'
 ##' Exact distributional properties of these statistics are unknown
 ##' (Masters & Wright, 1997, p. 112).  For details on the calculation,
