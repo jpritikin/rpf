@@ -1,6 +1,6 @@
-##' Calculate cell moments
+##' Calculate cell central moments
 ##' 
-##' Popular moments include 2 (variance) and 4 (kurtosis).
+##' Popular central moments include 2 (variance) and 4 (kurtosis).
 ##' 
 ##' @param spec list of item models
 ##' @param params data frame of item parameters, 1 per row
@@ -92,23 +92,32 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' @export
 rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh.exact=TRUE) {
 # why permit na.rm=FALSE ? TODO
+  if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")
   r.var <- rpf.1dim.moment(spec, params, scores,2)
   r.k <- rpf.1dim.moment(spec, params, scores,4)
   r.z <- rpf.1dim.stdresidual(spec, params, responses, scores)
-  wms.var <- apply(r.k - r.var^2, margin, sum, na.rm=na.rm)/
-    apply(r.var, margin, sum, na.rm=na.rm)^2
-  wms.sd <- sqrt(wms.var)
-  fudge <- wms.sd/3
-  if (!wh.exact) fudge <- 0
+  outfit.n <- apply(r.var, margin, function(l) sum(!is.na(l)))
+  outfit.sd <- NA
+# copied from mirt; doesn't work TODO
+#  outfit.sd <- sqrt(apply(r.k / r.var^2, margin, sum, na.rm=na.rm) /
+#                    outfit.n^2 - 1/outfit.n)
+  outfit.fudge <- outfit.sd/3
+  infit.sd <- sqrt(apply(r.k - r.var^2, margin, sum, na.rm=na.rm)/
+    apply(r.var, margin, sum, na.rm=na.rm)^2)
+  infit.fudge <- infit.sd/3
+  if (!wh.exact) {
+    infit.fudge <- 0
+    outfit.fudge <- 0
+  }
   outfit <- apply(r.z^2, margin, sum, na.rm=na.rm)/
                        apply(r.z, margin, function (l) sum(!is.na(l)))
-  outfit.z <- (outfit^(1/3) - 1)*(3/wms.sd) + fudge
+  outfit.z <- (outfit^(1/3) - 1)*(3/outfit.sd) + outfit.fudge
   infit <- apply(r.z^2 * r.var, margin, sum, na.rm=na.rm)/
                      apply(r.var, margin, sum, na.rm=na.rm)
-  infit.z <- (infit^(1/3) - 1)*(3/wms.sd) + fudge
+  infit.z <- (infit^(1/3) - 1)*(3/infit.sd) + infit.fudge
   df <- data.frame(infit, infit.z, outfit, outfit.z)
   if (margin == 2) {
-    df$name <- rownames(params)    
+    df$name <- rownames(params)
   } else {
     df$name <- rownames(responses)
   }
