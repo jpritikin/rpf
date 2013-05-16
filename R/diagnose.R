@@ -190,7 +190,7 @@ rpf.mean.info <- function(spec, param, grain=.1) {
 rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
   if (missing(quad)) quad <- rpf.GaussHermiteData(49)
   c.spec <- lapply(spec, function(m) {
-    if (length(m@spec)==0) { stop("Not implemented") }
+    if (length(m@spec)==0) { stop("Item model",m,"is not fully implemented") }
     else { m@spec }
   })
 

@@ -340,6 +340,8 @@ SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observe
 
 SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes)
 {
+  if (!isInteger(r_data)) error("Data must be of integer type");
+
   int data_rows;
   int data_cols;
   getMatrixDims(r_data, &data_rows, &data_cols);
