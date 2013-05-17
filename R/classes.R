@@ -145,17 +145,17 @@ setMethod("rpf.prior", signature(m="rpf.base", param="numeric"),
 ##' @seealso
 ##' The numDeriv package.
 ##' @aliases
-##' rpf.deriv,rpf.base,numeric,numeric,numeric-method
-##' rpf_deriv_wrapper
-setGeneric("rpf.deriv", function(m, param, where, weight) standardGeneric("rpf.deriv"))
+##' rpf.dLL,rpf.base,numeric,numeric,numeric-method
+##' rpf_dLL_wrapper
+setGeneric("rpf.dLL", function(m, param, where, weight) standardGeneric("rpf.dLL"))
 
-setMethod("rpf.deriv", signature(m="rpf.base", param="numeric",
+setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
                                  where="numeric", weight="numeric"),
           function(m, param, where, weight) {
             if (length(m@spec)==0) {
               stop("Not implemented")
             } else {
-              .Call(rpf_deriv_wrapper, m@spec, param, where, weight)
+              .Call(rpf_dLL_wrapper, m@spec, param, where, weight)
             }
           })
 

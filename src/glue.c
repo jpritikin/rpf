@@ -225,7 +225,7 @@ rpf_prior_wrapper(SEXP r_spec, SEXP r_param)
 }
 
 static SEXP
-rpf_deriv_wrapper(SEXP r_spec, SEXP r_param,
+rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
 		  SEXP r_where, SEXP r_weight)
 {
   if (length(r_spec) < RPF_ISpecCount)
@@ -258,13 +258,12 @@ rpf_deriv_wrapper(SEXP r_spec, SEXP r_param,
   const int numDeriv = numParam + numParam*(numParam+1)/2;
   SEXP ret;
   PROTECT(ret = allocVector(REALSXP, numDeriv));
-  (*librpf_model[id].deriv)(spec, REAL(r_param),
+  (*librpf_model[id].dLL1)(spec, REAL(r_param),
 			    REAL(r_where), 1.0, REAL(r_weight), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
     if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 1", px);
   }
-  (*librpf_model[id].deriv)(spec, REAL(r_param),
-			    NULL, 0, REAL(r_weight), REAL(ret));
+  (*librpf_model[id].dLL2)(spec, REAL(r_param), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
     if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 2", px);
   }
@@ -279,7 +278,7 @@ static R_CallMethodDef flist[] = {
   {"rpf_prob_wrapper", (DL_FUNC) rpf_prob_wrapper, 3},
   {"rpf_logprob_wrapper", (DL_FUNC) rpf_logprob_wrapper, 3},
   {"rpf_prior_wrapper", (DL_FUNC) rpf_prior_wrapper, 2},
-  {"rpf_deriv_wrapper", (DL_FUNC) rpf_deriv_wrapper, 4},
+  {"rpf_dLL_wrapper", (DL_FUNC) rpf_dLL_wrapper, 4},
   {"orlando_thissen_2000_wrapper", (DL_FUNC) orlando_thissen_2000, 5},
   {"sumscore_observed", (DL_FUNC) sumscore_observed, 4},
   {"rpf_GaussHermiteData", (DL_FUNC) omxGaussHermiteData, 1},

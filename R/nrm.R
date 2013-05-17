@@ -1,3 +1,47 @@
+# Copied from flexmirt.R
+Tnom.trend <- function(nc) {
+  T <- matrix(0,nc,nc-1)
+  for (i in 1:nc) {
+    T[i,1] <- i-1
+  }
+  for (k in 2:(nc-1)) {
+    for (i in 2:(nc-1)) {
+      T[k,i] <- sin(pi*(i-1)*(k-1)/(nc-1))
+    }
+  }
+  return(T)
+}
+
+# Copied from flexmirt.R
+Tnom.id <- function(nc) {
+  T <- matrix(0,nc,nc-1)
+  T[nc,1] <- nc-1
+  T[2:(nc-1),2:(nc-1)] <- diag(nc-2)
+  return(T)
+}
+
+build.T <- function(numOutcomes, got) {
+  if (!is.matrix(got)) {
+    if (got == "id") {
+      got <- Tnom.id(numOutcomes)
+    } else if (got == "trend") {
+      got <- Tnom.trend(numOutcomes)
+    } else {
+      stop(paste("T matrix", deparse(got), "not recognized"))
+    }
+  }
+  if (all(dim(got) == c(numOutcomes,numOutcomes-1))) {
+    if (any(got[1,] != 0)) warn("Non-zero T[1,] will be ignored")
+    got <- got[-1,]
+  }
+  if (all(dim(got) != rep(numOutcomes-1, 2))) {
+    stop(paste("T matrix must be of dimensions",
+               paste(rep(numOutcomes-1, 2), collapse="x"),
+               "not", paste(dim(got), collapse="x")))
+  }
+  got
+}
+
 ##' Create a nominal response model and associated hyperparameters.
 ##'
 ##' This function instantiates a nominal response model. Bayesian
@@ -7,52 +51,30 @@
 ##' @param dimensions the number of dimensions
 ##' @return an item model
 ##' @export
-##' @author Jonathan Weeks <weeksjp@@gmail.com>
-rpf.nrm <- function(numOutcomes=2, dimensions=1) {
-    new("rpf.mdim.nrm",
-        numOutcomes=numOutcomes, dimensions=dimensions,
-        numParam=(1 + dimensions) * numOutcomes,
-        a.prior.sdlog=.5)
+rpf.nrm <- function(numOutcomes=3, dimensions=1, T.a="trend", T.c="trend") {
+  T.a <- build.T(numOutcomes, T.a)
+  T.c <- build.T(numOutcomes, T.c)
+  id <- rpf.id_of("nominal")
+  m <- new("rpf.mdim.nrm",
+           numOutcomes=numOutcomes,
+           dimensions=dimensions,
+           a.prior.sdlog=.5)
+  m@spec <- c(id, numOutcomes, dimensions, T.a, T.c)
+  m
 }
 
-### mdim
-
-setMethod("rpf.prob", signature(m="rpf.mdim.nrm", param="numeric",
-                                theta="matrix"),
-          function(m, param, theta) {
-            ##   Object for the denominator in the final MMCM equation
-            den <- NULL
-            
-            numA <- m@numOutcomes * m@dimensions
-            a1 <- param[1:numA]
-            b1 <- param[-1:-numA]
-            
-            ##   Compute the denominator
-            for (k in 1:m@numOutcomes) {
-              tmp <- (k-1)*m@dimensions
-              tmp1 <- tmp+m@dimensions
-              d <- exp((theta %*% a1[(tmp+1):tmp1])+b1[k])
-              den <- cbind(den, d)
-            }
-            den <- apply(den,1,sum)
-            
-            numPersons <- dim(theta)[1]
-
-            p <- array(dim=c(numPersons, m@numOutcomes))
-
-            for (k in 1:m@numOutcomes) {
-              tmp <- (k-1)*m@dimensions
-              tmp1 <- tmp+m@dimensions
-              cp <- exp((theta %*% a1[(tmp+1):tmp1])+b1[k])/den
-              p[,k] <- cp
-            }
-            return(p)
-          })
+getT <- function(m, tx) {
+  Tsize <- (m@numOutcomes-1L)^2
+  offset <- 4 + tx * Tsize
+  matrix(m@spec[offset:(offset+Tsize-1)], m@numOutcomes-1L, m@numOutcomes-1L)
+}
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
           function(m) {
-              a <- rlnorm(m@numOutcomes * m@dimensions,
-                          meanlog=0, sdlog=m@a.prior.sdlog)
-              b <- sort(rnorm(m@numOutcomes))
-              c(a=a,b=b)
+            a <- rlnorm(m@dimensions, sdlog=.5)
+            ak <- abs(rnorm(m@numOutcomes-1, mean=1, sd=.25))
+            ck <- sort(rnorm(m@numOutcomes-1))
+            c(a=a,
+              alf=solve(getT(m,0)) %*% ak,
+              gam=solve(getT(m,1)) %*% ck)
           })

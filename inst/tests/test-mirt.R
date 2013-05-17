@@ -3,6 +3,10 @@ library(rpf)
 library(mirt)
 #options(error = utils::recover)
 
+myseed <- as.integer(runif(1) * 1e7)
+print(paste("set.seed =",myseed))
+set.seed(myseed)
+
 i.count <- 5
 spec <- list()
 
@@ -13,7 +17,7 @@ data <- simplify2array(lapply(data, unclass)) - 1
 suppressWarnings(fit <- mirt(data, 1, rep('3PL',i.count), D=1, technical=list(NCYCLES=1)))
 
 for (ix in 1:i.count) {
-  ii <- extract.item(fit, 1)
+  ii <- extract.item(fit, ix)
   expect_equal(c(probtrace(ii, c(-1,0,1))),
                c(rpf.prob(spec[[1]], ii@par[1:3], c(-1,0,1))))
 }
@@ -26,12 +30,26 @@ data <- simplify2array(lapply(data, unclass)) - 1
 suppressWarnings(fit <- mirt(data, 1, rep('graded',i.count), D=1, technical=list(NCYCLES=1)))
 
 for (ix in 1:i.count) {
-  ii <- extract.item(fit, 1)
+  ii <- extract.item(fit, ix)
+  if (length(ii@par) < 3) {
+                                        # mirt can lose a category if it is not represented in the data
+    #print(data[,ix])
+    next
+  }
   expect_equal(c(probtrace(ii, c(-1,0,1))),
                c(rpf.prob(spec[[1]], ii@par[1:3], c(-1,0,1))))
 }
 
-#suppressWarnings(fit <- mirt(data, 1, rep('nominal',i.count), D=1, technical=list(NCYCLES=1)))
-#ii <- extract.item(fit, 1)
-#str(ii)
-#ii@par
+spec[1:i.count] <- rpf.nrm(numOutcomes=3,
+                           T.a=rbind(0, diag(2)),
+                           T.c=rbind(0, diag(2)))
+
+suppressWarnings(fit <- mirt(data, 1, rep('nominal',i.count), D=1, technical=list(NCYCLES=1)))
+for (ix in 1:i.count) {
+  ii <- extract.item(fit, ix)
+  if (length(ii@par) < 7) next
+  expect_equal(c(probtrace(ii, c(-1,0,1))),
+               c(rpf.prob(spec[[1]], ii@par[c(1, 3:4, 6:7)], c(-1,0,1))))
+  expect_equal(c(log(probtrace(ii, c(-1,0,1)))),
+               c(rpf.logprob(spec[[1]], ii@par[c(1, 3:4, 6:7)], c(-1,0,1))))
+}

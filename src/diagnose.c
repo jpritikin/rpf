@@ -23,8 +23,8 @@ pda(const double *ar, int rows, int cols) {
 
 static const double KANG_CHEN_MIN_EXPECTED = 1.0;  // customizable parameter?
 
-static int find_smallcol(int rows, int cols, double *expected, int rx,
-			 int *goodcol, int *smallcol)
+static void find_smallcol(int rows, int cols, double *expected, int rx,
+			  int *goodcol, int *smallcol)
 {
   *goodcol = 0;
   *smallcol = -1;

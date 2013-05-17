@@ -34,22 +34,24 @@ typedef void (*rpf_prob_t)(const double *spec,
 			   double *restrict out);
 typedef double (*rpf_prior_t)(const double *spec,
 			      const double *restrict param);
-typedef void (*rpf_deriv_t)(const double *spec,
-			    const double *restrict param,
-			    const double *where, const double area,
-			    const double *weight, double *out);
+typedef void (*rpf_dLL1_t)(const double *spec,
+			   const double *restrict param,
+			   const double *where, const double area,
+			   const double *weight, double *out);
+typedef void (*rpf_dLL2_t)(const double *spec, const double *restrict param, double *out);
 typedef void (*rpf_rescale_t)(const double *spec, double *restrict param, const int *paramMask,
 			      const double *restrict mean, const double *restrict choleskyCov);
 typedef void (*rpf_transform_t)(double *spec, double *param);
 
 struct rpf {
-  const char name[8];
+  const char name[10];
   rpf_numSpec_t numSpec;
   rpf_numParam_t numParam;
   rpf_prob_t prob;
   rpf_prob_t logprob;
   rpf_prior_t prior;
-  rpf_deriv_t deriv;
+  rpf_dLL1_t dLL1;
+  rpf_dLL2_t dLL2;
   rpf_rescale_t rescale;
   rpf_transform_t prefit;
   rpf_transform_t postfit;

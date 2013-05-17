@@ -16,7 +16,7 @@
 ##' @references Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
 ##' Full-Information Item Bifactor Analysis.  \emph{Psychological
 ##' Methods, 16}(3), 221-248.
-rpf.drm <- function(numChoices=5, dimensions=1, multidimensional, a.prior.sdlog=.5, poor=FALSE) {
+rpf.drm <- function(numChoices=5, dimensions=1, multidimensional, a.prior.sdlog=.5, poor=FALSE, phil=FALSE) {
   if (missing(multidimensional)) {
     multidimensional <- dimensions > 1
   }
@@ -36,14 +36,18 @@ rpf.drm <- function(numChoices=5, dimensions=1, multidimensional, a.prior.sdlog=
              dimensions=1,
              c.prior.logit=c.prior.logit)
   } else {
-    id <- rpf.id_of("drm")
+    if (phil) {
+      id <- rpf.id_of("drm+phil")
+    } else {
+      id <- rpf.id_of("drm")
+    }
     m <- new("rpf.mdim.drm",
              numOutcomes=2,
              dimensions=dimensions,
              numParam=2+dimensions,
              c.prior.logit=c.prior.logit)
   }
-  m@spec <- c(id, m@numOutcomes, m@dimensions, a.prior.sdlog, c.prior.logit, c.prior.sd)
+  m@spec <- c(id, 2, m@dimensions, a.prior.sdlog, c.prior.logit, c.prior.sd)
   m
 }
 
@@ -66,7 +70,8 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
             n <- 1
             c(a=rlnorm(n, meanlog=0, sdlog=.5),
               b=rnorm(n),
-              c=1/(1+exp(-rnorm(n, mean=m@c.prior.logit, sd=.5))))
+              c=1/(1+exp(-rnorm(n, mean=m@c.prior.logit, sd=.5))),
+              u=1)
           })
 
 ### mdim
@@ -75,7 +80,8 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
           function(m) {
             c(a=rlnorm(m@dimensions, meanlog=0, sdlog=.5),
               b=rnorm(1),
-              c=1/(1+exp(-rnorm(1, mean=m@c.prior.logit, sd=.5))))
+              c=1/(1+exp(-rnorm(1, mean=m@c.prior.logit, sd=.5))),
+              u=1)
           })
 
 setMethod("rpf.info", signature(m="rpf.mdim.drm", param="numeric",
