@@ -23,6 +23,7 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.graded"),
 setMethod("rpf.rparam", signature(m="rpf.mdim.graded"),
           function(m) {
               a <- rlnorm(m@dimensions, meanlog=0, sdlog=.5)
-              b <- sort(rnorm(m@numOutcomes-1))
+              b <- rnorm(m@numOutcomes-1)
+              b <- b[order(-b)]
               c(a=a,b=b)
           })

@@ -72,25 +72,22 @@ setMethod("rpf.prob", signature(m="rpf.1dim.grm", param="numeric",
 setMethod("rpf.prob", signature(m="rpf.mdim.grm", param="numeric",
                                 theta="matrix"),
           function(m, param, theta) {
+            nc <- m@numOutcomes
             a <- param[1:m@dimensions]
-            b <- param[-1:-m@dimensions]
-
-            ct <- m@numOutcomes - 1
+            c <- param[-m@dimensions:-1]
             
             numPersons <- dim(theta)[1]
-            p <- array(dim=c(numPersons, m@numOutcomes))
-
-            ##   Compute the probabilities for the lowest category
-            p[,1] <- 1-1/(1+exp(-(theta %*% a+b[1])))
             
-            for (k in 1:ct) {
-              if (k<ct) {
-                cp <- (1/(1+exp(-(theta %*% a+b[k]))))-(1/(1+exp(-(theta %*% a+b[k+1]))))
-              } else if (k==ct) {
-                ##   Compute the probabilities for the highest category
-                cp <- 1/(1+exp(-(theta %*% a+b[k])))
-              }
-              p[,k+1] <- cp
+            T <- matrix(0,numPersons,nc+1)
+            T[,1] <- 1
+            T[,nc+1] <- 0
+            for (k in 1:(nc-1)) {
+              z <- c[k] + a %*% t(theta)
+              T[,k+1] <- 1/(1+exp(-z))
             }
-            return(p)
+            P <- matrix(0,numPersons,nc)
+            for (k in 1:nc) {
+              P[,k] <- T[,k]-T[,k+1]
+            }
+            P
           })
