@@ -125,7 +125,7 @@ setMethod("rpf.prior", signature(m="rpf.base", param="numeric"),
             }
           })
 
-##' Item parameter gradients
+##' Item parameter derivatives
 ##'
 ##' Evaluate the partial derivatives of the log likelihood with
 ##' respect to each parameter at \code{where} with \code{weight}.
@@ -134,19 +134,28 @@ setMethod("rpf.prior", signature(m="rpf.base", param="numeric"),
 ##' @param param item parameters
 ##' @param where location in the latent space
 ##' @param weight per outcome weights (typically derived by observation)
-##' @return derivative of the log likelihood with respect to each parameter evaluated at \code{where}
+##' @return first and second order partial derivatives of the log
+##' likelihood evaluated at \code{where} organized in the same manner
+##' as Bates and Watts. For p parameters, the first p values are the
+##' first derivative and the next p(p+1)/2 columns are the lower
+##' triangle of the second derivative.
+##' @references Bates, D. M. & Watts, D. (1980). Relative curvature
+##' measures of nonlinearity. \emph{Journal of the Royal Statistical
+##' Society. Series B (Methodological), 42}, 1-25.
+##' @seealso
+##' The numDeriv package.
 ##' @aliases
-##' rpf.gradient,rpf.base,numeric,numeric,numeric-method
-##' rpf_gradient_wrapper
-setGeneric("rpf.gradient", function(m, param, where, weight) standardGeneric("rpf.gradient"))
+##' rpf.deriv,rpf.base,numeric,numeric,numeric-method
+##' rpf_deriv_wrapper
+setGeneric("rpf.deriv", function(m, param, where, weight) standardGeneric("rpf.deriv"))
 
-setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
-                                    where="numeric", weight="numeric"),
+setMethod("rpf.deriv", signature(m="rpf.base", param="numeric",
+                                 where="numeric", weight="numeric"),
           function(m, param, where, weight) {
             if (length(m@spec)==0) {
               stop("Not implemented")
             } else {
-              .Call(rpf_gradient_wrapper, m@spec, param, where, weight)
+              .Call(rpf_deriv_wrapper, m@spec, param, where, weight)
             }
           })
 

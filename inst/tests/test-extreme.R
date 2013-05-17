@@ -18,5 +18,5 @@ for (ix in 1:length(spec)) {
   for (wh in where) rpf.prob(ispec, iparam, wh)
   for (wh in where) rpf.logprob(ispec, iparam, wh)
   w <- rchisq(ispec@numOutcomes, df=6)
-  for (wh in where) rpf.gradient(ispec, iparam, wh, w)
+  for (wh in where) rpf.deriv(ispec, iparam, wh, w)
 }

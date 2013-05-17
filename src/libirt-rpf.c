@@ -151,7 +151,7 @@ irt_rpf_1dim_drm_prior(const double *spec,
 }
 
 static void
-set_gradient_nan(const int numParam, const int *paramMask, double *out)
+set_deriv_nan(const int numParam, const int *paramMask, double *out)
 {
   for (int px=0; px < numParam; px++) {
     if (paramMask[px] >= 0) out[paramMask[px]] = FP_NAN;
@@ -178,7 +178,7 @@ irt_rpf_1dim_drm_gradient(const double *spec,
   if (!where) {
     const double *prior = spec + RPF_ISpecCount;
     if (aa <= 0 || cc < 0 || cc >= 1) {
-      set_gradient_nan(3, paramMask, out);
+      set_deriv_nan(3, paramMask, out);
       return;
     }
     if (paramMask[0] >= 0) {
@@ -313,12 +313,12 @@ irt_rpf_mdim_drm_gradient(const double *spec,
   double cc = param[numDims+1];
   if (!where) {
     if (cc < 0 || cc >= 1) {
-      set_gradient_nan(numDims+1, paramMask, out);
+      set_deriv_nan(numDims+1, paramMask, out);
       return;
     }
     for (int dx=0; dx < numDims; dx++) {
       if (aa[dx] < 0) {
-	set_gradient_nan(numDims+1, paramMask, out);
+	set_deriv_nan(numDims+1, paramMask, out);
 	return;
       }
     }
@@ -465,7 +465,7 @@ irt_rpf_1dim_gpcm_gradient(const double *spec,
   double aa = param[0];
   if (!where) {
     if (aa <= 0) {
-      set_gradient_nan(3, paramMask, out);
+      set_deriv_nan(3, paramMask, out);
       return;
     }
     const double *prior = spec + RPF_ISpecCount;

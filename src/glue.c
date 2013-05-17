@@ -225,8 +225,8 @@ rpf_prior_wrapper(SEXP r_spec, SEXP r_param)
 }
 
 static SEXP
-rpf_gradient_wrapper(SEXP r_spec, SEXP r_param,
-		     SEXP r_where, SEXP r_weight)
+rpf_deriv_wrapper(SEXP r_spec, SEXP r_param,
+		  SEXP r_where, SEXP r_weight)
 {
   if (length(r_spec) < RPF_ISpecCount)
     error("Item spec must be of length %d, not %d", RPF_ISpecCount, length(r_spec));
@@ -260,15 +260,15 @@ rpf_gradient_wrapper(SEXP r_spec, SEXP r_param,
 
   SEXP ret;
   PROTECT(ret = allocVector(REALSXP, numParam));
-  (*librpf_model[id].gradient)(spec, REAL(r_param), mask,
-			       REAL(r_where), REAL(r_weight), REAL(ret));
+  (*librpf_model[id].deriv)(spec, REAL(r_param), mask,
+			    REAL(r_where), REAL(r_weight), REAL(ret));
   for (int px=0; px < numParam; px++) {
-    if (!isfinite(REAL(ret)[px])) error("Gradient not finite at step 1");
+    if (!isfinite(REAL(ret)[px])) error("Deriv not finite at step 1");
   }
-  (*librpf_model[id].gradient)(spec, REAL(r_param), mask,
-			       NULL, REAL(r_weight), REAL(ret));
+  (*librpf_model[id].deriv)(spec, REAL(r_param), mask,
+			    NULL, REAL(r_weight), REAL(ret));
   for (int px=0; px < numParam; px++) {
-    if (!isfinite(REAL(ret)[px])) error("Gradient not finite at step 2");
+    if (!isfinite(REAL(ret)[px])) error("Deriv not finite at step 2");
   }
   UNPROTECT(1);
   return ret;
@@ -281,7 +281,7 @@ static R_CallMethodDef flist[] = {
   {"rpf_prob_wrapper", (DL_FUNC) rpf_prob_wrapper, 3},
   {"rpf_logprob_wrapper", (DL_FUNC) rpf_logprob_wrapper, 3},
   {"rpf_prior_wrapper", (DL_FUNC) rpf_prior_wrapper, 2},
-  {"rpf_gradient_wrapper", (DL_FUNC) rpf_gradient_wrapper, 4},
+  {"rpf_deriv_wrapper", (DL_FUNC) rpf_deriv_wrapper, 4},
   {"orlando_thissen_2000_wrapper", (DL_FUNC) orlando_thissen_2000, 5},
   {"sumscore_observed", (DL_FUNC) sumscore_observed, 4},
   {"rpf_GaussHermiteData", (DL_FUNC) omxGaussHermiteData, 1},
@@ -298,5 +298,5 @@ get_librpf_models(int *version, int *numModels, const struct rpf **model)
 
 void R_init_rpf(DllInfo *info) {
   R_registerRoutines(info, NULL, flist, NULL, NULL);
-  R_RegisterCCallable("rpf", "get_librpf_model", (DL_FUNC) get_librpf_models);
+  R_RegisterCCallable("rpf", "get_librpf_model_GPL", (DL_FUNC) get_librpf_models);
 }
