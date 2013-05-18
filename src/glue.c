@@ -259,12 +259,12 @@ rpf_deriv_wrapper(SEXP r_spec, SEXP r_param,
   SEXP ret;
   PROTECT(ret = allocVector(REALSXP, numDeriv));
   (*librpf_model[id].deriv)(spec, REAL(r_param),
-			    REAL(r_where), REAL(r_weight), REAL(ret));
+			    REAL(r_where), 1.0, REAL(r_weight), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
     if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 1", px);
   }
   (*librpf_model[id].deriv)(spec, REAL(r_param),
-			    NULL, REAL(r_weight), REAL(ret));
+			    NULL, 0, REAL(r_weight), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
     if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 2", px);
   }

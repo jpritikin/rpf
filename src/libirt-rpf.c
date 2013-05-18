@@ -169,8 +169,9 @@ set_deriv_nan(const int numParam, double *out)
  */
 static void
 irt_rpf_1dim_drm_deriv(const double *spec,
-			  const double *restrict param,
-			  const double *where, const double *weight, double *out)
+		       const double *restrict param,
+		       const double *where, const double area,
+		       const double *weight, double *out)
 {
   double aa = param[0];
   double bb = param[1];
@@ -204,13 +205,13 @@ irt_rpf_1dim_drm_deriv(const double *spec,
   double w0 = Eathb2 * (-(1-cc)/(Eathb+1) - cc + 1);
   double w1 = Eathb2 * ((1-cc)/(Eathb+1) + cc);
 
-  out[0] = (weight[0] * (bb-th)*Eathb / w0 +
-	    weight[1] * -(bb-th)*Eathb / w1);
-  out[1] = (weight[0] * Eathb / w0 +
-	    weight[1] * -Eathb / w1);
+  out[0] += area * ((weight[0] * (bb-th)*Eathb / w0 +
+		     weight[1] * -(bb-th)*Eathb / w1));
+  out[1] += area * ((weight[0] * Eathb / w0 +
+		     weight[1] * -Eathb / w1));
   double ratio = (1-(1/(Eathb+1))) / ((1-cc)/(Eathb+1) + cc);
-  out[2] = (weight[0] * (1/(cc-1)) +
-	    weight[1] * ratio);
+  out[2] += area * ((weight[0] * (1/(cc-1)) +
+		     weight[1] * ratio));
 }
 
 static void
@@ -296,8 +297,9 @@ irt_rpf_mdim_drm_prior(const double *spec,
  */
 static void
 irt_rpf_mdim_drm_deriv(const double *spec,
-			  const double *restrict param,
-			  const double *where, const double *weight, double *out)
+		       const double *restrict param,
+		       const double *where, const double area,
+		       const double *weight, double *out)
 {
   int numDims = spec[RPF_ISpecDims];
   const double *aa = param;
@@ -334,13 +336,13 @@ irt_rpf_mdim_drm_deriv(const double *spec,
 
   double Eathb = exp(athb);
   for (int dx=0; dx < numDims; dx++) {
-    out[dx] = (weight[0] * (where[dx]/(Eathb+1) - where[dx]) +
-			  weight[1] * (where[dx]/(Eathb+1) - cc * where[dx] / (Eathb+cc)));
+    out[dx] += area * ((weight[0] * (where[dx]/(Eathb+1) - where[dx]) +
+			weight[1] * (where[dx]/(Eathb+1) - cc * where[dx] / (Eathb+cc))));
   }
-  out[numDims] = (weight[0] * (1/(Eathb+1) - 1) +
-			     weight[1] * (-((cc-1)*Eathb)/((Eathb+1)*(Eathb+cc))));
-  out[numDims+1] = (weight[0] * (1/(cc-1)) +
-		    weight[1] * (1/(Eathb+cc)));
+  out[numDims] += area * ((weight[0] * (1/(Eathb+1) - 1) +
+			   weight[1] * (-((cc-1)*Eathb)/((Eathb+1)*(Eathb+cc)))));
+  out[numDims+1] += area * ((weight[0] * (1/(cc-1)) +
+			     weight[1] * (1/(Eathb+cc))));
 }
 
 static void
@@ -438,8 +440,9 @@ _1dim_gpcm_z(const int kk, const double *restrict param, double th)
 
 static void
 irt_rpf_1dim_gpcm_deriv(const double *spec,
-			   const double *restrict param,
-			   const double *where, const double *weight, double *out)
+			const double *restrict param,
+			const double *where, const double area,
+			const double *weight, double *out)
 {
   int numOutcomes = spec[RPF_ISpecOutcomes];
   double aa = param[0];
@@ -472,7 +475,7 @@ irt_rpf_1dim_gpcm_deriv(const double *spec,
       }
       grad += weight[kx-1] * (_1dim_gpcm_z(kx, param, th) - sum);
     }
-    out[0] = grad;
+    out[0] += area * grad;
   }
   double total_weight=0;
   for (int cc=0; cc < numOutcomes; cc++) {
@@ -483,7 +486,7 @@ irt_rpf_1dim_gpcm_deriv(const double *spec,
     for (int kx=0; kx <= bx-1; kx++) {
       grad += weight[kx] - pout[kx] * total_weight;
     }
-    out[bx] = grad;
+    out[bx] += area * grad;
   }
 }
 
