@@ -154,7 +154,7 @@ static void
 set_deriv_nan(const int numParam, double *out)
 {
   for (int px=0; px < numParam; px++) {
-    out[px] = FP_NAN;
+    out[px] = nan("I");
   }
 }
 
@@ -187,11 +187,11 @@ irt_rpf_1dim_drm_deriv(const double *spec,
     //out[0] += lognormal_gradient(aa, prior[0]);
 
     out[1] *= aa * (1-cc);
-    if (cc == 0) { out[2] = FP_NAN; }
+    if (cc == 0) { out[2] = nan("I"); }
     else {
       out[2] += logitnormal_gradient(cc, prior[1], prior[2]);
     }
-    for (int px=3; px < 6; px++) out[px] = FP_NAN;
+    for (int px=3; px < 9; px++) out[px] = nan("I");
     return;
   }
   double th = where[0];
@@ -321,12 +321,12 @@ irt_rpf_mdim_drm_deriv(const double *spec,
 	//out[dx] += lognormal_gradient(aa[dx], prior[0]);
     }
     if (cc == 0) {
-      out[numDims+1] = FP_NAN;
+      out[numDims+1] = nan("I");
     } else {
       out[numDims+1] += logitnormal_gradient(cc, prior[1], prior[2]);
     }
     const int numH = (numDims+2) * (numDims+3) / 2;
-    for (int px=numDims+2; px < numDims+2 + numH; px++) out[px] = FP_NAN;
+    for (int px=numDims+2; px < numDims+2 + numH; px++) out[px] = nan("I");
     return;
   }
 
@@ -458,7 +458,7 @@ irt_rpf_1dim_gpcm_deriv(const double *spec,
       out[bx] *= aa;
     }
     const int numH = numOutcomes * (numOutcomes+1) / 2;
-    for (int px=numOutcomes; px < numOutcomes + numH; px++) out[px] = FP_NAN;
+    for (int px=numOutcomes; px < numOutcomes + numH; px++) out[px] = nan("I");
     return;
   }
   double pout[numOutcomes];
