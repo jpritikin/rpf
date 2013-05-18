@@ -151,10 +151,10 @@ irt_rpf_1dim_drm_prior(const double *spec,
 }
 
 static void
-set_deriv_nan(const int numParam, const int *paramMask, double *out)
+set_deriv_nan(const int numParam, double *out)
 {
   for (int px=0; px < numParam; px++) {
-    if (paramMask[px] >= 0) out[paramMask[px]] = FP_NAN;
+    out[px] = FP_NAN;
   }
 }
 
@@ -168,8 +168,8 @@ set_deriv_nan(const int numParam, const int *paramMask, double *out)
  * diff(log(irf(a,b,c,th)),c);
  */
 static void
-irt_rpf_1dim_drm_gradient(const double *spec,
-			  const double *restrict param, const int *paramMask,
+irt_rpf_1dim_drm_deriv(const double *spec,
+			  const double *restrict param,
 			  const double *where, const double *weight, double *out)
 {
   double aa = param[0];
@@ -178,22 +178,19 @@ irt_rpf_1dim_drm_gradient(const double *spec,
   if (!where) {
     const double *prior = spec + RPF_ISpecCount;
     if (aa <= 0 || cc < 0 || cc >= 1) {
-      set_deriv_nan(3, paramMask, out);
+      set_deriv_nan(3, out);
       return;
     }
-    if (paramMask[0] >= 0) {
-      out[paramMask[0]] *= (1-cc);
-      //out[paramMask[0]] += lognormal_gradient(aa, prior[0]);
+
+    out[0] *= (1-cc);
+    //out[0] += lognormal_gradient(aa, prior[0]);
+
+    out[1] *= aa * (1-cc);
+    if (cc == 0) { out[2] = FP_NAN; }
+    else {
+      out[2] += logitnormal_gradient(cc, prior[1], prior[2]);
     }
-    if (paramMask[1] >= 0) {
-      out[paramMask[1]] *= aa * (1-cc);
-    }
-    if (paramMask[2] >= 0) {
-      if (cc == 0) { out[paramMask[2]] = FP_NAN; }
-      else {
-	out[paramMask[2]] += logitnormal_gradient(cc, prior[1], prior[2]);
-      }
-    }
+    for (int px=3; px < 6; px++) out[px] = FP_NAN;
     return;
   }
   double th = where[0];
@@ -206,19 +203,14 @@ irt_rpf_1dim_drm_gradient(const double *spec,
   double Eathb2 = (Eathb+1)*(Eathb+1);
   double w0 = Eathb2 * (-(1-cc)/(Eathb+1) - cc + 1);
   double w1 = Eathb2 * ((1-cc)/(Eathb+1) + cc);
-  if (paramMask[0] >= 0) {
-    out[paramMask[0]] = (weight[0] * (bb-th)*Eathb / w0 +
-			 weight[1] * -(bb-th)*Eathb / w1);
-  }
-  if (paramMask[1] >= 0) {
-    out[paramMask[1]] = (weight[0] * Eathb / w0 +
-			 weight[1] * -Eathb / w1);
-  }
-  if (paramMask[2] >= 0) {
-    double ratio = (1-(1/(Eathb+1))) / ((1-cc)/(Eathb+1) + cc);
-    out[paramMask[2]] = (weight[0] * (1/(cc-1)) +
-			 weight[1] * ratio);
-  }
+
+  out[0] = (weight[0] * (bb-th)*Eathb / w0 +
+	    weight[1] * -(bb-th)*Eathb / w1);
+  out[1] = (weight[0] * Eathb / w0 +
+	    weight[1] * -Eathb / w1);
+  double ratio = (1-(1/(Eathb+1))) / ((1-cc)/(Eathb+1) + cc);
+  out[2] = (weight[0] * (1/(cc-1)) +
+	    weight[1] * ratio);
 }
 
 static void
@@ -303,8 +295,8 @@ irt_rpf_mdim_drm_prior(const double *spec,
  * d/db log( (c+(1-c)/(1+exp(-(x*f+y*g+z*h+b)))))
  */
 static void
-irt_rpf_mdim_drm_gradient(const double *spec,
-			  const double *restrict param, const int *paramMask,
+irt_rpf_mdim_drm_deriv(const double *spec,
+			  const double *restrict param,
 			  const double *where, const double *weight, double *out)
 {
   int numDims = spec[RPF_ISpecDims];
@@ -313,32 +305,26 @@ irt_rpf_mdim_drm_gradient(const double *spec,
   double cc = param[numDims+1];
   if (!where) {
     if (cc < 0 || cc >= 1) {
-      set_deriv_nan(numDims+1, paramMask, out);
+      set_deriv_nan(numDims+1, out);
       return;
     }
     for (int dx=0; dx < numDims; dx++) {
       if (aa[dx] < 0) {
-	set_deriv_nan(numDims+1, paramMask, out);
+	set_deriv_nan(numDims+1, out);
 	return;
       }
     }
     const double *prior = spec + RPF_ISpecCount;
     for (int dx=0; dx < numDims; dx++) {
-      if (paramMask[dx] > 0) {
-	//out[paramMask[dx]] += lognormal_gradient(aa[dx], prior[0]);
-      }
+	//out[dx] += lognormal_gradient(aa[dx], prior[0]);
     }
-    if (paramMask[numDims] >= 0) {
-      // OK
+    if (cc == 0) {
+      out[numDims+1] = FP_NAN;
+    } else {
+      out[numDims+1] += logitnormal_gradient(cc, prior[1], prior[2]);
     }
-    if (paramMask[numDims+1] >= 0) {
-      if (cc == 0) {
-	out[paramMask[numDims+1]] = FP_NAN;
-      }
-      else {
-	out[paramMask[numDims+1]] += logitnormal_gradient(cc, prior[1], prior[2]);
-      }
-    }
+    const int numH = (numDims+2) * (numDims+3) / 2;
+    for (int px=numDims+2; px < numDims+2 + numH; px++) out[px] = FP_NAN;
     return;
   }
 
@@ -348,19 +334,13 @@ irt_rpf_mdim_drm_gradient(const double *spec,
 
   double Eathb = exp(athb);
   for (int dx=0; dx < numDims; dx++) {
-    if (paramMask[dx] >= 0) {
-      out[paramMask[dx]] = (weight[0] * (where[dx]/(Eathb+1) - where[dx]) +
-			    weight[1] * (where[dx]/(Eathb+1) - cc * where[dx] / (Eathb+cc)));
-    }
+    out[dx] = (weight[0] * (where[dx]/(Eathb+1) - where[dx]) +
+			  weight[1] * (where[dx]/(Eathb+1) - cc * where[dx] / (Eathb+cc)));
   }
-  if (paramMask[numDims] >= 0) {
-    out[paramMask[numDims]] = (weight[0] * (1/(Eathb+1) - 1) +
-			       weight[1] * (-((cc-1)*Eathb)/((Eathb+1)*(Eathb+cc))));
-  }
-  if (paramMask[numDims+1] >= 0) {
-    out[paramMask[numDims+1]] = (weight[0] * (1/(cc-1)) +
-				 weight[1] * (1/(Eathb+cc)));
-  }
+  out[numDims] = (weight[0] * (1/(Eathb+1) - 1) +
+			     weight[1] * (-((cc-1)*Eathb)/((Eathb+1)*(Eathb+cc))));
+  out[numDims+1] = (weight[0] * (1/(cc-1)) +
+		    weight[1] * (1/(Eathb+cc)));
 }
 
 static void
@@ -457,27 +437,25 @@ _1dim_gpcm_z(const int kk, const double *restrict param, double th)
 }
 
 static void
-irt_rpf_1dim_gpcm_gradient(const double *spec,
-			   const double *restrict param, const int *paramMask,
+irt_rpf_1dim_gpcm_deriv(const double *spec,
+			   const double *restrict param,
 			   const double *where, const double *weight, double *out)
 {
   int numOutcomes = spec[RPF_ISpecOutcomes];
   double aa = param[0];
   if (!where) {
     if (aa <= 0) {
-      set_deriv_nan(3, paramMask, out);
+      set_deriv_nan(3, out);
       return;
     }
     const double *prior = spec + RPF_ISpecCount;
-    if (paramMask[0] >= 0) {
-      out[paramMask[0]] /= aa;
-      //out[paramMask[0]] += lognormal_gradient(aa, prior[0]);
-    }
+    out[0] /= aa;
+    //out[0] += lognormal_gradient(aa, prior[0]);
     for (int bx=1; bx < numOutcomes; bx++) {
-      if (paramMask[bx] >= 0) {
-	out[paramMask[bx]] *= aa;
-      }
+      out[bx] *= aa;
     }
+    const int numH = numOutcomes * (numOutcomes+1) / 2;
+    for (int px=numOutcomes; px < numOutcomes + numH; px++) out[px] = FP_NAN;
     return;
   }
   double pout[numOutcomes];
@@ -485,7 +463,7 @@ irt_rpf_1dim_gpcm_gradient(const double *spec,
 
   double th = where[0];
 
-  if (paramMask[0] >= 0) {
+  {
     double grad=0;
     for (int kx=1; kx <= numOutcomes; kx++) {
       double sum=0;
@@ -494,20 +472,18 @@ irt_rpf_1dim_gpcm_gradient(const double *spec,
       }
       grad += weight[kx-1] * (_1dim_gpcm_z(kx, param, th) - sum);
     }
-    out[paramMask[0]] = grad;
+    out[0] = grad;
   }
   double total_weight=0;
   for (int cc=0; cc < numOutcomes; cc++) {
     total_weight += weight[cc];
   }
   for (int bx=1; bx < numOutcomes; bx++) {
-    if (paramMask[bx] >= 0) {
-      double grad = 0;
-      for (int kx=0; kx <= bx-1; kx++) {
-	grad += weight[kx] - pout[kx] * total_weight;
-      }
-      out[paramMask[bx]] = grad;
+    double grad = 0;
+    for (int kx=0; kx <= bx-1; kx++) {
+      grad += weight[kx] - pout[kx] * total_weight;
     }
+    out[bx] = grad;
   }
 }
 
@@ -540,7 +516,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_drm_prob,
     irt_rpf_logprob_adapter,
     irt_rpf_1dim_drm_prior,
-    irt_rpf_1dim_drm_gradient,
+    irt_rpf_1dim_drm_deriv,
     irt_rpf_1dim_drm_rescale,
     noop,
     noop,
@@ -562,7 +538,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_drm_prob,
     irt_rpf_logprob_adapter,
     irt_rpf_mdim_drm_prior,
-    irt_rpf_mdim_drm_gradient,
+    irt_rpf_mdim_drm_deriv,
     irt_rpf_mdim_drm_rescale,
     noop,
     irt_rpf_1dim_drm_postfit,
@@ -573,7 +549,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_drm_prob,
     irt_rpf_logprob_adapter,
     irt_rpf_mdim_drm_prior,
-    irt_rpf_mdim_drm_gradient,
+    irt_rpf_mdim_drm_deriv,
     irt_rpf_mdim_drm_rescale,
     noop,
     noop
@@ -584,7 +560,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_gpcm_prob,
     irt_rpf_logprob_adapter,
     irt_rpf_1dim_gpcm_prior,
-    irt_rpf_1dim_gpcm_gradient,
+    irt_rpf_1dim_gpcm_deriv,
     irt_rpf_1dim_gpcm_rescale,
     noop,
     noop

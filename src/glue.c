@@ -245,9 +245,6 @@ rpf_deriv_wrapper(SEXP r_spec, SEXP r_param,
   if (length(r_param) < numParam)
     error("Item has %d parameters, only %d given", numParam, length(r_param));
 
-  int mask[numParam];
-  for (int px=0; px < numParam; px++) mask[px] = px;
-
   int dims = spec[RPF_ISpecDims];
   if (length(r_where) != dims)
     error("Item has %d dimensions, but where is of length %d",
@@ -258,17 +255,18 @@ rpf_deriv_wrapper(SEXP r_spec, SEXP r_param,
     error("Item has %d outcomes, but weight is of length %d",
 	  outcomes, length(r_weight));
 
+  const int numDeriv = numParam + numParam*(numParam+1)/2;
   SEXP ret;
-  PROTECT(ret = allocVector(REALSXP, numParam));
-  (*librpf_model[id].deriv)(spec, REAL(r_param), mask,
+  PROTECT(ret = allocVector(REALSXP, numDeriv));
+  (*librpf_model[id].deriv)(spec, REAL(r_param),
 			    REAL(r_where), REAL(r_weight), REAL(ret));
-  for (int px=0; px < numParam; px++) {
-    if (!isfinite(REAL(ret)[px])) error("Deriv not finite at step 1");
+  for (int px=0; px < numDeriv; px++) {
+    if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 1", px);
   }
-  (*librpf_model[id].deriv)(spec, REAL(r_param), mask,
+  (*librpf_model[id].deriv)(spec, REAL(r_param),
 			    NULL, REAL(r_weight), REAL(ret));
-  for (int px=0; px < numParam; px++) {
-    if (!isfinite(REAL(ret)[px])) error("Deriv not finite at step 2");
+  for (int px=0; px < numDeriv; px++) {
+    if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 2", px);
   }
   UNPROTECT(1);
   return ret;

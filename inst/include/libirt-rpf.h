@@ -33,7 +33,7 @@ typedef void (*rpf_prob_t)(const double *spec,
 typedef double (*rpf_prior_t)(const double *spec,
 			      const double *restrict param);
 typedef void (*rpf_deriv_t)(const double *spec,
-			       const double *restrict param, const int *paramMask,
+			       const double *restrict param,
 			       const double *where, const double *weight, double *out);
 typedef void (*rpf_rescale_t)(const double *spec, double *restrict param, const int *paramMask,
 			      const double *restrict mean, const double *restrict choleskyCov);
