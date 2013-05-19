@@ -11,3 +11,4 @@
 *.synctex.gz
 /inst/doc/figure
 /inst/doc/cache
+/src/Makevars
