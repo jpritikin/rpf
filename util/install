@@ -9,6 +9,11 @@ if [ ! -e ./util/install ]; then
   exit
 fi
 
+if [ -d inst/doc ]; then
+  mv inst/doc inst/doc.skip
+  echo "NOTE: Disabling vignettes for quick install"
+fi
+
 pkg=rpf
 
 rm -f ${pkg}_*.tar.gz
