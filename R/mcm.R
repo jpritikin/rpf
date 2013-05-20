@@ -11,11 +11,11 @@
 ##' @export
 ##' @author Jonathan Weeks <weeksjp@@gmail.com>
 rpf.mcm <- function(numOutcomes=2, numChoices=5, dimensions=1) {
+  stop("Not implemented")
   guess.weight <- 20
   guessing <- (1/numChoices)
   new("rpf.mdim.mcm",
       numOutcomes=numOutcomes, dimensions=dimensions,
-      numParam=numOutcomes * (dimensions + 2) - 1,
       a.prior.sdlog=.5,
       c.prior.alpha=guess.weight*guessing+1,
       c.prior.beta=guess.weight*(1-guessing)+1)

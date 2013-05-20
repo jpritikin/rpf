@@ -60,7 +60,6 @@ NULL
 setClass("rpf.base",
          representation(spec="numeric",
                         numOutcomes="numeric",
-                        numParam="numeric",
                         dimensions="numeric",
                         "VIRTUAL"))
 
@@ -103,11 +102,7 @@ setGeneric("rpf.numParam", function(m) standardGeneric("rpf.numParam"))
 
 setMethod("rpf.numParam", signature(m="rpf.base"),
           function(m) {
-            if (length(m@spec)==0) {
-              m@numParam
-            } else {
-              .Call(rpf_numParam_wrapper, m@spec)
-            }
+            .Call(rpf_numParam_wrapper, m@spec)
           })
 
 ##' Log likelihood of the item model parameters given the Bayesian prior

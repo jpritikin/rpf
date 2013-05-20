@@ -32,7 +32,6 @@ rpf.drm <- function(numChoices=5, dimensions=1, multidimensional, a.prior.sdlog=
     id <- rpf.id_of(ifelse(poor, "drm1-", "drm1"))
     m <- new("rpf.1dim.drm",
              numOutcomes=2,
-             numParam=3,
              dimensions=1,
              c.prior.logit=c.prior.logit)
   } else {
@@ -44,7 +43,6 @@ rpf.drm <- function(numChoices=5, dimensions=1, multidimensional, a.prior.sdlog=
     m <- new("rpf.mdim.drm",
              numOutcomes=2,
              dimensions=dimensions,
-             numParam=2+dimensions,
              c.prior.logit=c.prior.logit)
   }
   m@spec <- c(id, 2, m@dimensions, a.prior.sdlog, c.prior.logit, c.prior.sd)

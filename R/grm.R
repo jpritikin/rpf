@@ -33,14 +33,12 @@ rpf.grm <- function(numOutcomes=2, dimensions=1, multidimensional) {
     m <- new("rpf.1dim.grm",
              numOutcomes=numOutcomes,
              dimensions=1,
-             numParam=numOutcomes,
              a.prior.sdlog=.5)
   } else {
     id <- rpf.id_of("grm")
     m <- new("rpf.mdim.grm",
              numOutcomes=numOutcomes,
              dimensions=dimensions,
-             numParam=dimensions + numOutcomes - 1,
              a.prior.sdlog=.5)
   }
   m@spec <- c(id, m@numOutcomes, m@dimensions)

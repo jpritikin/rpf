@@ -26,15 +26,13 @@ rpf.gpcm <- function(numOutcomes=2, dimensions=1, multidimensional) {
   if (!multidimensional) {
     m <- new("rpf.1dim.gpcm",
         numOutcomes=numOutcomes,
-        dimensions=1,
-        numParam=numOutcomes)
+        dimensions=1)
     m@spec <- c(rpf.id_of('gpcm1'), m@numOutcomes, m@dimensions)
     m
   } else {
     m <- new("rpf.mdim.gpcm",
         numOutcomes=numOutcomes,
-        dimensions=dimensions,
-        numParam=dimensions + numOutcomes - 1)
+        dimensions=dimensions)
 #    m@spec <- c(rpf.id_of('gpcm'), m@numOutcomes, m@dimensions)
     m
   }

@@ -98,7 +98,7 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
     cols <- design[,ix]
     cols <- cols[!is.na(cols)]
     i.theta <- as.matrix(theta[,cols])
-    P <- rpf.prob(i, param[1:i@numParam], i.theta)
+    P <- rpf.prob(i, param[1:rpf.numParam(i)], i.theta)
 #    if (any(is.na(P))) stop(paste("Item", i@spec, "with param", param," produced NAs"))
     ret[[ix]] <- as.ordered(apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F))
   }

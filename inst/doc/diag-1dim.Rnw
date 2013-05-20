@@ -53,7 +53,7 @@ plot.info <- function(spec, param, i.name, width=3) {
   for (ix in 1:length(spec)) {
     id <- i.name[ix]
     s <- spec[[ix]]
-    df[[id]] <- rpf.info(s, param[ix,1:s@numParam], grid)
+    df[[id]] <- rpf.info(s, param[ix,1:rpf.numParam(s)], grid)
     total <- total + df[[id]]
   }
   df$total <- total
@@ -73,7 +73,7 @@ plot.info(spec, param, ms.items[,'name'])
 data(ms.people)
 
 data.vs.model <- function(spec1, param, espt, item.name, width=3, data.bins=10) {
-  pm <- rpf.prob(spec1, param[1:spec1@numParam], seq(-width, width, .1))
+  pm <- rpf.prob(spec1, param[1:rpf.numParam(spec1)], seq(-width, width, .1))
   icc <- as.data.frame(melt(pm, varnames=c("theta",'category')))
   icc$theta <- seq(-width, width, .1)
   icc$category <- as.ordered(1+max(icc$category)-icc$category)  #parscale reverses stuff
