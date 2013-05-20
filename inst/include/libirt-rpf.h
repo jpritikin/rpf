@@ -25,6 +25,8 @@ enum RPF_ISpec {
   RPF_ISpecCount
 };
 
+#define RPF_ISpecFacts RPF_ISpecDims
+
 typedef int (*rpf_numSpec_t)(const double *spec);
 typedef int (*rpf_numParam_t)(const double *spec);
 typedef void (*rpf_prob_t)(const double *spec,
