@@ -30,6 +30,7 @@ Suggests:
 Depends:
     methods,
     R (>= 2.15.0)
+VignetteBuilder: knitr
 Collate:
     'classes.R'
     'drm.R'

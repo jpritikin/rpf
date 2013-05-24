@@ -1,5 +1,6 @@
-\documentclass{article}
+%\VignetteEngine{knitr::knitr}
 %\VignetteIndexEntry{How to perform common IRT diagnostics}
+\documentclass{article}
 \begin{document}
 
 <<setup, cache=FALSE, include=FALSE>>=
