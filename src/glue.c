@@ -280,6 +280,7 @@ static R_CallMethodDef flist[] = {
   {"rpf_prior_wrapper", (DL_FUNC) rpf_prior_wrapper, 2},
   {"rpf_dLL_wrapper", (DL_FUNC) rpf_dLL_wrapper, 4},
   {"orlando_thissen_2000_wrapper", (DL_FUNC) orlando_thissen_2000, 5},
+  {"kang_chen_2007_wrapper", (DL_FUNC) kang_chen_2007_wrapper, 2},
   {"sumscore_observed", (DL_FUNC) sumscore_observed, 4},
   {"rpf_GaussHermiteData", (DL_FUNC) omxGaussHermiteData, 1},
   {NULL, NULL, 0}

@@ -195,11 +195,14 @@ rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
   })
 
   out <- .Call(orlando_thissen_2000_wrapper, c.spec, param, item, observed, quad)
-  observed <- c(out$observed)
-  expected <- c(out$expected)
+  out$orig.observed <- out$observed
+  out$orig.expected <- out$expected
+  kc <- .Call(kang_chen_2007_wrapper, out$orig.observed, out$orig.expected)
+  out$observed <- observed <- kc$observed
+  out$expected <- expected <- kc$expected
   mask <- expected!=0
   out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-  out$df <- out$df - free;
+  out$df <- out$df - free - kc$collapsed;
   out$p.value <- dchisq(out$statistic, out$df)
   out
 }
