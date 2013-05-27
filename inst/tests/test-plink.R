@@ -9,7 +9,7 @@ library(rpf)
 set.seed(1)
 
 theta <- rnorm(2)
-theta.2d <- array(dim=c(3,2), data=rnorm(6))
+theta.2d <- array(dim=c(2,3), data=rnorm(6))
 
 checkDim <- function(item, param) {
     expect_equal(length(param), rpf.numParam(item), class(item))
@@ -26,14 +26,14 @@ expect_equal(drm(t(i1.p), theta, 1)@prob[,2],
 m1 <- rpf.drm(factors=2)
 m1.p <- rpf.rparam(m1)
 checkDim(m1,m1.p)
-expect_equivalent(rpf.prob(m1, m1.p, theta.2d)[,2],
-                  drm(t(m1.p), theta.2d, dimensions=2)@prob[,3],
+expect_equivalent(rpf.prob(m1, m1.p, theta.2d)[2,],
+                  drm(t(m1.p), t(theta.2d), dimensions=2)@prob[,3],
                    "M3PL")
 
 i2 <- rpf.gpcm(outcomes=3)
 i2.p <- rpf.rparam(i2)
 checkDim(i2,i2.p)
-expect_equivalent(as.matrix(gpcm(t(i2.p), i2@outcomes, theta)@prob[,-1]),
+expect_equivalent(t(gpcm(t(i2.p), i2@outcomes, theta)@prob[,-1]),
                    rpf.prob(i2, i2.p, theta),
                    "GPCM")
 
@@ -53,7 +53,7 @@ i4.p <- rpf.rparam(i4)
 #i4.plink <- t(c(i4.p[1:2],ak0=0,i4.p[3:4],g0=0,i4.p[5:6]))
 checkDim(i4,i4.p)
 expect_equivalent(rpf.prob(i4, i4.p, theta.2d),
-                   as.matrix(nrm(x=i4.plink,cat=3, factors=2, theta.2d)@prob[,-1:-2]),
+                   as.matrix(nrm(x=i4.plink,cat=3, factors=2, t(theta.2d))@prob[,-1:-2]),
                    "NRM")
 }
 
@@ -70,11 +70,11 @@ i6 <- rpf.grm(outcomes=4)
 i6.p <- rpf.rparam(i6)
 checkDim(i6,i6.p)
 expect_equivalent(rpf.prob(i6, i6.p, theta),
-  as.matrix(grm(t(i6.p), factors=1,cat=4, theta=theta, catprob=TRUE)@prob[,-1]))
+  t(grm(t(i6.p), factors=1,cat=4, theta=theta, catprob=TRUE)@prob[,-1]))
 
 i7 <- rpf.grm(factors=2, outcomes=3)
 i7.p <- rpf.rparam(i7)
 checkDim(i7,i7.p)
 expect_equivalent(rpf.prob(i7, i7.p, theta.2d),
-                   as.matrix(grm(t(i7.p),dimensions=2,cat=3,theta.2d,catprob=TRUE)@prob[,-1:-2]),
+                   t(grm(t(i7.p),dimensions=2,cat=3,t(theta.2d),catprob=TRUE)@prob[,-1:-2]),
                    "M-GRM")

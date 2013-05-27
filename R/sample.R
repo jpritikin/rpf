@@ -73,12 +73,12 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
     numPeople <- theta
     # mean & covariance TODO
     theta <- array(rnorm(numPeople * maxAbilities),
-                   dim=c(numPeople, maxAbilities))
+                   dim=c(maxAbilities, numPeople))
   } else if (maxDim == 1 && is.vector(theta)) {
     numPeople <- length(theta)
-    theta <- array(theta, dim=c(numPeople, maxAbilities))
+    theta <- array(theta, dim=c(maxAbilities, numPeople))
   } else {
-    numPeople <- dim(theta)[1]
+    numPeople <- dim(theta)[2]
   }
 
   if (missing(params)) {
@@ -97,10 +97,10 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
     }
     cols <- design[,ix]
     cols <- cols[!is.na(cols)]
-    i.theta <- as.matrix(theta[,cols])
+    i.theta <- as.matrix(theta[cols,])
     P <- rpf.prob(i, param[1:rpf.numParam(i)], i.theta)
 #    if (any(is.na(P))) stop(paste("Item", i@spec, "with param", param," produced NAs"))
-    ret[[ix]] <- as.ordered(apply(P, c(1), sample, x=1:i@outcomes, size=1, replace=F))
+    ret[[ix]] <- as.ordered(apply(P, 2, sample, x=1:i@outcomes, size=1, replace=F))
   }
   ret <- as.data.frame(ret)
   colnames(ret) <- paste0(prefix,1:numItems)

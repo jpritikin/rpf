@@ -65,7 +65,7 @@ for (ix in 1:numItems) {
 }
 
 data <- rpf.sample(3, items, correct)
-expect_identical(c(simplify2array(data)), as.character(c(1, 2, 1, 1, 2, 2, 1, 1, 1)))
+expect_identical(c(simplify2array(data)), as.character(c(1, 1, 1, 1, 1, 2, 1, 1, 1)))
 
 ### uneven 2d design
 

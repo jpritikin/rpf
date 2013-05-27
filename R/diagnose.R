@@ -13,7 +13,7 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
   out <- array(dim=c(length(scores), length(spec)))
   for (ix in 1:length(spec)) {
     i <- spec[[ix]]
-    prob <- rpf.prob(i, params[ix,], scores)
+    prob <- t(rpf.prob(i, params[ix,], scores))  # remove t() TODO
     Escore <- apply(prob, 1, function(r) sum(r * 0:(i@outcomes-1)))
     grid <- t(array(0:(i@outcomes-1), dim=c(i@outcomes, length(scores))))
     out[,ix] <- apply((grid - Escore)^m * prob, 1, sum)
@@ -34,7 +34,7 @@ rpf.1dim.residual <- function(spec, params, responses, scores) {
   Zscore <- array(dim=c(length(scores), length(spec)))
   for (ix in 1:length(spec)) {
     i <- spec[[ix]]
-    prob <- rpf.prob(i, params[ix,], scores)
+    prob <- t(rpf.prob(i, params[ix,], scores))  # remove t() TODO
     Escore <- apply(prob, 1, function(r) sum(r * 0:(i@outcomes-1)))
     data <- responses[,ix]
     if (!is.ordered(data)) { stop(paste("Column",ix,"is not an ordered factor")) }

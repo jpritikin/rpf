@@ -18,8 +18,8 @@ suppressWarnings(fit <- mirt(data, 1, rep('3PL',i.count), D=1, technical=list(NC
 
 for (ix in 1:i.count) {
   ii <- extract.item(fit, ix)
-  expect_equal(c(probtrace(ii, c(-1,0,1))),
-               c(rpf.prob(spec[[1]], ii@par[1:3], c(-1,0,1))))
+  expect_equal(c(t(probtrace(ii, c(-1,0,1)))),
+               c(rpf.prob(spec[[1]], ii@par[1:4], c(-1,0,1))))
 }
 
 spec[1:i.count] <- rpf.grm(outcomes=3, multidimensional=TRUE)
@@ -36,7 +36,7 @@ for (ix in 1:i.count) {
     #print(data[,ix])
     next
   }
-  expect_equal(c(probtrace(ii, c(-1,0,1))),
+  expect_equal(c(t(probtrace(ii, c(-1,0,1)))),
                c(rpf.prob(spec[[1]], ii@par[1:3], c(-1,0,1))))
 }
 
@@ -48,8 +48,8 @@ suppressWarnings(fit <- mirt(data, 1, rep('nominal',i.count), D=1, technical=lis
 for (ix in 1:i.count) {
   ii <- extract.item(fit, ix)
   if (length(ii@par) < 7) next
-  expect_equal(c(probtrace(ii, c(-1,0,1))),
+  expect_equal(c(t(probtrace(ii, c(-1,0,1)))),
                c(rpf.prob(spec[[1]], ii@par[c(1, 3:4, 6:7)], c(-1,0,1))))
-  expect_equal(c(log(probtrace(ii, c(-1,0,1)))),
+  expect_equal(c(log(t(probtrace(ii, c(-1,0,1))))),
                c(rpf.logprob(spec[[1]], ii@par[c(1, 3:4, 6:7)], c(-1,0,1))))
 }
