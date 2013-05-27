@@ -20,23 +20,23 @@ Tnom.id <- function(nc) {
   return(T)
 }
 
-build.T <- function(numOutcomes, got) {
+build.T <- function(outcomes, got) {
   if (!is.matrix(got)) {
     if (got == "id") {
-      got <- Tnom.id(numOutcomes)
+      got <- Tnom.id(outcomes)
     } else if (got == "trend") {
-      got <- Tnom.trend(numOutcomes)
+      got <- Tnom.trend(outcomes)
     } else {
       stop(paste("T matrix", deparse(got), "not recognized"))
     }
   }
-  if (all(dim(got) == c(numOutcomes,numOutcomes-1))) {
+  if (all(dim(got) == c(outcomes,outcomes-1))) {
     if (any(got[1,] != 0)) warn("Non-zero T[1,] will be ignored")
     got <- got[-1,]
   }
-  if (all(dim(got) != rep(numOutcomes-1, 2))) {
-    stop(paste("T matrix must be of dimensions",
-               paste(rep(numOutcomes-1, 2), collapse="x"),
+  if (all(dim(got) != rep(outcomes-1, 2))) {
+    stop(paste("T matrix must be of dimension",
+               paste(rep(outcomes-1, 2), collapse="x"),
                "not", paste(dim(got), collapse="x")))
   }
   got
@@ -47,33 +47,33 @@ build.T <- function(numOutcomes, got) {
 ##' This function instantiates a nominal response model. Bayesian
 ##' priors are only used to generate plausible random parameters.
 ##' 
-##' @param numOutcomes The number of choices available
-##' @param dimensions the number of dimensions
+##' @param outcomes The number of choices available
+##' @param factors the number of factors
 ##' @return an item model
 ##' @export
-rpf.nrm <- function(numOutcomes=3, dimensions=1, T.a="trend", T.c="trend") {
-  T.a <- build.T(numOutcomes, T.a)
-  T.c <- build.T(numOutcomes, T.c)
+rpf.nrm <- function(outcomes=3, factors=1, T.a="trend", T.c="trend") {
+  T.a <- build.T(outcomes, T.a)
+  T.c <- build.T(outcomes, T.c)
   id <- rpf.id_of("nominal")
   m <- new("rpf.mdim.nrm",
-           numOutcomes=numOutcomes,
-           dimensions=dimensions,
+           outcomes=outcomes,
+           factors=factors,
            a.prior.sdlog=.5)
-  m@spec <- c(id, numOutcomes, dimensions, T.a, T.c)
+  m@spec <- c(id, outcomes, factors, T.a, T.c)
   m
 }
 
 getT <- function(m, tx) {
-  Tsize <- (m@numOutcomes-1L)^2
+  Tsize <- (m@outcomes-1L)^2
   offset <- 4 + tx * Tsize
-  matrix(m@spec[offset:(offset+Tsize-1)], m@numOutcomes-1L, m@numOutcomes-1L)
+  matrix(m@spec[offset:(offset+Tsize-1)], m@outcomes-1L, m@outcomes-1L)
 }
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
           function(m) {
-            a <- rlnorm(m@dimensions, sdlog=.5)
-            ak <- abs(rnorm(m@numOutcomes-1, mean=1, sd=.25))
-            ck <- sort(rnorm(m@numOutcomes-1))
+            a <- rlnorm(m@factors, sdlog=.5)
+            ak <- abs(rnorm(m@outcomes-1, mean=1, sd=.25))
+            ck <- sort(rnorm(m@outcomes-1))
             c(a=a,
               alf=solve(getT(m,0)) %*% ak,
               gam=solve(getT(m,1)) %*% ck)

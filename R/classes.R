@@ -59,8 +59,8 @@ NULL
 ##' @export
 setClass("rpf.base",
          representation(spec="numeric",
-                        numOutcomes="numeric",
-                        dimensions="numeric",
+                        outcomes="numeric",
+                        factors="numeric",
                         "VIRTUAL"))
 
 ##' The base class for 1 dimensional response probability functions.

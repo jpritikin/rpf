@@ -22,7 +22,7 @@ for (ix in 1:i.count) {
                c(rpf.prob(spec[[1]], ii@par[1:3], c(-1,0,1))))
 }
 
-spec[1:i.count] <- rpf.grm(numOutcomes=3, multidimensional=TRUE)
+spec[1:i.count] <- rpf.grm(outcomes=3, multidimensional=TRUE)
 
 data <- rpf.sample(100, spec)
 data <- simplify2array(lapply(data, unclass)) - 1
@@ -40,7 +40,7 @@ for (ix in 1:i.count) {
                c(rpf.prob(spec[[1]], ii@par[1:3], c(-1,0,1))))
 }
 
-spec[1:i.count] <- rpf.nrm(numOutcomes=3,
+spec[1:i.count] <- rpf.nrm(outcomes=3,
                            T.a=rbind(0, diag(2)),
                            T.c=rbind(0, diag(2)))
 

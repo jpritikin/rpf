@@ -22,7 +22,7 @@ set.seed(1)
 
 i1 <- rpf.drm()
 i1.p <- rpf.rparam(i1)
-i2 <- rpf.gpcm(numOutcomes=3)
+i2 <- rpf.gpcm(outcomes=3)
 i2.p <- rpf.rparam(i2)
 data <- rpf.sample(3, list(i1,i2), list(i1.p, i2.p))
 compare.df(unclass(data), data.frame(i1=c(2,1,1), i2=c(3,3,3)))
@@ -36,8 +36,8 @@ numItems <- 4
 items <- vector("list", numItems)
 correct <- vector("list", numItems)
 
-i1 <- rpf.drm(dimensions=2)
-i2 <- rpf.drm(dimensions=1, multidimensional=TRUE)
+i1 <- rpf.drm(factors=2)
+i2 <- rpf.drm(factors=1, multidimensional=TRUE)
 
 for (ix in 1:(numItems-1)) {
   items[[ix]] <- i1
@@ -58,7 +58,7 @@ numItems <- 3
 items <- vector("list", numItems)
 correct <- vector("list", numItems)
 
-i1 <- rpf.drm(dimensions=2)
+i1 <- rpf.drm(factors=2)
 for (ix in 1:numItems) {
   items[[ix]] <- i1
   correct[[ix]] <- rpf.rparam(i1)
@@ -76,14 +76,14 @@ maxDim <- 2
 items <- vector("list", numItems)
 correct <- vector("list", numItems)
 for (ix in 1:numItems) {
-	items[[ix]] <- rpf.drm(dimensions=min(ix,maxDim),
+	items[[ix]] <- rpf.drm(factors=min(ix,maxDim),
                                multidimensional=TRUE)
 	correct[[ix]] <- rpf.rparam(items[[ix]])
 	correct[[ix]][[4]] <- 0   # no guessing, for now
 }
 
-maxParam <- max(vapply(items, function(i) i@numParam, 0))
-maxOutcomes <- max(vapply(items, function(i) i@numOutcomes, 0))
+maxParam <- max(vapply(items, rpf.numParam, 0))
+maxOutcomes <- max(vapply(items, function(i) i@outcomes, 0))
 
 design <- matrix(c(1, 1,1,1,2,
 		   NA,2,2,2,1), byrow=TRUE, nrow=2)
@@ -98,7 +98,7 @@ compare.df(unclass(data),
 
 numItems <- 4
 i1 <- rpf.drm(numChoices=2)
-i2 <- rpf.drm(numChoices=2, dimensions=2)
+i2 <- rpf.drm(numChoices=2, factors=2)
 items <- vector("list", numItems)
 for (ix in seq(1,numItems,2)) items[[ix]] <- i1
 for (ix in seq(2,numItems,2)) items[[ix]] <- i2

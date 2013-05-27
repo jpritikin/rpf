@@ -3,10 +3,10 @@
 setMethod("rpf.info", signature(m="rpf.1dim.graded", param="numeric", theta="numeric"),
           function(m, param, theta) {
             pr <- rpf.prob(m, param, theta)
-            tbar <- apply(pr, 1, function(r) sum(r * 1:m@numOutcomes))
+            tbar <- apply(pr, 1, function(r) sum(r * 1:m@outcomes))
             ret <- numeric(length(theta))
             for (rx in 1:length(theta)) {
-              ret[rx] <- sum((1:m@numOutcomes - tbar[rx])^2 * pr[rx,])
+              ret[rx] <- sum((1:m@outcomes - tbar[rx])^2 * pr[rx,])
             }
             ret * param[1]^2
           })
@@ -14,7 +14,7 @@ setMethod("rpf.info", signature(m="rpf.1dim.graded", param="numeric", theta="num
 setMethod("rpf.rparam", signature(m="rpf.1dim.graded"),
           function(m) {
               a <- rlnorm(1, meanlog=0, sdlog=.5)
-              b <- sort(rnorm(m@numOutcomes-1))
+              b <- sort(rnorm(m@outcomes-1))
               c(a=a,b=b)
           })
 
@@ -22,8 +22,8 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.graded"),
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.graded"),
           function(m) {
-              a <- rlnorm(m@dimensions, meanlog=0, sdlog=.5)
-              b <- rnorm(m@numOutcomes-1)
+              a <- rlnorm(m@factors, meanlog=0, sdlog=.5)
+              b <- rnorm(m@outcomes-1)
               b <- b[order(-b)]
               c(a=a,b=b)
           })

@@ -21,12 +21,12 @@ set.seed(myseed)
 
 numItems <- 3
 items <- list()
-items[[1]] <- rpf.drm(numChoices=4, dimensions=2, phil=TRUE)
-items[[2]] <- rpf.grm(numOutcomes=3, dimensions=2)
+items[[1]] <- rpf.drm(numChoices=4, factors=2, phil=TRUE)
+items[[2]] <- rpf.grm(outcomes=3, factors=2)
 T.a <- matrix(rnorm(9),3,3) + diag(3)
 T.c <- matrix(rnorm(9),3,3) + diag(3)
 
-items[[3]] <- rpf.nrm(numOutcomes=4, dimensions=2,
+items[[3]] <- rpf.nrm(outcomes=4, factors=2,
                       T.a=T.a, T.c=T.c)
 
 # If not all outcomes are represented then lots of warnings result.

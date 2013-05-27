@@ -88,10 +88,10 @@ data.vs.model <- function(spec1, param, espt, item.name, width=3, data.bins=10) 
     warning("Some bins have less than 10 samples; try fewer data.bins")
   }
   
-  eout <- array(dim=c(data.bins, spec1@numOutcomes+1))
+  eout <- array(dim=c(data.bins, spec1@outcomes+1))
   for (px in 1:data.bins) {
     t <- table(espt[[item.name]][bin==px], useNA="no")
-    eout[px,2:(spec1@numOutcomes+1)] <- t / sum(t)
+    eout[px,2:(spec1@outcomes+1)] <- t / sum(t)
   }
   eout[,1] <- ((c(breaks,0) + c(0,breaks))/2)[2:(data.bins+1)]
   

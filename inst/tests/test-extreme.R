@@ -17,6 +17,6 @@ for (ix in 1:length(spec)) {
   iparam <- param[[ix]]
   for (wh in where) rpf.prob(ispec, iparam, wh)
   for (wh in where) rpf.logprob(ispec, iparam, wh)
-  w <- rchisq(ispec@numOutcomes, df=6)
+  w <- rchisq(ispec@outcomes, df=6)
   for (wh in where) rpf.dLL(ispec, iparam, wh, w)
 }

@@ -12,18 +12,18 @@
 ##' priori assumptions offer provide more power at the cost of
 ##' flexibility.
 ##' 
-##' @param numOutcomes The number of choices available
-##' @param dimensions the number of dimensions
+##' @param outcomes The number of choices available
+##' @param factors the number of factors
 ##' @param multidimensional whether to use a multidimensional model.
-##' Defaults to \code{TRUE} when \code{dimensions>1} and
-##' \code{FALSE} when \code{dimensions==1}.
+##' Defaults to \code{TRUE} when \code{factors>1} and
+##' \code{FALSE} when \code{factors==1}.
 ##' @return an item model
 ##' @export
-rpf.grm <- function(numOutcomes=2, dimensions=1, multidimensional) {
+rpf.grm <- function(outcomes=2, factors=1, multidimensional) {
   if (missing(multidimensional)) {
-    multidimensional <- dimensions > 1
+    multidimensional <- factors > 1
   }
-  if (!multidimensional && dimensions > 1) {
+  if (!multidimensional && factors > 1) {
     stop("More than 1 dimension must use a multidimensional model")
   }
   m <- NULL
@@ -31,17 +31,16 @@ rpf.grm <- function(numOutcomes=2, dimensions=1, multidimensional) {
   if (!multidimensional) {
     id <- rpf.id_of("grm1")
     m <- new("rpf.1dim.grm",
-             numOutcomes=numOutcomes,
-             dimensions=1,
+             outcomes=outcomes,
+             factors=1,
              a.prior.sdlog=.5)
   } else {
     id <- rpf.id_of("grm")
     m <- new("rpf.mdim.grm",
-             numOutcomes=numOutcomes,
-             dimensions=dimensions,
+             outcomes=outcomes,
+             factors=factors,
              a.prior.sdlog=.5)
   }
-  m@spec <- c(id, m@numOutcomes, m@dimensions)
+  m@spec <- c(id, m@outcomes, m@factors)
   m
 }
-

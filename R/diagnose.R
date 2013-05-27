@@ -14,8 +14,8 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
   for (ix in 1:length(spec)) {
     i <- spec[[ix]]
     prob <- rpf.prob(i, params[ix,], scores)
-    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@numOutcomes-1)))
-    grid <- t(array(0:(i@numOutcomes-1), dim=c(i@numOutcomes, length(scores))))
+    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@outcomes-1)))
+    grid <- t(array(0:(i@outcomes-1), dim=c(i@outcomes, length(scores))))
     out[,ix] <- apply((grid - Escore)^m * prob, 1, sum)
   }
   out
@@ -35,7 +35,7 @@ rpf.1dim.residual <- function(spec, params, responses, scores) {
   for (ix in 1:length(spec)) {
     i <- spec[[ix]]
     prob <- rpf.prob(i, params[ix,], scores)
-    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@numOutcomes-1)))
+    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@outcomes-1)))
     data <- responses[,ix]
     if (!is.ordered(data)) { stop(paste("Column",ix,"is not an ordered factor")) }
     data <- unclass(data) - 1
@@ -131,7 +131,7 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh
 ##' @param grain the step size for numerical integration (optional)
 rpf.mean.info1 <- function(spec, iparam, grain=.1) {
   range <- 9
-  dim <- spec@dimensions
+  dim <- spec@factors
   if (dim != 1) stop("Not implemented")
   grid <- seq(-range, range, grain)
   info <- rpf.info(spec, iparam, grid)
@@ -232,14 +232,14 @@ rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
     if (0) {
       # hard to persuade R to do this correctly
       ob.table <- table(apply(data[,context[context != interest]], 1, sum), data[,interest])
-      sumscores <- (length(spec)-1):(sum(sapply(spec, function(m) slot(m,'numOutcomes'))) - spec[[interest]]@numOutcomes)
-      observed <- array(0, dim=c(length(sumscores), spec[[interest]]@numOutcomes))
+      sumscores <- (length(spec)-1):(sum(sapply(spec, function(m) slot(m,'outcomes'))) - spec[[interest]]@outcomes)
+      observed <- array(0, dim=c(length(sumscores), spec[[interest]]@outcomes))
       rowmap <- match(sumscores, rownames(ob.table))
       rowmap <- rowmap[!is.na(rowmap)]
       observed[rowmap,] <- ob.table
     } else {
-      observed <- .Call(sumscore_observed, sum(sapply(spec, function(m) slot(m,'numOutcomes'))),
-                        data, interest, spec[[interest]]@numOutcomes)
+      observed <- .Call(sumscore_observed, sum(sapply(spec, function(m) slot(m,'outcomes'))),
+                        data, interest, spec[[interest]]@outcomes)
     }
     ot.out <- rpf.ot2000.chisq1(spec, param, sum(free[,interest]), interest, observed, quad)
     got[[interest]] <- ot.out
