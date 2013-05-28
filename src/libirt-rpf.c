@@ -511,15 +511,15 @@ irt_rpf_mdim_drm_rescale(const double *spec, double *restrict param, const int *
 			 const double *restrict mean, const double *restrict choleskyCov)
 {
   int numDims = spec[RPF_ISpecDims];
+
   for (int d1=0; d1 < numDims; d1++) {
     if (paramMask[d1] < 0) continue;
-    double result=0;
-    for (int d2=d1; d2 < numDims; d2++) {
-      result += param[d2] * choleskyCov[d1 * numDims + d2];
-    }
-    param[d1] = result;
-    param[numDims] += result * mean[d1];
+    param[d1] = dotprod(param+d1, choleskyCov + d1 * numDims + d1, numDims-d1);
   }
+
+  double madj = dotprod(param, mean, numDims);
+
+  param[numDims] += madj;
 }
 
 static void
@@ -695,12 +695,32 @@ irt_rpf_mdim_grm_deriv2(const double *spec,
   }
 }
 
+static void
+irt_rpf_mdim_grm_rescale(const double *spec, double *restrict param, const int *paramMask,
+			 const double *restrict mean, const double *restrict choleskyCov)
+{
+  int numDims = spec[RPF_ISpecDims];
+  int nzeta = spec[RPF_ISpecOutcomes] - 1;
+
+  for (int d1=0; d1 < numDims; d1++) {
+    if (paramMask[d1] < 0) continue;
+    param[d1] = dotprod(param+d1, choleskyCov + d1 * numDims + d1, numDims-d1);
+  }
+
+  double madj = dotprod(param, mean, numDims);
+
+  for (int tx=0; tx < nzeta; tx++) {
+    int px = numDims + tx;
+    if (paramMask[px] >= 0) param[px] += madj;
+  }
+}
+
 static int
 irt_rpf_nominal_numSpec(const double *spec)
 {
   int outcomes = spec[RPF_ISpecOutcomes];
   int Tlen = (outcomes - 1) * (outcomes - 1);
-  return RPF_ISpecCount + 2 * Tlen;
+  return RPF_ISpecCount + 4 * Tlen;
 }
 
 static int
@@ -1098,6 +1118,55 @@ irt_rpf_nominal_deriv2(const double *spec,
   Free(dmat);
 }
 
+static void
+irt_rpf_mdim_nrm_rescale(const double *spec, double *restrict param, const int *paramMask,
+			 const double *restrict mean, const double *restrict choleskyCov)
+{
+  int numDims = spec[RPF_ISpecDims];
+  int nzeta = spec[RPF_ISpecOutcomes] - 1;
+  double *alpha = param + numDims;
+  double *gamma = param + numDims + nzeta;
+  const double *Ta  = spec + RPF_ISpecCount;
+  const double *Tc  = spec + RPF_ISpecCount + nzeta * nzeta;
+  const double *iTc = spec + RPF_ISpecCount + 3 * nzeta * nzeta;
+
+  for (int d1=0; d1 < numDims; d1++) {
+    if (paramMask[d1] < 0) continue;
+    param[d1] = dotprod(param+d1, choleskyCov + d1 * numDims + d1, numDims-d1);
+  }
+
+  double madj = dotprod(param, mean, numDims);
+
+  double ak[nzeta];
+  double ck[nzeta];
+  memset(ak, 0, sizeof(double)*nzeta);
+  memset(ck, 0, sizeof(double)*nzeta);
+
+  for (int kx=0; kx < nzeta; kx++) {
+    for (int tx=0; tx < nzeta; tx++) {
+      int Tcell = tx * nzeta + kx;
+      ak[kx] += Ta[Tcell] * alpha[tx];
+      ck[kx] += Tc[Tcell] * gamma[tx];
+    }
+  }
+
+  for (int kx=0; kx < nzeta; kx++) {
+    ck[kx] += madj * ak[kx];
+  }
+
+  for (int kx=0; kx < nzeta; kx++) {
+    int px = numDims + nzeta + kx;
+    if (paramMask[px] < 0) continue;
+
+    param[px] = 0;
+
+    for (int tx=0; tx < nzeta; tx++) {
+      int Tcell = tx * nzeta + kx;
+      param[px] += iTc[Tcell] * ck[tx];
+    }
+  }
+}
+
 static int
 irt_rpf_1dim_gpcm_numSpec(const double *spec)
 { return RPF_ISpecCount; }
@@ -1253,6 +1322,7 @@ irt_rpf_1dim_gpcm_rescale(const double *spec, double *restrict param, const int 
 }
 
 static void noop() {}
+static void notimplemented() { error("Not implemented"); }
 
 const struct rpf librpf_model[] = {
   { "drm1-",
@@ -1272,10 +1342,10 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_drm_numParam,
     irt_rpf_1dim_drm_prob,
     irt_rpf_logprob_adapter,
-    0,
-    0,
-    0,
-    0,
+    (rpf_prior_t) notimplemented,
+    notimplemented,
+    notimplemented,
+    notimplemented,
     irt_rpf_1dim_drm_prefit,
     noop,
   },
@@ -1347,7 +1417,7 @@ const struct rpf librpf_model[] = {
     (rpf_prior_t) noop,
     irt_rpf_mdim_grm_deriv1,
     irt_rpf_mdim_grm_deriv2,
-    noop, // rescale
+    irt_rpf_mdim_grm_rescale,
     noop,
     noop
   },
@@ -1359,7 +1429,7 @@ const struct rpf librpf_model[] = {
     (rpf_prior_t) noop,
     irt_rpf_nominal_deriv1,
     irt_rpf_nominal_deriv2,
-    noop, // rescale
+    irt_rpf_mdim_nrm_rescale,
     noop,
     noop
   }

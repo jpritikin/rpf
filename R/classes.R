@@ -153,6 +153,21 @@ setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
             }
           })
 
+##' Rescale item parameters
+##'
+##' TODO doc
+setGeneric("rpf.rescale", function(m, param, mean, cov) standardGeneric("rpf.rescale"))
+
+setMethod("rpf.rescale", signature(m="rpf.base", param="numeric",
+                                   mean="numeric", cov="matrix"),
+          function(m, param, mean, cov) {
+            if (length(m@spec)==0) {
+              stop("Not implemented")
+            } else {
+              .Call(rpf_rescale_wrapper, m@spec, param, mean, cov)
+            }
+          })
+
 ##' Map an item model, item parameters, and person trait score into a
 ##' probability vector
 ##'

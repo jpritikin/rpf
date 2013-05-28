@@ -26,6 +26,13 @@ build.T <- function(outcomes, got) {
       got <- Tnom.id(outcomes)
     } else if (got == "trend") {
       got <- Tnom.trend(outcomes)
+    } else if (got == "random") {
+      while (1) {
+        side <- outcomes-1
+        got <- matrix(rnorm(side*side), side, side)
+        invertible <- try(solve(got), silent=TRUE)
+        if (!inherits(invertible, "try-error")) break
+      }
     } else {
       stop(paste("T matrix", deparse(got), "not recognized"))
     }
@@ -59,7 +66,7 @@ rpf.nrm <- function(outcomes=3, factors=1, T.a="trend", T.c="trend") {
            outcomes=outcomes,
            factors=factors,
            a.prior.sdlog=.5)
-  m@spec <- c(id, outcomes, factors, T.a, T.c)
+  m@spec <- c(id, outcomes, factors, T.a, T.c, solve(T.a), solve(T.c))
   m
 }
 
@@ -75,6 +82,6 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
             ak <- abs(rnorm(m@outcomes-1, mean=1, sd=.25))
             ck <- sort(rnorm(m@outcomes-1))
             c(a=a,
-              alf=solve(getT(m,0)) %*% ak,
-              gam=solve(getT(m,1)) %*% ck)
+              alf=getT(m,2) %*% ak,
+              gam=getT(m,3) %*% ck)
           })
