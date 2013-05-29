@@ -323,76 +323,8 @@ irt_rpf_mdim_drm_prior(const double *spec,
   return ll;
 }
 
-/**
- * irf(a1,a2,b,c,th1,th2) := c+(1-c)/(1+exp(-(a1*th1+a2*th2+b)));
- * ratsimp(diff(log(1-irf(a1,a2,b,c,th1,th2)),a1)); //0
- * diff(log(1-irf(a1,a2,b,c,th1,th2)),a2);
- * diff(log(1-irf(a1,a2,b,c,th1,th2)),b);
- * diff(log(1-irf(a1,a2,b,c,th1,th2)),c);
- *
- * Wolfram Alpha
- * d/dx log(1- (c+(1-c)/(1+exp(-(x*f+y*g+z*h+b)))))
- * d/db log( (c+(1-c)/(1+exp(-(x*f+y*g+z*h+b)))))
- */
 static void
 irt_rpf_mdim_drm_deriv1(const double *spec,
-		       const double *restrict param,
-		       const double *where, const double area,
-		       const double *weight, double *out)
-{
-  int numDims = spec[RPF_ISpecDims];
-  const double *aa = param;
-  double bb = param[numDims];
-  double cc = param[numDims+1];
-
-  double athb = dotprod(aa, where, numDims) + bb;
-  if (athb < -GRADIENT_STABLE_DOMAIN) athb = -GRADIENT_STABLE_DOMAIN;
-  else if (athb > GRADIENT_STABLE_DOMAIN) athb = GRADIENT_STABLE_DOMAIN;
-
-  double Eathb = exp(athb);
-  for (int dx=0; dx < numDims; dx++) {
-    out[dx] += area * ((weight[0] * (where[dx]/(Eathb+1) - where[dx]) +
-			weight[1] * (where[dx]/(Eathb+1) - cc * where[dx] / (Eathb+cc))));
-  }
-  out[numDims] += area * ((weight[0] * (1/(Eathb+1) - 1) +
-			   weight[1] * (-((cc-1)*Eathb)/((Eathb+1)*(Eathb+cc)))));
-  out[numDims+1] += area * ((weight[0] * (1/(cc-1)) +
-			     weight[1] * (1/(Eathb+cc))));
-}
-
-static void
-irt_rpf_mdim_drm_deriv2(const double *spec,
-			const double *restrict param,
-			double *out)
-{
-  int numDims = spec[RPF_ISpecDims];
-  const double *aa = param;
-  double cc = param[numDims+1];
-  if (cc < 0 || cc >= 1) {
-    set_deriv_nan(spec, out);
-    return;
-  }
-  for (int dx=0; dx < numDims; dx++) {
-    if (aa[dx] < 0) {
-      set_deriv_nan(spec, out);
-      return;
-    }
-  }
-  const double *prior = spec + RPF_ISpecCount;
-  for (int dx=0; dx < numDims; dx++) {
-    //out[dx] += lognormal_gradient(aa[dx], prior[0]);
-  }
-  if (cc == 0) {
-    out[numDims+1] = nan("I");
-  } else {
-    out[numDims+1] += logitnormal_gradient(cc, prior[1], prior[2]);
-  }
-  const int numH = (numDims+2) * (numDims+3) / 2;
-  for (int px=numDims+2; px < numDims+2 + numH; px++) out[px] = nan("I");
-}
-
-static void
-irt_rpf_mdim_drm_deriv_phil1(const double *spec,             // remove old impl TODO
 		       const double *restrict param,
 		       const double *where, const double area,
 		       const double *weight, double *out)
@@ -479,16 +411,16 @@ irt_rpf_mdim_drm_deriv_phil1(const double *spec,             // remove old impl 
 }
 
 static void
-irt_rpf_mdim_drm_deriv_phil2(const double *spec,
-			     const double *restrict param,
-			     double *out)
+irt_rpf_mdim_drm_deriv2(const double *spec,
+			const double *restrict param,
+			double *out)
 {
   int numDims = spec[RPF_ISpecDims];
   const double *aa = param;
   double cc = param[numDims+1];
   double upper = param[numDims+2];
 
-  if (cc < 0 || cc >= 1) {
+  if (cc < 0 || cc >= 1 || upper <= 0 || upper > 1) {
     set_deriv_nan(spec, out);
     return;
   }
@@ -1369,18 +1301,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_drm_prior,
     irt_rpf_mdim_drm_deriv1,
     irt_rpf_mdim_drm_deriv2,
-    irt_rpf_mdim_drm_rescale,
-    noop,
-    noop
-  },
-  { "drm+phil",
-    irt_rpf_mdim_drm_numSpec,
-    irt_rpf_mdim_drm_numParam,
-    irt_rpf_mdim_drm_prob,
-    irt_rpf_logprob_adapter,
-    (rpf_prior_t) noop,
-    irt_rpf_mdim_drm_deriv_phil1,
-    irt_rpf_mdim_drm_deriv_phil2,
     irt_rpf_mdim_drm_rescale,
     noop,
     noop

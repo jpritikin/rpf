@@ -16,7 +16,7 @@
 ##' @references Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
 ##' Full-Information Item Bifactor Analysis.  \emph{Psychological
 ##' Methods, 16}(3), 221-248.
-rpf.drm <- function(numChoices=5, factors=1, multidimensional, a.prior.sdlog=.5, poor=FALSE, phil=FALSE) {
+rpf.drm <- function(numChoices=5, factors=1, multidimensional, a.prior.sdlog=.5, poor=FALSE) {
   if (missing(multidimensional)) {
     multidimensional <- factors > 1
   }
@@ -35,11 +35,7 @@ rpf.drm <- function(numChoices=5, factors=1, multidimensional, a.prior.sdlog=.5,
              factors=1,
              c.prior.logit=c.prior.logit)
   } else {
-    if (phil) {
-      id <- rpf.id_of("drm+phil")
-    } else {
-      id <- rpf.id_of("drm")
-    }
+    id <- rpf.id_of("drm")
     m <- new("rpf.mdim.drm",
              outcomes=2,
              factors=factors,
@@ -54,6 +50,7 @@ rpf.drm <- function(numChoices=5, factors=1, multidimensional, a.prior.sdlog=.5,
 ##' @references
 ##' Embretson & Reise (2000, p. 184)
 info.3pl <- function(m, param, theta) {
+  # TODO replace with mirt deriv approach
             p <- rpf.prob(m, param, theta)
             a <- param[1]
             c <- param[3]
