@@ -32,8 +32,6 @@ typedef int (*rpf_numParam_t)(const double *spec);
 typedef void (*rpf_prob_t)(const double *spec,
 			   const double *restrict param, const double *restrict th,
 			   double *restrict out);
-typedef double (*rpf_prior_t)(const double *spec,
-			      const double *restrict param);
 typedef void (*rpf_dLL1_t)(const double *spec,
 			   const double *restrict param,
 			   const double *where, const double area,
@@ -49,7 +47,6 @@ struct rpf {
   rpf_numParam_t numParam;
   rpf_prob_t prob;
   rpf_prob_t logprob;
-  rpf_prior_t prior;
   rpf_dLL1_t dLL1;
   rpf_dLL2_t dLL2;
   rpf_rescale_t rescale;

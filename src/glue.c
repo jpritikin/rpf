@@ -197,34 +197,6 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 }
 
 static SEXP
-rpf_prior_wrapper(SEXP r_spec, SEXP r_param)
-{
-  if (length(r_spec) < RPF_ISpecCount)
-    error("Item spec must be of length %d, not %d", RPF_ISpecCount, length(r_spec));
-
-  double *spec = REAL(r_spec);
-
-  int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
-    error("Item model %d out of range", id);
-
-  int numSpec = (*librpf_model[id].numSpec)(spec);
-  if (length(r_spec) < numSpec)
-    error("Item spec must be of length %d, not %d", numSpec, length(r_spec));
-    
-  int numParam = (*librpf_model[id].numParam)(spec);
-  if (length(r_param) < numParam)
-    error("Item has %d parameters, only %d given", numParam, length(r_param));
-
-  SEXP ret;
-  PROTECT(ret = allocVector(REALSXP, 1));
-  REAL(ret)[0] = (*librpf_model[id].prior)(spec, REAL(r_param));
-  if (!isfinite(REAL(ret)[0])) error("Prior not finite");
-  UNPROTECT(1);
-  return ret;
-}
-
-static SEXP
 rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
 		  SEXP r_where, SEXP r_weight)
 {
@@ -320,7 +292,6 @@ static R_CallMethodDef flist[] = {
   {"rpf_numParam_wrapper", (DL_FUNC) rpf_numParam_wrapper, 1},
   {"rpf_prob_wrapper", (DL_FUNC) rpf_prob_wrapper, 3},
   {"rpf_logprob_wrapper", (DL_FUNC) rpf_logprob_wrapper, 3},
-  {"rpf_prior_wrapper", (DL_FUNC) rpf_prior_wrapper, 2},
   {"rpf_dLL_wrapper", (DL_FUNC) rpf_dLL_wrapper, 4},
   {"rpf_rescale_wrapper", (DL_FUNC) rpf_rescale_wrapper, 4},
   {"orlando_thissen_2000_wrapper", (DL_FUNC) orlando_thissen_2000, 5},

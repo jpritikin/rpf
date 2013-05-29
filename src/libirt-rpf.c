@@ -1138,14 +1138,6 @@ irt_rpf_1dim_gpcm_prob(const double *spec,
   }
 }
 
-static double
-irt_rpf_1dim_gpcm_prior(const double *spec,
-			const double *restrict param)
-{
-  //const double *prior = spec + RPF_ISpecCount;
-  return 0; //lognormal_pdf(param[0], prior[0]);
-}
-
 /**
  * Based on Muraki (1992, p. 167). I am not sure exactly how the
  * parameterization here relates to the parameterization in Muraki (1992).
@@ -1262,7 +1254,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_drm_numParam,
     irt_rpf_1dim_drm_prob,
     irt_rpf_logprob_adapter,
-    irt_rpf_1dim_drm_prior,
     irt_rpf_1dim_drm_deriv1,
     irt_rpf_1dim_drm_deriv2,
     irt_rpf_1dim_drm_rescale,
@@ -1274,7 +1265,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_drm_numParam,
     irt_rpf_1dim_drm_prob,
     irt_rpf_logprob_adapter,
-    (rpf_prior_t) notimplemented,
     notimplemented,
     notimplemented,
     notimplemented,
@@ -1286,7 +1276,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_drm_numParam,
     irt_rpf_mdim_drm_prob,
     irt_rpf_logprob_adapter,
-    irt_rpf_mdim_drm_prior,
     irt_rpf_mdim_drm_deriv1,
     irt_rpf_mdim_drm_deriv2,
     irt_rpf_mdim_drm_rescale,
@@ -1298,7 +1287,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_drm_numParam,
     irt_rpf_mdim_drm_prob,
     irt_rpf_logprob_adapter,
-    irt_rpf_mdim_drm_prior,
     irt_rpf_mdim_drm_deriv1,
     irt_rpf_mdim_drm_deriv2,
     irt_rpf_mdim_drm_rescale,
@@ -1310,7 +1298,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_gpcm_numParam,
     irt_rpf_1dim_gpcm_prob,
     irt_rpf_logprob_adapter,
-    irt_rpf_1dim_gpcm_prior,
     irt_rpf_1dim_gpcm_deriv1,
     irt_rpf_1dim_gpcm_deriv2,
     irt_rpf_1dim_gpcm_rescale,
@@ -1322,7 +1309,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_grm_numParam,
     irt_rpf_1dim_grm_prob,
     irt_rpf_logprob_adapter,
-    (rpf_prior_t) noop,
     noop,
     noop,
     noop,
@@ -1334,7 +1320,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_grm_numParam,
     irt_rpf_mdim_grm_prob,
     irt_rpf_logprob_adapter,
-    (rpf_prior_t) noop,
     irt_rpf_mdim_grm_deriv1,
     irt_rpf_mdim_grm_deriv2,
     irt_rpf_mdim_grm_rescale,
@@ -1346,7 +1331,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_nominal_numParam,
     irt_rpf_nominal_prob,
     irt_rpf_nominal_logprob,
-    (rpf_prior_t) noop,
     irt_rpf_nominal_deriv1,
     irt_rpf_nominal_deriv2,
     irt_rpf_mdim_nrm_rescale,
