@@ -17,7 +17,9 @@
 ##' @param params a list or matrix of item parameters. If omitted, random item
 ##' parameters are generated for each item model.
 ##' @param design a matrix assigning person abilities to item factors
-##' @param prefix prefix for column label (optional)
+##' @param prefix Column names are taken from param or items.
+##' If no column names are available, some will be generated using
+##' the given prefix.
 ##' @return Returns a data frame of response patterns
 ##' @export
 ##' @examples
@@ -103,6 +105,9 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
     ret[[ix]] <- as.ordered(apply(P, 2, sample, x=1:i@outcomes, size=1, replace=F))
   }
   ret <- as.data.frame(ret)
-  colnames(ret) <- paste0(prefix,1:numItems)
+  name <- colnames(params)
+  if (is.null(name)) name <- names(items)
+  if (is.null(name)) name <- paste0(prefix,1:numItems)
+  colnames(ret) <- name
   return(ret)
 }
