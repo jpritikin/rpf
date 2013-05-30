@@ -86,6 +86,7 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
   if (missing(params)) {
     params <- lapply(items, rpf.rparam)
   }
+
   outcomes <- vapply(items, function(i) i@outcomes, 0)
   
   ret <- list()
@@ -97,6 +98,12 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
     } else {
       param <- params[,ix]  # item parameters are in columns
     }
+
+    if (length(param) < rpf.numParam(i)) {
+      stop(paste("Item",class(i),"needs",rpf.numParam(i),
+                 "parameters but only",length(param),"given"))
+    }
+
     cols <- design[,ix]
     cols <- cols[!is.na(cols)]
     i.theta <- as.matrix(theta[cols,])

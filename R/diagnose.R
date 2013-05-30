@@ -178,7 +178,7 @@ rpf.mean.info <- function(spec, param, grain=.1) {
 ##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
 ##' @param item the item of interest
 ##' @param observed a matrix of observed raw scores by the outcome of the item of interest
-##' @param quad the quadrature rule (default is G-H with 49 points)
+##' @param quad the quadrature rule (default is equally spaced intervals with 49 points)
 ##'
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
@@ -188,12 +188,21 @@ rpf.mean.info <- function(spec, param, grain=.1) {
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
 rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
-  if (missing(quad)) quad <- rpf.GaussHermiteData(49)
+  if (missing(quad)) {
+    n <- 49
+    width <- 6
+    x <- seq(-width, width, length.out=n)
+    quad <- list(x=x, w=dnorm(x)/sum(dnorm(x)))
+  }
   c.spec <- lapply(spec, function(m) {
     if (length(m@spec)==0) { stop("Item model",m,"is not fully implemented") }
     else { m@spec }
   })
 
+  max.param <- max(vapply(spec, rpf.numParam, 0))
+  if (dim(param)[1] < max.param) {
+    stop(paste("param matrix must have", max.param ,"rows"))
+  }
   out <- .Call(orlando_thissen_2000_wrapper, c.spec, param, item, observed, quad)
   out$orig.observed <- out$observed
   out$orig.expected <- out$expected
@@ -212,15 +221,22 @@ rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
 ##' Runs \code{\link{rpf.ot2000.chisq1}} for every item and accumulates
 ##' the results.
 ##'
+##' TODO: Handle multiple factors with mean and covariance parameters.
+##'
 ##' @param spec a list of item specifications
 ##' @param param item paramters in columns
 ##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
 ##' @param data a data frame or matrix of response patterns, 1 per row
-##' @param quad the quadrature rule (default is G-H with 49 points)
+##' @param quad the quadrature rule (default is equally spaced intervals with 49 points)
 ##' @return
 ##' a list of output from \code{\link{rpf.ot2000.chisq1}}
 rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
-  if (missing(quad)) quad <- rpf.GaussHermiteData(49)
+  if (missing(quad)) {
+    n <- 49
+    width <- 6
+    x <- seq(-width, width, length.out=n)
+    quad <- list(x=x, w=dnorm(x)/sum(dnorm(x)))
+  }
   if (is.data.frame(data)) {
     data <- sapply(data, unclass)
   }
@@ -246,22 +262,3 @@ rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
   }
   got
 }
-
-##' Compute Gauss-Hermite quadrature rule
-##'
-##' Computes Gauss-Hermite quadrature rule of requested order using the
-##' Golub-Welsch algorithm. This is very fast and numerically
-##' stable. It can handle quadrature of order 1000+.
-##' @param
-##' n Order of Gauss-Hermite rule to compute (number of nodes)
-##' @return A list containing the node positions (x) and the
-##' quadrature weights (w) for the requested rule.
-##' @author
-##' Alexander W Blocker <ablocker@@gmail.com>
-##' @aliases
-##' rpf_GaussHermiteData
-##' @references
-##' Golub, G. H. and Welsch, J. H. (1969). Calculation of
-##' Gauss Quadrature Rules. Mathematics of Computation 23 (106):
-##' 221-230
-rpf.GaussHermiteData <- function(n) .Call(rpf_GaussHermiteData, n)

@@ -7,17 +7,21 @@ set.seed(1)
 spec <- list()
 spec[1:3] <- rpf.drm()
 
-gen.p <- matrix(c(1,0,0,1,-1,0,1,1,0), ncol=3, nrow=3)
+gen.p <- matrix(c(1,0,0,1,
+                  1,-1,0,1,
+                  1,1,0,1), ncol=3, nrow=4)  # note byrow=FALSE
 data <- rpf.sample(200, spec, gen.p)
 #  write.csv(data, "fit-test.csv", row.names=FALSE, quote=FALSE)
 
-param <- matrix(c(.71,.03,0, 1.53,-.85,0, 0.19,4.26,0), ncol=3, nrow=3)
+param <- matrix(c(.71,.03,0, 1,
+                  1.53,-.85, 0, 1,
+                  0.19,4.26,0, 1), ncol=3, nrow=4)
 
-got <- rpf.ot2000.chisq(spec, param, param!=0, data)
+got <- rpf.ot2000.chisq(spec, param, param!=0 & param!=1, data)
 
 tbl <- round(t(sapply(got, function(row) c(chisq=row$statistic, df=row$df, p=row$p.value))),2)
 expect_equal(sum(tbl[,2]), 3)
-expect_equal(sum(tbl[,1]), 6.79)
+expect_equal(sum(tbl[,1]), 5.71)
 
 ######################
 
@@ -38,5 +42,5 @@ param <- structure(c(2.22843629514544, -0.599521609942681, 0.363362200164802,  0
 got <- rpf.ot2000.chisq(items, param, param!=0, data)
 
 tbl <- round(t(sapply(got, function(row) c(chisq=row$statistic, df=row$df, p=row$p.value))),2)
-expect_equal(sum(tbl[,2]), 513)
-expect_equal(sum(tbl[,1]), 522.33)
+expect_equal(sum(tbl[,2]), 501)
+expect_equal(sum(tbl[,1]), 546.64)
