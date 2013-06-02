@@ -20,6 +20,8 @@
 ##' @param prefix Column names are taken from param or items.
 ##' If no column names are available, some will be generated using
 ##' the given prefix.
+##' @param mean mean vector of latent distribution (optional)
+##' @param cov covariance matrix of latent distribution (optional)
 ##' @return Returns a data frame of response patterns
 ##' @export
 ##' @examples
@@ -52,7 +54,8 @@
 ##' @references
 ##' Cai, L. (2010). A two-tier full-information item factor analysis
 ##' model with applications. \emph{Psychometrika, 75}, 581-612.
-rpf.sample <- function(theta, items, params, design, prefix="i") {
+rpf.sample <- function(theta, items, params, design, prefix="i",
+                       mean=NULL, cov=NULL) {
   numItems <- length(items)
   maxDim <- max(vapply(items, function(i) i@factors, 0))
   if (missing(design)) {
@@ -73,8 +76,9 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
   if (is.numeric(theta) && length(theta) == 1) {
     if (theta <= 1) stop("Request at least 2 samples")
     numPeople <- theta
-    # mean & covariance TODO
-    theta <- array(rnorm(numPeople * maxAbilities),
+    if (missing(mean)) mean <- rep(0, maxAbilities)
+    if (missing(cov)) cov <- diag(maxAbilities)
+    theta <- array(t(rmvnorm(numPeople, mean=mean, sigma=cov)),
                    dim=c(maxAbilities, numPeople))
   } else if (maxDim == 1 && is.vector(theta)) {
     numPeople <- length(theta)

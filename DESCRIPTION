@@ -28,6 +28,7 @@ Suggests:
     OpenMx
 Depends:
     methods,
+    mvtnorm,
     R (>= 2.15.0)
 VignetteBuilder: knitr
 Collate:
