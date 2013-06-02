@@ -3,6 +3,8 @@
 library(testthat)
 library(rpf)
 
+context("rescale")
+
 genOrthogonal<-function(dim) { 
   Q<-MOrthogonal(runif(dim))
   return(Q)
@@ -35,46 +37,48 @@ genPositiveDefMat <- function(dim, low=-1.4, upp=1.4) {
 }
 
 for (dims in 1:3) {
-  spec <- list()
-  spec[[1]] <- rpf.drm(factors=dims, multidimensional=TRUE)
-  spec[[2]] <- rpf.grm(factors=dims, outcomes = 3, multidimensional=TRUE)
-  spec[[3]] <- rpf.nrm(factors=dims, T.a="random", T.c="random")
-  numItems <- length(spec)
-  
-  test.point <- rnorm(dims)
-  param <- list()
-  prob <- list()
-  for (ix in 1:numItems) {
-    param[[ix]] <- rpf.rparam(spec[[ix]])
-    prob[[ix]] <- rpf.prob(spec[[ix]], param[[ix]], test.point)
-  }
-  
-  for (ix in 1:numItems) {
-    info <- paste("  (While testing item model", class(spec[[ix]]), ")")
+  test_that(paste(dims, "dims"), {
+    spec <- list()
+    spec[[1]] <- rpf.drm(factors=dims, multidimensional=TRUE)
+    spec[[2]] <- rpf.grm(factors=dims, outcomes = 3, multidimensional=TRUE)
+    spec[[3]] <- rpf.nrm(factors=dims, T.a="random", T.c="random")
+    numItems <- length(spec)
     
-    nomove <- rep(0, dims)
-    padj <- rpf.rescale(spec[[ix]], param[[ix]], nomove, diag(dims))
-    prob.adj <- rpf.prob(spec[[ix]], padj, test.point)
-    expect_equal(prob.adj, prob[[ix]], 1e-3, label="Unmoved params",
-                 info=info)
+    test.point <- rnorm(dims)
+    param <- list()
+    prob <- list()
+    for (ix in 1:numItems) {
+      param[[ix]] <- rpf.rparam(spec[[ix]])
+      prob[[ix]] <- rpf.prob(spec[[ix]], param[[ix]], test.point)
+    }
     
-    move <- rnorm(dims)
-    padj <- rpf.rescale(spec[[ix]], param[[ix]], move, diag(dims))
-    prob.adj <- rpf.prob(spec[[ix]], padj, test.point-move)
-    expect_equal(prob.adj, prob[[ix]], 1e-3, label="Moved params", info=info)
-    
-    cov <- genPositiveDefMat(dims) * lower.tri(diag(dims), TRUE)
-    Icov <- t(solve(cov))
-    
-    padj <- rpf.rescale(spec[[ix]], param[[ix]], nomove, cov)
-    prob.adj <- rpf.prob(spec[[ix]], padj, t(test.point %*% Icov))
-    expect_equal(prob.adj, prob[[ix]], 1e-3, label="Covariance scaled params", info=info)
-    
-    padj <- rpf.rescale(spec[[ix]], param[[ix]], move, cov)
-    prob.adj <- rpf.prob(spec[[ix]], padj, t(test.point %*% Icov)-move)
-    expect_equal(prob.adj, prob[[ix]], 1e-3,
-                 label="Moved and covariance scaled params", info=info)
-  }
+    for (ix in 1:numItems) {
+      info <- paste("  (While testing item model", class(spec[[ix]]), ")")
+      
+      nomove <- rep(0, dims)
+      padj <- rpf.rescale(spec[[ix]], param[[ix]], nomove, diag(dims))
+      prob.adj <- rpf.prob(spec[[ix]], padj, test.point)
+      expect_equal(prob.adj, prob[[ix]], 1e-3, label="Unmoved params",
+                   info=info)
+      
+      move <- rnorm(dims)
+      padj <- rpf.rescale(spec[[ix]], param[[ix]], move, diag(dims))
+      prob.adj <- rpf.prob(spec[[ix]], padj, test.point-move)
+      expect_equal(prob.adj, prob[[ix]], 1e-3, label="Moved params", info=info)
+      
+      cov <- genPositiveDefMat(dims) * lower.tri(diag(dims), TRUE)
+      Icov <- t(solve(cov))
+      
+      padj <- rpf.rescale(spec[[ix]], param[[ix]], nomove, cov)
+      prob.adj <- rpf.prob(spec[[ix]], padj, t(test.point %*% Icov))
+      expect_equal(prob.adj, prob[[ix]], 1e-3, label="Covariance scaled params", info=info)
+      
+      padj <- rpf.rescale(spec[[ix]], param[[ix]], move, cov)
+      prob.adj <- rpf.prob(spec[[ix]], padj, t(test.point %*% Icov)-move)
+      expect_equal(prob.adj, prob[[ix]], 1e-3,
+                   label="Moved and covariance scaled params", info=info)
+    }
+  })
 }
 
 if (0) {

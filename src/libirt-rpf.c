@@ -515,6 +515,29 @@ irt_rpf_mdim_grm_prob(const double *spec,
     out[kx-1] -= tmp;
     out[kx] = tmp;
   }
+
+  // look for crazy stuff
+  for (int kx=0; kx < numOutcomes; kx++) {
+    if (out[kx] <= 0) {
+      int bigk = -1;
+      double big = 0;
+      for (int bx=0; bx < numOutcomes; bx++) {
+	if (out[bx] > big) {
+	  bigk = bx;
+	  big = out[bx];
+	}
+      }
+      for (int fx=0; fx < numOutcomes; fx++) {
+	if (out[fx] < 0) error("GRM categories are out of order");
+	if (out[fx] == 0) {
+	  double small = 1 / (1 + exp(EXP_STABLE_DOMAIN));
+	  out[bigk] -= small;
+	  out[fx] += small;
+	}
+      }
+      return;
+    }
+  }
 }
 
 static void
@@ -1309,7 +1332,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_grm_numParam,
     irt_rpf_1dim_grm_prob,
     irt_rpf_logprob_adapter,
-    noop,
+    noop, // TODO fill in pre/post transformation
     noop,
     noop,
     noop,

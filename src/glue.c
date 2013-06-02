@@ -230,6 +230,7 @@ rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
   const int numDeriv = numParam + numParam*(numParam+1)/2;
   SEXP ret;
   PROTECT(ret = allocVector(REALSXP, numDeriv));
+  memset(REAL(ret), 0, sizeof(double) * numDeriv);
   (*librpf_model[id].dLL1)(spec, REAL(r_param),
 			    REAL(r_where), 1.0, REAL(r_weight), REAL(ret));
   for (int px=0; px < numDeriv; px++) {

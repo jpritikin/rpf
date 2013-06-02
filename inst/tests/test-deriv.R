@@ -4,6 +4,8 @@ library(rpf)
 library(numDeriv)
 options(error = utils::recover)
 
+context("dLL")
+
 unpackHession <- function(deriv, np) {
   hess <- matrix(NA, nrow=np, ncol=np)
   dx <- np+1
@@ -15,7 +17,7 @@ unpackHession <- function(deriv, np) {
 }
 
 myseed <- as.integer(runif(1) * 1e7)
-print(paste("set.seed =",myseed))
+#print(paste("set.seed =",myseed))
 set.seed(myseed)
 #set.seed(3090526)
 
@@ -65,8 +67,8 @@ m2 <- mxModel(model="drm1", ip.mat, spec, Eip,
                 ItemSpec="ItemSpec",
                 ItemParam="itemParam",
                 EItemParam="EitemParam",
-                doRescale=FALSE,
-                GHpoints=12),
+                qpoints=12,
+                rescale=FALSE),
               mxFitFunctionBA81())
 
 m2 <- mxOption(m2, "Analytic Gradients", 'yes')
@@ -99,7 +101,7 @@ for (ii in 1:numItems) {
     np <- length(param)
     m2@matrices$itemParam@values[1:np,ii] <- param
     m2 <- mxRun(m2, useOptimizer=FALSE, silent=TRUE)
-    m2@output$minimum
+    m2@output$EM.LL
   }, spoint[[ii]], method.args=list(eps=0.01, d=0.01, r=2))
 
   emp.hess <- unpackHession(deriv, np)
@@ -116,7 +118,7 @@ for (ii in 1:numItems) {
     print(round(hess - emp.hess, 2))
   }
   
-  expect_equal(deriv$D[1:np], grad1, tolerance=1e-7)
+  expect_equal(deriv$D[1:np], grad1, tolerance=1e-6)
   expect_equal(emp.hess, hess, tolerance=1e-4)
 }
 #warnings()
