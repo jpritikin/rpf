@@ -41,7 +41,6 @@ Collate:
     'grm.R'
     'sample.R'
     'diagnose.R'
-    'ms.R'
     'science.R'
     'kct.R'
 URL: https://gitorious.org/rpf
