@@ -1,8 +1,7 @@
 ##' Create a multiple-choice response model and associated hyperparameters.
 ##'
 ##' This function instantiates a multiple-choice response
-##' model. Bayesian priors are only used to generate plausible random
-##' parameters.
+##' model.
 ##' 
 ##' @param outcomes the number of possible outcomes
 ##' @param numChoices the number of choices available

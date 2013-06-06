@@ -66,7 +66,9 @@ test_that("multidimension, no design", {
   }
 
   data <- rpf.sample(3, items, correct)
-  expect_identical(c(simplify2array(data)), as.character(c(1, 1, 1, 1, 1, 2, 1, 1, 1)))
+  expect_identical(c(simplify2array(data)),
+                   as.character(c(1, 2, 1, 2, 2, 2, 1, 1, 1)),
+                   info=paste(deparse(simplify2array(data)), collapse="\n"))
 })
 
 test_that("uneven 2d design", {
@@ -98,8 +100,8 @@ test_that("uneven 2d design", {
 
 test_that("1d and 2d", {
   numItems <- 4
-  i1 <- rpf.drm(numChoices=2)
-  i2 <- rpf.drm(numChoices=2, factors=2)
+  i1 <- rpf.drm()
+  i2 <- rpf.drm(factors=2)
   items <- vector("list", numItems)
   for (ix in seq(1,numItems,2)) items[[ix]] <- i1
   for (ix in seq(2,numItems,2)) items[[ix]] <- i2

@@ -64,8 +64,7 @@ rpf.nrm <- function(outcomes=3, factors=1, T.a="trend", T.c="trend") {
   id <- rpf.id_of("nominal")
   m <- new("rpf.mdim.nrm",
            outcomes=outcomes,
-           factors=factors,
-           a.prior.sdlog=.5)
+           factors=factors)
   m@spec <- c(id, outcomes, factors, T.a, T.c, solve(T.a), solve(T.c))
   m
 }

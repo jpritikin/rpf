@@ -21,6 +21,7 @@ checkDim <- function(item, param) {
 test_that("3PL ICC", {
   i1 <- rpf.drm()
   i1.p <- rpf.rparam(i1)
+  i1.p[-1] <- 1  # plink doesn't do upper bounds
   checkDim(i1,i1.p)
   expect_equal(drm(t(i1.p[1:3]), theta, 1)@prob[,2],
                rpf.prob(i1, i1.p, theta)[,2],
@@ -28,6 +29,7 @@ test_that("3PL ICC", {
 
   m1 <- rpf.drm(factors=2)
   m1.p <- rpf.rparam(m1)
+  m1.p[-1] <- 1  # plink doesn't do upper bounds
   checkDim(m1,m1.p)
   expect_equivalent(rpf.prob(m1, m1.p, theta.2d)[2,],
                     drm(t(m1.p[1:4]), t(theta.2d), dimensions=2)@prob[,3],

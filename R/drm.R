@@ -3,12 +3,10 @@
 ##' For discussion on the choice of priors see Cai, Yang, and
 ##' Hansen (2011, p. 246).
 ##'
-##' @param numChoices the number of choices in the question
 ##' @param factors the number of factors
 ##' @param multidimensional whether to use a multidimensional model.
 ##' Defaults to \code{TRUE} when \code{factors>1} and
 ##' \code{FALSE} when \code{factors==1}.
-##' @param a.prior.sdlog under construction
 ##' @param poor if TRUE, use the traditional parameterization of
 ##' the 1d model instead of the slope-intercept parameterization
 ##' @return an item model
@@ -16,32 +14,27 @@
 ##' @references Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
 ##' Full-Information Item Bifactor Analysis.  \emph{Psychological
 ##' Methods, 16}(3), 221-248.
-rpf.drm <- function(numChoices=5, factors=1, multidimensional, a.prior.sdlog=.5, poor=FALSE) {
+rpf.drm <- function(factors=1, multidimensional, poor=FALSE) {
   if (missing(multidimensional)) {
     multidimensional <- factors > 1
   }
   if (!multidimensional && factors > 1) {
     stop("More than 1 dimension must use a multidimensional model")
   }
-  guessing <- (1/numChoices)
   m <- NULL
   id <- -1
-  c.prior.sd <- .5
-  c.prior.logit <- log(guessing/(1-guessing))
   if (!multidimensional) {
     id <- rpf.id_of(ifelse(poor, "drm1-", "drm1"))
     m <- new("rpf.1dim.drm",
              outcomes=2,
-             factors=1,
-             c.prior.logit=c.prior.logit)
+             factors=1)
   } else {
     id <- rpf.id_of("drm")
     m <- new("rpf.mdim.drm",
              outcomes=2,
-             factors=factors,
-             c.prior.logit=c.prior.logit)
+             factors=factors)
   }
-  m@spec <- c(id, 2, m@factors, a.prior.sdlog, c.prior.logit, c.prior.sd)
+  m@spec <- c(id, 2, m@factors)
   m
 }
 
@@ -52,8 +45,8 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
             n <- 1
             c(a=rlnorm(n, meanlog=0, sdlog=.5),
               b=rnorm(n),
-              c=1/(1+exp(-rnorm(n, mean=m@c.prior.logit, sd=.5))),
-              u=1)
+              c=rbeta(1, 5,17),
+              u=rbeta(1, 17,5))
           })
 
 ### mdim
@@ -62,8 +55,8 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
           function(m) {
             c(a=rlnorm(m@factors, meanlog=0, sdlog=.5),
               b=rnorm(1),
-              c=1/(1+exp(-rnorm(1, mean=m@c.prior.logit, sd=.5))),
-              u=1)
+              c=rbeta(1, 5,17),
+              u=rbeta(1, 17,5))
           })
 
 # Not sure if this is correct because of rotation

@@ -1,7 +1,6 @@
 ##' Create a graded response model and associated hyperparameters.
 ##'
-##' This function instantiates a graded response model. Bayesian
-##' priors are only used to generate plausible random parameters.
+##' This function instantiates a graded response model.
 ##'
 ##' The graded response model was designed for a item with a series of
 ##' dependent parts where a higher score implies that easier parts of
@@ -32,14 +31,12 @@ rpf.grm <- function(outcomes=2, factors=1, multidimensional) {
     id <- rpf.id_of("grm1")
     m <- new("rpf.1dim.grm",
              outcomes=outcomes,
-             factors=1,
-             a.prior.sdlog=.5)
+             factors=1)
   } else {
     id <- rpf.id_of("grm")
     m <- new("rpf.mdim.grm",
              outcomes=outcomes,
-             factors=factors,
-             a.prior.sdlog=.5)
+             factors=factors)
   }
   m@spec <- c(id, m@outcomes, m@factors)
   m

@@ -23,7 +23,7 @@ set.seed(myseed)
 
 numItems <- 3
 items <- list()
-items[[1]] <- rpf.drm(numChoices=4, factors=2)
+items[[1]] <- rpf.drm(factors=2)
 items[[2]] <- rpf.grm(outcomes=3, factors=2)
 T.a <- matrix(rnorm(9),3,3) + diag(3)
 T.c <- matrix(rnorm(9),3,3) + diag(3)

@@ -335,8 +335,7 @@ rpf.info <- function(ii, ii.p, where, basis=1) {
 
 ##' Generates item parameters
 ##'
-##' This function generates random item parameters taking the Bayesian
-##' priors into account.
+##' This function generates random item parameters.
 ##' 
 ##' @param m an item model
 ##' @return item parameters
@@ -409,8 +408,7 @@ setClass("rpf.mdim.graded", contains='rpf.mdim',
 ##' @name Class rpf.1dim.grm
 ##' @rdname rpf.1dim.grm-class
 ##' @aliases rpf.1dim.grm-class
-setClass("rpf.1dim.grm", contains='rpf.1dim.graded',
-         representation(a.prior.sdlog="numeric"))
+setClass("rpf.1dim.grm", contains='rpf.1dim.graded')
 
 ##' The unidimensional generalized partial credit item model.
 ##'
@@ -426,8 +424,7 @@ setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded')
 ##' @name Class rpf.1dim.drm
 ##' @rdname rpf.1dim.drm-class
 ##' @aliases rpf.1dim.drm-class
-setClass("rpf.1dim.drm", contains='rpf.1dim',
-         representation(c.prior.logit="numeric"))
+setClass("rpf.1dim.drm", contains='rpf.1dim')
 
 ##' Multidimensional dichotomous item models (M1PL, M2PL, and M3PL).
 ##'
@@ -435,8 +432,7 @@ setClass("rpf.1dim.drm", contains='rpf.1dim',
 ##' @name Class rpf.mdim.drm
 ##' @rdname rpf.mdim.drm-class
 ##' @aliases rpf.mdim.drm-class
-setClass("rpf.mdim.drm", contains='rpf.mdim',
-         representation(c.prior.logit="numeric"))
+setClass("rpf.mdim.drm", contains='rpf.mdim')
 
 ##' The multidimensional graded response item model.
 ##'
@@ -444,8 +440,7 @@ setClass("rpf.mdim.drm", contains='rpf.mdim',
 ##' @name Class rpf.mdim.grm
 ##' @rdname rpf.mdim.grm-class
 ##' @aliases rpf.mdim.grm-class
-setClass("rpf.mdim.grm", contains='rpf.mdim.graded',
-         representation(a.prior.sdlog="numeric"))
+setClass("rpf.mdim.grm", contains='rpf.mdim.graded')
 
 ##' The multidimensional generalized partial credit item model.
 ##'
@@ -462,8 +457,7 @@ setClass("rpf.mdim.gpcm", contains='rpf.mdim.graded')
 ##' @name Class rpf.mdim.nrm
 ##' @rdname rpf.mdim.nrm-class
 ##' @aliases rpf.mdim.nrm-class
-setClass("rpf.mdim.nrm", contains='rpf.mdim',
-         representation(a.prior.sdlog="numeric"))
+setClass("rpf.mdim.nrm", contains='rpf.mdim')
 
 ##' The multiple-choice response item model (both unidimensional and
 ##' multidimensional models have the same parameterization).
@@ -472,10 +466,7 @@ setClass("rpf.mdim.nrm", contains='rpf.mdim',
 ##' @name Class rpf.mdim.mcm
 ##' @rdname rpf.mdim.mcm-class
 ##' @aliases rpf.mdim.mcm-class
-setClass("rpf.mdim.mcm", contains='rpf.mdim',
-         representation(a.prior.sdlog="numeric",
-                        c.prior.alpha="numeric",
-                        c.prior.beta="numeric"))
+setClass("rpf.mdim.mcm", contains='rpf.mdim')
 
 ##' Convert an IRT item model name to an ID
 ##'

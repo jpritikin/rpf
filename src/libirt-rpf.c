@@ -126,7 +126,7 @@ static double logitnormal_gradient(double cc, double mean, double sd)
 
 static int
 irt_rpf_1dim_drm_numSpec(const double *spec)
-{ return RPF_ISpecCount + 3; }
+{ return RPF_ISpecCount; }
 
 static int
 irt_rpf_1dim_drm_numParam(const double *spec)
@@ -261,7 +261,7 @@ irt_rpf_1dim_drm_postfit(double *spec, double *restrict param)
 
 static int
 irt_rpf_mdim_drm_numSpec(const double *spec)
-{ return RPF_ISpecCount + 3; }
+{ return RPF_ISpecCount; }
 
 static int
 irt_rpf_mdim_drm_numParam(const double *spec)
