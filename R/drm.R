@@ -47,19 +47,6 @@ rpf.drm <- function(numChoices=5, factors=1, multidimensional, a.prior.sdlog=.5,
 
 ### 1dim
 
-##' @references
-##' Embretson & Reise (2000, p. 184)
-info.3pl <- function(m, param, theta) {
-  # TODO replace with mirt deriv approach
-            p <- rpf.prob(m, param, theta)
-            a <- param[1]
-            c <- param[3]
-            a^2 * (p[,1]/p[,2]) * ((p[,2]-c)^2/(1-c)^2)
-          }
-
-setMethod("rpf.info", signature(m="rpf.1dim.drm", param="numeric",
-                                theta="numeric"), info.3pl)
-
 setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
           function(m) {
             n <- 1
@@ -78,9 +65,6 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
               c=1/(1+exp(-rnorm(1, mean=m@c.prior.logit, sd=.5))),
               u=1)
           })
-
-setMethod("rpf.info", signature(m="rpf.mdim.drm", param="numeric",
-                                theta="numeric"), info.3pl)
 
 # Not sure if this is correct because of rotation
 ## as.loadings <- function(m, param) {

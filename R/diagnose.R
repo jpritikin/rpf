@@ -126,6 +126,8 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh
 
 ##' Find the point where an item provides mean maximum information
 ##'
+##' WARNING: This function is experimental and may disappear.
+##'
 ##' @param spec an item spec
 ##' @param iparam an item parameter vector
 ##' @param grain the step size for numerical integration (optional)

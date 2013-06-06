@@ -1,5 +1,4 @@
 exportClassPattern("^rpf.+")
-exportMethods(rpf.info)
 exportMethods(rpf.logprob)
 exportMethods(rpf.prob)
 exportMethods(rpf.rparam)

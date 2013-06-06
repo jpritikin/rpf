@@ -138,6 +138,26 @@ setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
             }
           })
 
+setGeneric("rpf.dTheta", function(m, param, where, dir) standardGeneric("rpf.dTheta"))
+
+setMethod("rpf.dTheta", signature(m="rpf.base", param="numeric",
+                                  where="numeric", dir="numeric"),
+          function(m, param, where, dir) {
+            if (length(m@spec)==0) {
+              stop("Not implemented")
+            } else {
+              .Call(rpf_dTheta_wrapper, m@spec, param, where, dir)
+            }
+          })
+
+setMethod("rpf.dTheta", signature(m="rpf.base", param="numeric",
+                                  where="matrix", dir="numeric"),
+          function(m, param, where, dir) {
+            dP.raw <- apply(where, 2, function(w) rpf.dTheta(m, param, w, dir))
+            list(gradient=sapply(dP.raw, function(deriv) deriv$gradient),
+                 hessian=sapply(dP.raw, function(deriv) deriv$hessian))
+          })
+
 ##' Rescale item parameters
 ##'
 ##' TODO doc
@@ -294,27 +314,24 @@ setMethod("rpf.prob", signature(m="rpf.mdim", param="numeric", theta="numeric"),
 ##' @param param item parameters
 ##' @param theta the trait score(s)
 ##' @return Fisher information
-##' @docType methods
-##' @aliases
-##' rpf.info,rpf.base,data.frame,numeric-method
-##' rpf.info,rpf.1dim.drm,numeric,numeric-method
-##' rpf.info,rpf.mdim.drm,numeric,numeric-method
-##' rpf.info,rpf.1dim.graded,numeric,numeric-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
 ##' i1.p <- c(.6,1,.1)
 ##' theta <- seq(0,3,.05)
 ##' plot(theta, rpf.info(i1, i1.p, theta), type="l")
-##' @references
-##' Muraki, E. (1993) Information functions of the generalized partial credit model.
-##' Applied Psychological Measurement, 17(4), 351-363.
-setGeneric("rpf.info", function(m, param, theta) standardGeneric("rpf.info"))
-
-setMethod("rpf.info", signature(m="rpf.base", param="data.frame", theta="numeric"),
-          function(m, param, theta) {
-            rpf.info(m, as.numeric(param), theta)
-          })
+##' @references Dodd, B. G., De Ayala, R. J. & Koch,
+##' W. R. (1995). Computerized adaptive testing with polytomous items.
+##' \emph{Applied psychological measurement 19}(1), 5-22.
+rpf.info <- function(ii, ii.p, where, basis=1) {
+  if (any(basis < 0)) warning("All components of the basis vector should be positive")
+  if (!missing(basis)) {
+    basis <- basis/sqrt(sum(basis^2))
+  }
+  P <- rpf.prob(ii, ii.p, where)
+  dP <- rpf.dTheta(ii, ii.p, where, basis)
+  colSums(dP$gradient^2 / P - dP$hessian)
+}
 
 ##' Generates item parameters
 ##'

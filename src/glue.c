@@ -245,6 +245,55 @@ rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
 }
 
 static SEXP
+rpf_dTheta_wrapper(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
+{
+  if (length(r_spec) < RPF_ISpecCount)
+    error("Item spec must be of length %d, not %d", RPF_ISpecCount, length(r_spec));
+
+  double *spec = REAL(r_spec);
+
+  int id = spec[RPF_ISpecID];
+  if (id < 0 || id >= librpf_numModels)
+    error("Item model %d out of range", id);
+
+  int numSpec = (*librpf_model[id].numSpec)(spec);
+  if (length(r_spec) < numSpec)
+    error("Item spec must be of length %d, not %d", numSpec, length(r_spec));
+    
+  int numParam = (*librpf_model[id].numParam)(spec);
+  if (length(r_param) < numParam)
+    error("Item has %d parameters, only %d given", numParam, length(r_param));
+
+  int dims = spec[RPF_ISpecDims];
+  if (length(r_dir) != dims)
+    error("Item has %d dimensions, but dir is of length %d",
+	  dims, length(r_dir));
+  if (length(r_where) != dims)
+    error("Item has %d dimensions, but where is of length %d",
+	  dims, length(r_where));
+
+  SEXP ret, names;
+  PROTECT(ret = allocVector(VECSXP, 2));
+  PROTECT(names = allocVector(STRSXP, 2));
+
+  int outcomes = spec[RPF_ISpecOutcomes];
+  SEXP grad, hess;
+  PROTECT(grad = allocVector(REALSXP, outcomes));
+  PROTECT(hess = allocVector(REALSXP, outcomes));
+  memset(REAL(grad), 0, sizeof(double) * outcomes);
+  memset(REAL(hess), 0, sizeof(double) * outcomes);
+  (*librpf_model[id].dTheta)(spec, REAL(r_param), REAL(r_where), REAL(r_dir),
+			     REAL(grad), REAL(hess));
+  SET_VECTOR_ELT(ret, 0, grad);
+  SET_VECTOR_ELT(ret, 1, hess);
+  SET_STRING_ELT(names, 0, mkChar("gradient"));
+  SET_STRING_ELT(names, 1, mkChar("hessian"));
+  namesgets(ret, names);
+  UNPROTECT(4);
+  return ret;
+}
+
+static SEXP
 rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
 {
   if (length(r_spec) < RPF_ISpecCount)
@@ -294,6 +343,7 @@ static R_CallMethodDef flist[] = {
   {"rpf_prob_wrapper", (DL_FUNC) rpf_prob_wrapper, 3},
   {"rpf_logprob_wrapper", (DL_FUNC) rpf_logprob_wrapper, 3},
   {"rpf_dLL_wrapper", (DL_FUNC) rpf_dLL_wrapper, 4},
+  {"rpf_dTheta_wrapper", (DL_FUNC) rpf_dTheta_wrapper, 4},
   {"rpf_rescale_wrapper", (DL_FUNC) rpf_rescale_wrapper, 4},
   {"orlando_thissen_2000_wrapper", (DL_FUNC) orlando_thissen_2000, 5},
   {"kang_chen_2007_wrapper", (DL_FUNC) kang_chen_2007_wrapper, 2},

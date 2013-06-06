@@ -455,6 +455,42 @@ irt_rpf_mdim_drm_rescale(const double *spec, double *restrict param, const int *
 }
 
 static void
+irt_rpf_mdim_drm_dTheta(const double *spec, const double *restrict param,
+			const double *where, const double *dir,
+			double *grad, double *hess)
+{
+  int numDims = spec[RPF_ISpecDims];
+  double PQ[2];
+  double PQstar[2];
+  irt_rpf_mdim_drm_prob2(spec, param, where, PQstar, PQ);
+  double Pstar = PQstar[0];
+  double Qstar = PQstar[1];
+  const double *aa = param;
+  const double guess = param[numDims + 1];
+  const double upper = param[numDims + 2];
+  for (int ax=0; ax < numDims; ax++) {
+    double piece = dir[ax] * (upper-guess) * aa[ax] * (Pstar * Qstar);
+    grad[1] += piece;
+    grad[0] -= piece;
+    piece = dir[ax] * (2 * (upper - guess) * aa[ax]*aa[ax] * (Qstar * Qstar * Pstar) -
+		       (upper - guess) * aa[ax]*aa[ax] * (Pstar * Qstar));
+    hess[1] -= piece;
+    hess[0] += piece;
+  }
+}
+
+static void
+irt_rpf_1dim_drm_dTheta(const double *spec, const double *restrict param,
+			const double *where, const double *dir,
+			double *grad, double *hess)
+{
+  double nparam[4];
+  memcpy(nparam, param, sizeof(double) * 4);
+  nparam[1] = param[1] * -param[0];
+  irt_rpf_mdim_drm_dTheta(spec, nparam, where, dir, grad, hess);
+}
+
+static void
 irt_rpf_1dim_grm_prob(const double *spec,
 		      const double *restrict param, const double *restrict th,
 		      double *restrict out)
@@ -651,6 +687,29 @@ irt_rpf_mdim_grm_deriv2(const double *spec,
 }
 
 static void
+irt_rpf_mdim_grm_dTheta(const double *spec, const double *restrict param,
+			const double *where, const double *dir,
+			double *grad, double *hess)
+{
+  int numDims = spec[RPF_ISpecDims];
+  int outcomes = spec[RPF_ISpecOutcomes];
+  const double *aa = param;
+  double P[outcomes+1];
+  irt_rpf_mdim_grm_rawprob(spec, param, where, P);
+  for (int jx=0; jx < numDims; jx++) {
+    for (int ix=0; ix < outcomes; ix++) {
+      double w1 = P[ix] * (1-P[ix]) * aa[jx];
+      double w2 = P[ix+1] * (1-P[ix+1]) * aa[jx];
+      grad[ix] += dir[jx] * (w1 - w2);
+      hess[ix] += dir[jx] * (aa[jx]*aa[jx] * (2 * P[ix] * (1 - P[ix])*(1 - P[ix]) -
+					      P[ix] * (1 - P[ix]) -
+					      2 * P[ix+1] * (1 - P[ix+1])*(1 - P[ix+1]) +
+					      P[ix+1] * (1 - P[ix+1])));
+    }
+  }
+}
+
+static void
 irt_rpf_mdim_grm_rescale(const double *spec, double *restrict param, const int *paramMask,
 			 const double *restrict mean, const double *restrict choleskyCov)
 {
@@ -682,39 +741,55 @@ static int
 irt_rpf_nominal_numParam(const double *spec)
 { return spec[RPF_ISpecDims] + 2 * (spec[RPF_ISpecOutcomes]-1); }
 
+
 static void
-irt_rpf_nominal_prob(const double *spec,
-		     const double *restrict param, const double *restrict th,
-		     double *restrict out)
+_nominal_rawprob(const double *spec,
+		 const double *restrict param, const double *restrict th,
+		 double discr, double *ak, double *num)
 {
   int numDims = spec[RPF_ISpecDims];
   int numOutcomes = spec[RPF_ISpecOutcomes];
-  double discr = dotprod(param, th, numDims);
   const double *alpha = param + numDims;
   const double *gamma = param + numDims + numOutcomes - 1;
   const double *Ta = spec + RPF_ISpecCount;
   const double *Tc = spec + RPF_ISpecCount + (numOutcomes-1) * (numOutcomes-1);
 
-  double num[numOutcomes];
-  double den = 0;
   for (int kx=0; kx < numOutcomes; kx++) {
-    double ak = 0;
+    ak[kx] = 0;
     double ck = 0;
     if (kx) {
       for (int tx=0; tx < numOutcomes-1; tx++) {
 	int Tcell = tx * (numOutcomes-1) + kx-1;
-	ak += Ta[Tcell] * alpha[tx];
+	ak[kx] += Ta[Tcell] * alpha[tx];
 	ck += Tc[Tcell] * gamma[tx];
       }
     }
 
-    double z = discr * ak + ck;
+    double z = discr * ak[kx] + ck;
     if (z < -EXP_STABLE_DOMAIN) z = -EXP_STABLE_DOMAIN;
     else if (z > EXP_STABLE_DOMAIN) z = EXP_STABLE_DOMAIN;
-    num[kx] = exp(z);
+    num[kx] = z;
+  }
+}
+
+
+static void
+irt_rpf_nominal_prob(const double *spec,
+		     const double *restrict param, const double *restrict th,
+		     double *restrict out)
+{
+  int numOutcomes = spec[RPF_ISpecOutcomes];
+  int numDims = spec[RPF_ISpecDims];
+  double num[numOutcomes];
+  double ak[numOutcomes];
+  double discr = dotprod(param, th, numDims);
+  _nominal_rawprob(spec, param, th, discr, ak, num);
+  double den = 0;
+
+  for (int kx=0; kx < numOutcomes; kx++) {
+    num[kx] = exp(num[kx]);
     den += num[kx];
   }
-
   for (int kx=0; kx < numOutcomes; kx++) {
     out[kx] = num[kx]/den;
   }
@@ -725,35 +800,19 @@ irt_rpf_nominal_logprob(const double *spec,
 			const double *restrict param, const double *restrict th,
 			double *restrict out)
 {
-  int numDims = spec[RPF_ISpecDims];
   int numOutcomes = spec[RPF_ISpecOutcomes];
-  double discr = dotprod(param, th, numDims);
-  const double *alpha = param + numDims;
-  const double *gamma = param + numDims + numOutcomes - 1;
-  const double *Ta = spec + RPF_ISpecCount;
-  const double *Tc = spec + RPF_ISpecCount + (numOutcomes-1) * (numOutcomes-1);
-
+  int numDims = spec[RPF_ISpecDims];
   double num[numOutcomes];
+  double ak[numOutcomes];
+  double discr = dotprod(param, th, numDims);
+  _nominal_rawprob(spec, param, th, discr, ak, num);
   double den = 0;
+
   for (int kx=0; kx < numOutcomes; kx++) {
-    double ak = 0;
-    double ck = 0;
-    if (kx) {
-      for (int tx=0; tx < numOutcomes-1; tx++) {
-	int Tcell = tx * (numOutcomes-1) + kx-1;
-	ak += Ta[Tcell] * alpha[tx];
-	ck += Tc[Tcell] * gamma[tx];
-      }
-    }
-
-    double z = discr * ak + ck;
-    if (z < -EXP_STABLE_DOMAIN) z = -EXP_STABLE_DOMAIN;
-    else if (z > EXP_STABLE_DOMAIN) z = EXP_STABLE_DOMAIN;
-    num[kx] = z;
-    den += exp(z);
+    den += exp(num[kx]);
   }
-
   den = log(den);
+
   for (int kx=0; kx < numOutcomes; kx++) {
     out[kx] = num[kx] - den;
   }
@@ -793,10 +852,12 @@ irt_rpf_nominal_deriv1(const double *spec,
   double aTheta2 = aTheta * aTheta;
 
   double num[ncat];
+  double ak[ncat];
+  _nominal_rawprob(spec, param, where, aTheta, ak, num);
+
   double P[ncat];
   double P2[ncat];
   double P3[ncat];
-  double ak[ncat];
   double ak2[ncat];
   double dat_num[ncat];
   double numsum = 0;
@@ -804,31 +865,12 @@ irt_rpf_nominal_deriv1(const double *spec,
   double numak2D2 = 0;
   double numakDTheta_numsum[nfact];
 
-  const double *alpha = param + nfact;
-  const double *gamma = param + nfact + ncat - 1;
-  const double *Ta = spec + RPF_ISpecCount;
-  const double *Tc = spec + RPF_ISpecCount + (ncat-1) * (ncat-1);
-
   for (int kx=0; kx < ncat; kx++) {
-    double ak1 = 0;
-    double ck1 = 0;
-    if (kx) {
-      for (int tx=0; tx < ncat-1; tx++) {
-	int Tcell = tx * (ncat-1) + kx - 1;
-	ak1 += Ta[Tcell] * alpha[tx];
-	ck1 += Tc[Tcell] * gamma[tx];
-      }
-    }
-
-    double z = aTheta * ak1 + ck1;
-    if (z < -EXP_STABLE_DOMAIN) z = -EXP_STABLE_DOMAIN;
-    else if (z > EXP_STABLE_DOMAIN) z = EXP_STABLE_DOMAIN;
-    num[kx] = exp(z);
-    ak[kx] = ak1;
-    ak2[kx] = ak1 * ak1;
+    num[kx] = exp(num[kx]);
+    ak2[kx] = ak[kx] * ak[kx];
     dat_num[kx] = weight[kx]/num[kx];
     numsum += num[kx];
-    numakD += num[kx] * ak1;
+    numakD += num[kx] * ak[kx];
     numak2D2 += num[kx] * ak2[kx];
   }
   double numsum2 = numsum * numsum;
@@ -1074,6 +1116,51 @@ irt_rpf_nominal_deriv2(const double *spec,
 }
 
 static void
+irt_rpf_mdim_nrm_dTheta(const double *spec, const double *param,
+			const double *where, const double *dir,
+			double *grad, double *hess)
+{
+  int numDims = spec[RPF_ISpecDims];
+  int outcomes = spec[RPF_ISpecOutcomes];
+  const double *aa = param;
+  double num[outcomes];
+  double ak[outcomes];
+  double discr = dotprod(param, where, numDims);
+  _nominal_rawprob(spec, param, where, discr, ak, num);
+
+  double den = 0;
+  for (int kx=0; kx < outcomes; kx++) {
+    num[kx] = exp(num[kx]);
+    den += num[kx];
+  }
+
+  double P[outcomes];
+  for (int kx=0; kx < outcomes; kx++) {
+    P[kx] = num[kx]/den;
+  }
+
+  for(int jx=0; jx < numDims; jx++) {
+    double jak[outcomes];
+    double jak2[outcomes];
+    for (int ax=0; ax < outcomes; ax++) {
+      jak[ax] = ak[ax] * aa[jx];
+      jak2[ax] = jak[ax] * jak[ax];
+    }
+    double numjak = dotprod(num, jak, outcomes);
+    double numjakden2 = numjak / den;
+    numjakden2 *= numjakden2;
+    double numjak2den = dotprod(num, jak2, outcomes) / den;
+
+    for(int ix=0; ix < outcomes; ix++) {
+      grad[ix] += dir[jx] * (ak[ix] * aa[jx] * P[ix] - P[ix] * numjak / den);
+      hess[ix] += dir[jx] * (ak[ix]*ak[ix] * aa[jx]*aa[jx] * P[ix] -
+			     2 * ak[ix] * aa[jx] * P[ix] * numjak / den +
+			     2 * P[ix] * numjakden2 - P[ix] * numjak2den);
+    }
+  }
+}
+
+static void
 irt_rpf_mdim_nrm_rescale(const double *spec, double *restrict param, const int *paramMask,
 			 const double *restrict mean, const double *restrict choleskyCov)
 {
@@ -1279,6 +1366,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     irt_rpf_1dim_drm_deriv1,
     irt_rpf_1dim_drm_deriv2,
+    notimplemented,
     irt_rpf_1dim_drm_rescale,
     noop,
     noop,
@@ -1290,6 +1378,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     notimplemented,
     notimplemented,
+    irt_rpf_1dim_drm_dTheta,
     notimplemented,
     irt_rpf_1dim_drm_prefit,
     noop,
@@ -1301,6 +1390,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     irt_rpf_mdim_drm_deriv1,
     irt_rpf_mdim_drm_deriv2,
+    notimplemented,
     irt_rpf_mdim_drm_rescale,
     noop,
     irt_rpf_1dim_drm_postfit,
@@ -1312,6 +1402,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     irt_rpf_mdim_drm_deriv1,
     irt_rpf_mdim_drm_deriv2,
+    irt_rpf_mdim_drm_dTheta,
     irt_rpf_mdim_drm_rescale,
     noop,
     noop
@@ -1323,6 +1414,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     irt_rpf_1dim_gpcm_deriv1,
     irt_rpf_1dim_gpcm_deriv2,
+    notimplemented,
     irt_rpf_1dim_gpcm_rescale,
     noop,
     noop
@@ -1334,6 +1426,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     noop, // TODO fill in pre/post transformation
     noop,
+    notimplemented,
     noop,
     noop,
     noop
@@ -1345,6 +1438,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     irt_rpf_mdim_grm_deriv1,
     irt_rpf_mdim_grm_deriv2,
+    irt_rpf_mdim_grm_dTheta,
     irt_rpf_mdim_grm_rescale,
     noop,
     noop
@@ -1356,6 +1450,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_nominal_logprob,
     irt_rpf_nominal_deriv1,
     irt_rpf_nominal_deriv2,
+    irt_rpf_mdim_nrm_dTheta,
     irt_rpf_mdim_nrm_rescale,
     noop,
     noop
