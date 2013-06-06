@@ -61,9 +61,11 @@ for (sx in 1:length(starting)) {
 Eip <- mxMatrix(name="EitemParam", nrow=dim(ip.mat@values)[1], ncol=numItems,
                 values=ip.mat@values)
 
-m2 <- mxModel(model="drm1", ip.mat, spec, Eip,
+m.mat <- mxMatrix(name="mean", nrow=1, ncol=2, values=0, free=FALSE)
+cov.mat <- mxMatrix(name="cov", nrow=2, ncol=2, values=diag(2), free=FALSE)
+m2 <- mxModel(model="drm1", ip.mat, spec, Eip, m.mat, cov.mat,
               mxData(observed=data, type="raw"),
-              mxExpectationBA81(
+              mxExpectationBA81(mean="mean", cov="cov",
                 ItemSpec="ItemSpec",
                 ItemParam="itemParam",
                 EItemParam="EitemParam",
