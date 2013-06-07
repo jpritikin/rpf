@@ -20,7 +20,7 @@ test_that("mirt", {
   params[,2] <- params[,2] / -params[,1]
   scores <- scores.full[,'F1']
   data.f <- as.data.frame(lapply(as.data.frame(data), ordered))
-  fit <- rpf.1dim.fit(spec, params, data.f, scores, 2)
+  fit <- rpf.1dim.fit(spec, t(params), data.f, scores, 2)
 
   expect_equal(mirt.fit$infit, fit$infit, tolerance=10^-4)
   expect_equal(mirt.fit$outfit, fit$outfit, tolerance=10^-4)

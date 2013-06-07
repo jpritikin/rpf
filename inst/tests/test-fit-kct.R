@@ -17,7 +17,7 @@ test_that("kct", {
   items<-list()
   items[1:18] <- rpf.drm()
 
-  fit <- rpf.1dim.fit(items[1:14], cbind(params[4:17,],1),
+  fit <- rpf.1dim.fit(items[1:14], t(cbind(params[4:17,],1)),
                       responses, scores[1:34], 2)
 
   expect_equal(fit$infit, kct.items$IN.MSQ[4:17], tolerance=.002)

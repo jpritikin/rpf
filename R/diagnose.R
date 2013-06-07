@@ -13,7 +13,7 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
   out <- array(dim=c(length(scores), length(spec)))
   for (ix in 1:length(spec)) {
     i <- spec[[ix]]
-    prob <- t(rpf.prob(i, params[ix,], scores))  # remove t() TODO
+    prob <- t(rpf.prob(i, params[,ix], scores))  # remove t() TODO
     Escore <- apply(prob, 1, function(r) sum(r * 0:(i@outcomes-1)))
     grid <- t(array(0:(i@outcomes-1), dim=c(i@outcomes, length(scores))))
     out[,ix] <- apply((grid - Escore)^m * prob, 1, sum)
@@ -34,11 +34,14 @@ rpf.1dim.residual <- function(spec, params, responses, scores) {
   Zscore <- array(dim=c(length(scores), length(spec)))
   for (ix in 1:length(spec)) {
     i <- spec[[ix]]
-    prob <- t(rpf.prob(i, params[ix,], scores))  # remove t() TODO
+    prob <- t(rpf.prob(i, params[,ix], scores))  # remove t() TODO
     Escore <- apply(prob, 1, function(r) sum(r * 0:(i@outcomes-1)))
     data <- responses[,ix]
-    if (!is.ordered(data)) { stop(paste("Column",ix,"is not an ordered factor")) }
-    data <- unclass(data) - 1
+    if (is.ordered(data)) {
+      data <- unclass(data) - 1
+    } else if (is.factor(data)) {
+      stop(paste("Column",ix,"is an unordered factor"))
+    }
     Zscore[,ix] <- data - Escore
   }
   Zscore
@@ -62,7 +65,7 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' Calculate item and person Rasch fit statistics
 ##'
 ##' Note: These statistics are only appropriate if all discrimination
-##' parameters are fixed equal.
+##' parameters are fixed equal and there is no missing data.
 ##'
 ##' Exact distributional properties of these statistics are unknown
 ##' (Masters & Wright, 1997, p. 112).  For details on the calculation,
@@ -72,7 +75,7 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' To adjust Z scores for fewer items use wh.exact=FALSE.
 ##'
 ##' @param spec list of item models
-##' @param params data frame of item parameters, 1 per row
+##' @param params matrix of item parameters, 1 per column
 ##' @param responses persons in rows and items in columns
 ##' @param scores model derived person scores
 ##' @param margin for people 1, for items 2
@@ -117,7 +120,7 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh
   infit.z <- (infit^(1/3) - 1)*(3/infit.sd) + infit.fudge
   df <- data.frame(infit, infit.z, outfit, outfit.z)
   if (margin == 2) {
-    df$name <- rownames(params)
+    df$name <- colnames(params)
   } else {
     df$name <- rownames(responses)
   }
