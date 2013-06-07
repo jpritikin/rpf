@@ -43,4 +43,5 @@ Collate:
     'diagnose.R'
     'science.R'
     'kct.R'
+    'flexmirt.R'
 URL: https://gitorious.org/rpf

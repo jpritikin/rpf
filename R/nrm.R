@@ -9,7 +9,7 @@ Tnom.trend <- function(nc) {
       T[k,i] <- sin(pi*(i-1)*(k-1)/(nc-1))
     }
   }
-  return(T)
+  return(T[-1,])
 }
 
 # Copied from flexmirt.R
@@ -17,7 +17,7 @@ Tnom.id <- function(nc) {
   T <- matrix(0,nc,nc-1)
   T[nc,1] <- nc-1
   T[2:(nc-1),2:(nc-1)] <- diag(nc-2)
-  return(T)
+  return(T[-1,])
 }
 
 build.T <- function(outcomes, got) {
