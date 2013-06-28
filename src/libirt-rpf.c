@@ -245,20 +245,6 @@ irt_rpf_1dim_drm_rescale(const double *spec, double *restrict param, const int *
   }
 }
 
-static void
-irt_rpf_1dim_drm_prefit(double *spec, double *restrict param)
-{
-  param[1] *= -param[0];
-  spec[RPF_ISpecID] = model_name_to_id("drm1+");
-}
-
-static void
-irt_rpf_1dim_drm_postfit(double *spec, double *restrict param)
-{
-  param[1] /= -param[0];
-  spec[RPF_ISpecID] = model_name_to_id("drm1");
-}
-
 static int
 irt_rpf_mdim_drm_numSpec(const double *spec)
 { return RPF_ISpecCount; }
@@ -1368,8 +1354,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_drm_deriv2,
     notimplemented,
     irt_rpf_1dim_drm_rescale,
-    noop,
-    noop,
   },
   { "drm1",
     irt_rpf_1dim_drm_numSpec,
@@ -1380,8 +1364,6 @@ const struct rpf librpf_model[] = {
     notimplemented,
     irt_rpf_1dim_drm_dTheta,
     notimplemented,
-    irt_rpf_1dim_drm_prefit,
-    noop,
   },
   { "drm1+",
     irt_rpf_mdim_drm_numSpec,
@@ -1392,8 +1374,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_drm_deriv2,
     notimplemented,
     irt_rpf_mdim_drm_rescale,
-    noop,
-    irt_rpf_1dim_drm_postfit,
   },
   { "drm",
     irt_rpf_mdim_drm_numSpec,
@@ -1404,8 +1384,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_drm_deriv2,
     irt_rpf_mdim_drm_dTheta,
     irt_rpf_mdim_drm_rescale,
-    noop,
-    noop
   },
   { "gpcm1",
     irt_rpf_1dim_gpcm_numSpec,
@@ -1416,8 +1394,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_gpcm_deriv2,
     notimplemented,
     irt_rpf_1dim_gpcm_rescale,
-    noop,
-    noop
   },
   { "grm1",
     irt_rpf_mdim_grm_numSpec,
@@ -1428,8 +1404,6 @@ const struct rpf librpf_model[] = {
     noop,
     notimplemented,
     noop,
-    noop,
-    noop
   },
   { "grm",
     irt_rpf_mdim_grm_numSpec,
@@ -1440,8 +1414,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_grm_deriv2,
     irt_rpf_mdim_grm_dTheta,
     irt_rpf_mdim_grm_rescale,
-    noop,
-    noop
   },
   { "nominal",
     irt_rpf_nominal_numSpec,
@@ -1452,8 +1424,6 @@ const struct rpf librpf_model[] = {
     irt_rpf_nominal_deriv2,
     irt_rpf_mdim_nrm_dTheta,
     irt_rpf_mdim_nrm_rescale,
-    noop,
-    noop
   }
 };
 
