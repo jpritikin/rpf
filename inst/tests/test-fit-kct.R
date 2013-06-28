@@ -15,7 +15,7 @@ test_that("kct", {
   params <- as.data.frame(cbind(1, kct.items$MEASURE, 0))
   rownames(params) <- kct.items$NAME
   items<-list()
-  items[1:18] <- rpf.drm()
+  items[1:18] <- rpf.drm(multidimensional=FALSE)
 
   fit <- rpf.1dim.fit(items[1:14], t(cbind(params[4:17,],1)),
                       responses, scores[1:34], 2)

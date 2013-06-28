@@ -15,7 +15,7 @@ test_that("mirt", {
   scores.full <- fscores(raschfit, full.scores=TRUE)
 
   spec <- list()
-  spec[1:20] <- rpf.drm()
+  spec[1:20] <- rpf.drm(multidimensional=FALSE)
   params <- t(simplify2array(coef(raschfit)[1:20]))[,1:4]
   params[,2] <- params[,2] / -params[,1]
   scores <- scores.full[,'F1']

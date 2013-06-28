@@ -18,10 +18,7 @@
 ##' \code{FALSE} when \code{factors==1}.
 ##' @return an item model
 ##' @export
-rpf.grm <- function(outcomes=2, factors=1, multidimensional) {
-  if (missing(multidimensional)) {
-    multidimensional <- factors > 1
-  }
+rpf.grm <- function(outcomes=2, factors=1, multidimensional=TRUE) {
   if (!multidimensional && factors > 1) {
     stop("More than 1 dimension must use a multidimensional model")
   }

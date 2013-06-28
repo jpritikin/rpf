@@ -14,10 +14,7 @@
 ##' @references Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
 ##' Full-Information Item Bifactor Analysis.  \emph{Psychological
 ##' Methods, 16}(3), 221-248.
-rpf.drm <- function(factors=1, multidimensional, poor=FALSE) {
-  if (missing(multidimensional)) {
-    multidimensional <- factors > 1
-  }
+rpf.drm <- function(factors=1, multidimensional=TRUE, poor=FALSE) {
   if (!multidimensional && factors > 1) {
     stop("More than 1 dimension must use a multidimensional model")
   }

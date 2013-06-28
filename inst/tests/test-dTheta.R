@@ -36,7 +36,7 @@ for (ii in items) {
       expect_equal(analytic$gradient,
                    c(dir %*% deriv[c(1:ii@factors),]), 1e-6)
       expect_equal(analytic$hessian,
-                   c(dir %*% deriv[c(ii@factors+triSize(1:ii@factors)),]), 1e-6)
+                   c(dir %*% deriv[c(ii@factors+triSize(1:ii@factors)),]), 1e-5)
     }
   })
 }

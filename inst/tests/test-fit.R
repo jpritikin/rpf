@@ -8,7 +8,7 @@ test_that("simple case", {
   set.seed(1)
 
   spec <- list()
-  spec[1:3] <- rpf.drm()
+  spec[1:3] <- rpf.drm(multidimensional=FALSE)
 
   gen.p <- matrix(c(1,0,0,1,
                     1,-1,0,1,
