@@ -18,6 +18,13 @@
 ######################################################################################################################################
 ######################################################################################################################################
 
+##' Read a flexMIRT PRM file
+##'
+##' Load the item parameters from a flexMIRT PRM file.
+##'
+##' @param fname file name
+##' @return a list of groups each with item parameters and the latent distribution
+##' @export
 read.flexmirt <- function(fname) {
   groups <- list()
 
@@ -163,7 +170,17 @@ serialize.T <- function(spec, T) {
   }
 }
 
-##' @author Joshua N. Pritikin
+##' Write a flexMIRT PRM file
+##'
+##' Formats item parameters in the way that flexMIRT expects to read
+##' them. Use \code{\link{read.flexmirt}} to see what shape the groups
+##' parameter of this function should take.
+##'
+##' NOTE: Support for the graded response model is not complete.
+##'
+##' @param groups a list of groups each with items and latent parameters
+##' @param file the destination file name
+##' @param fileEncoding how to encode the text file (optional)
 write.flexmirt <- function(groups, file=NULL, fileEncoding="") {
   if (missing(file)) {
     stop("You must specify the destination file=")

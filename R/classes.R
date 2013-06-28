@@ -137,6 +137,19 @@ setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
             }
           })
 
+##' Item derivatives with respect to ability
+##'
+##' Evaluate the partial derivatives of the response probability with
+##' respect to ability.
+##' 
+##' @param m item model
+##' @param param item parameters
+##' @param where location in the latent distribution
+##' @param dir if more than 1 factor, a basis vector]
+##' @aliases
+##' rpf_dTheta_wrapper
+##' rpf.dTheta,rpf.base,numeric,numeric,numeric-method
+##' rpf.dTheta,rpf.base,numeric,matrix,numeric-method
 setGeneric("rpf.dTheta", function(m, param, where, dir) standardGeneric("rpf.dTheta"))
 
 setMethod("rpf.dTheta", signature(m="rpf.base", param="numeric",
@@ -159,7 +172,16 @@ setMethod("rpf.dTheta", signature(m="rpf.base", param="numeric",
 
 ##' Rescale item parameters
 ##'
-##' TODO doc
+##' Adjust item parameters for changes in mean and covariance of the
+##' latent distribution.
+##' 
+##' @param m item model
+##' @param param item parameters
+##' @param mean vector of means
+##' @param cov covariance matrix
+##' @aliases
+##' rpf_rescale_wrapper
+##' rpf.rescale,rpf.base,numeric,numeric,matrix-method
 setGeneric("rpf.rescale", function(m, param, mean, cov) standardGeneric("rpf.rescale"))
 
 setMethod("rpf.rescale", signature(m="rpf.base", param="numeric",
@@ -308,16 +330,17 @@ setMethod("rpf.prob", signature(m="rpf.mdim", param="numeric", theta="numeric"),
 ##' Map an item model, item parameters, and person trait score into a
 ##' information vector
 ##'
-##' @param m an item model
-##' @param param item parameters
-##' @param theta the trait score(s)
+##' @param ii an item model
+##' @param ii.p item parameters
+##' @param where the location in the latent distribution
+##' @param basis if more than 1 factor, a positive basis vector
 ##' @return Fisher information
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
-##' i1.p <- c(.6,1,.1)
+##' i1.p <- c(.6,1,.1,.95)
 ##' theta <- seq(0,3,.05)
-##' plot(theta, rpf.info(i1, i1.p, theta), type="l")
+##' plot(theta, rpf.info(i1, i1.p, t(theta)), type="l")
 ##' @references Dodd, B. G., De Ayala, R. J. & Koch,
 ##' W. R. (1995). Computerized adaptive testing with polytomous items.
 ##' \emph{Applied psychological measurement 19}(1), 5-22.

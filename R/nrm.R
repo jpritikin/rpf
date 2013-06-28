@@ -38,7 +38,7 @@ build.T <- function(outcomes, got) {
     }
   }
   if (all(dim(got) == c(outcomes,outcomes-1))) {
-    if (any(got[1,] != 0)) warn("Non-zero T[1,] will be ignored")
+    if (any(got[1,] != 0)) warning("Non-zero T[1,] will be ignored")
     got <- got[-1,]
   }
   if (all(dim(got) != rep(outcomes-1, 2))) {
@@ -51,13 +51,20 @@ build.T <- function(outcomes, got) {
 
 ##' Create a nominal response model
 ##'
-##' This function instantiates a nominal response model. Bayesian
-##' priors are only used to generate plausible random parameters.
+##' This function instantiates a nominal response model. The T matrix
+##' must be an invertible square matrix of dimension outcomes-1. As a
+##' shortcut, either T matrix can be specified as "trend" for a
+##' Fourier basis or as "id" for an identity basis.
 ##' 
 ##' @param outcomes The number of choices available
 ##' @param factors the number of factors
+##' @param T.a the T matrix for slope parameters
+##' @param T.c the T matrix for intercept parameters
 ##' @return an item model
-##' @export
+##' @references Thissen, D., Cai, L., & Bock, R. D. (2010). The
+##' Nominal Categories Item Response Model. In M. L. Nering &
+##' R. Ostini (Eds.), \emph{Handbook of Polytomous Item Response
+##' Theory Models} (pp. 43--75). Routledge.
 rpf.nrm <- function(outcomes=3, factors=1, T.a="trend", T.c="trend") {
   T.a <- build.T(outcomes, T.a)
   T.c <- build.T(outcomes, T.c)
