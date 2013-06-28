@@ -79,7 +79,6 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' @param responses persons in rows and items in columns
 ##' @param scores model derived person scores
 ##' @param margin for people 1, for items 2
-##' @param na.rm remove NAs (default TRUE)
 ##' @param wh.exact whether to use the exact Wilson-Hilferty transformation (default TRUE)
 ##' @references Masters, G. N. & Wright, B. D. (1997). The Partial
 ##' Credit Model. In W. van der Linden & R. K. Kambleton (Eds.),
@@ -93,9 +92,9 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
 ##' Analysis.} Chicago: Mesa Press.
 ##' @export
-rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh.exact=TRUE) {
-# why permit na.rm=FALSE ? TODO
-  if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")
+rpf.1dim.fit <- function(spec, params, responses, scores, margin, wh.exact=TRUE) {
+  if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")  # true? TODO
+  na.rm=TRUE
   r.var <- rpf.1dim.moment(spec, params, scores,2)
   r.k <- rpf.1dim.moment(spec, params, scores,4)
   r.z <- rpf.1dim.stdresidual(spec, params, responses, scores)
