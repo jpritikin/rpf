@@ -18,7 +18,7 @@ change every time the documentation is recreated.
 
 <<fig.height=2.5>>=
 plot.icc <- function(item, param, width=3) {
-  pm <- rpf.prob(item, param, seq(-width, width, .1))
+  pm <- t(rpf.prob(item, param, seq(-width, width, .1)))
   icc <- as.data.frame(melt(pm, varnames=c("theta",'category')))
   icc$theta <- seq(-width, width, .1)
   icc$category <- as.factor(icc$category)
@@ -73,7 +73,7 @@ plot.info(spec, param, ms.items[,'name'])
 data(ms.people)
 
 data.vs.model <- function(spec1, param, espt, item.name, width=3, data.bins=10) {
-  pm <- rpf.prob(spec1, param[1:rpf.numParam(spec1)], seq(-width, width, .1))
+  pm <- t(rpf.prob(spec1, param[1:rpf.numParam(spec1)], seq(-width, width, .1)))
   icc <- as.data.frame(melt(pm, varnames=c("theta",'category')))
   icc$theta <- seq(-width, width, .1)
   icc$category <- as.ordered(1+max(icc$category)-icc$category)  #parscale reverses stuff
