@@ -39,15 +39,6 @@ static const double EXP_STABLE_DOMAIN = 35;
 // 25 as well.
 static const double GRADIENT_STABLE_DOMAIN = 25;
 
-static int
-model_name_to_id(const char *target)
-{
-  for (int sx=0; sx < librpf_numModels; sx++) {
-    if (strcmp(librpf_model[sx].name, target) == 0) return sx;
-  }
-  return -1;
-}
-
 static void
 irt_rpf_logprob_adapter(const double *spec,
 			const double *restrict param, const double *restrict th,
@@ -145,19 +136,6 @@ irt_rpf_1dim_drm_prob(const double *spec,
   double pp = guessing + (upper-guessing) / (1 + exp(athb));
   out[0] = 1-pp;
   out[1] = pp;
-}
-
-static double
-irt_rpf_1dim_drm_prior(const double *spec,
-		       const double *restrict param)
-{
-  const double *prior = spec + RPF_ISpecCount;
-  double ll = 0; //lognormal_pdf(param[0], prior[0]);
-  double cc = param[2];
-  if (cc > 0) {
-    ll += logitnormal_pdf(cc, prior[1], prior[2]);
-  }
-  return ll;
 }
 
 static void
@@ -290,23 +268,6 @@ irt_rpf_mdim_drm_prob2(const double *spec,
   tmp = guessing + (upper-guessing) * tmp;
   out2[0] = 1-tmp;
   out2[1] = tmp;
-}
-
-static double
-irt_rpf_mdim_drm_prior(const double *spec,
-		       const double *restrict param)
-{
-  int numDims = spec[RPF_ISpecDims];
-  const double *prior = spec + RPF_ISpecCount;
-  double ll=0;
-  for (int dx=0; dx < numDims; dx++) {
-    //if (param[dx] > 0) ll += lognormal_pdf(param[dx], prior[0]);
-  }
-  double cc = param[numDims+1];
-  if (cc > 0) {
-    ll += logitnormal_pdf(cc, prior[1], prior[2]);
-  }
-  return ll;
 }
 
 static void
