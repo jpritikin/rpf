@@ -9,8 +9,7 @@
 ##' parameters to response probabilities for dichotomous (1PL, 2PL and
 ##' 3PL) \code{\link{rpf.drm}} and polytomous (graded response
 ##' \code{\link{rpf.grm}}, partial credit/generalized partial credit
-##' \code{\link{rpf.gpcm}}, nominal \code{\link{rpf.nrm}}, and
-##' multiple-choice model \code{\link{rpf.mcm}}) items. Both
+##' (via the nominal model), and nominal \code{\link{rpf.nrm}} items. Both
 ##' unidimensional and multidimensional versions of the models are
 ##' available.
 ##'
@@ -197,7 +196,6 @@ setMethod("rpf.rescale", signature(m="rpf.base", param="numeric",
 ##' rpf.prob,rpf.1dim,numeric,matrix-method
 ##' rpf.prob,rpf.1dim.grm,numeric,numeric-method
 ##' rpf.prob,rpf.mdim.grm,numeric,numeric-method
-##' rpf.prob,rpf.mdim.gpcm,numeric,matrix-method
 ##' rpf.prob,rpf.mdim.nrm,numeric,matrix-method
 ##' rpf.prob,rpf.mdim.mcm,numeric,matrix-method
 ##' rpf.prob,rpf.mdim.grm,numeric,matrix-method
@@ -230,7 +228,7 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf_logprob_wrapper
 ##' @export
 ##' @examples
-##' i1 <- rpf.gpcm()
+##' i1 <- rpf.drm()
 ##' i1.p <- rpf.rparam(i1)
 ##' rpf.logprob(i1, c(i1.p), -1)   # low trait score
 ##' rpf.logprob(i1, c(i1.p), c(0,1))    # average and high trait score
@@ -410,14 +408,6 @@ setClass("rpf.mdim.graded", contains='rpf.mdim',
 ##' @aliases rpf.1dim.grm-class
 setClass("rpf.1dim.grm", contains='rpf.1dim.graded')
 
-##' The unidimensional generalized partial credit item model.
-##'
-##' @export
-##' @name Class rpf.1dim.gpcm
-##' @rdname rpf.1dim.gpcm-class
-##' @aliases rpf.1dim.gpcm-class
-setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded')
-
 ##' Unidimensional dichotomous item models (1PL, 2PL, and 3PL).
 ##'
 ##' @export
@@ -442,14 +432,6 @@ setClass("rpf.mdim.drm", contains='rpf.mdim')
 ##' @aliases rpf.mdim.grm-class
 setClass("rpf.mdim.grm", contains='rpf.mdim.graded')
 
-##' The multidimensional generalized partial credit item model.
-##'
-##' @export
-##' @name Class rpf.mdim.gpcm
-##' @rdname rpf.mdim.gpcm-class
-##' @aliases rpf.mdim.gpcm-class
-setClass("rpf.mdim.gpcm", contains='rpf.mdim.graded')
-
 ##' The nominal response item model (both unidimensional and
 ##' multidimensional models have the same parameterization).
 ##'
@@ -470,8 +452,7 @@ setClass("rpf.mdim.mcm", contains='rpf.mdim')
 
 ##' Convert an IRT item model name to an ID
 ##'
-##' drm1 is the standard 3PL. drm is the multidimensional version of
-##' the 3PL. gpcm1 is the Generalized Partial Credit Model.
+##' This is an internal function and should not be used.
 ##'
 ##' @param name name of the item model (string)
 ##' @return the integer ID assigned to the given model

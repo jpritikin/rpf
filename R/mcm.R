@@ -1,5 +1,7 @@
-##' Create a multiple-choice response model and associated hyperparameters.
+##' Create a multiple-choice response model
 ##'
+##' WARNING: This model is mostly not implemented.
+##' 
 ##' This function instantiates a multiple-choice response
 ##' model.
 ##' 

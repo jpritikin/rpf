@@ -28,7 +28,7 @@
 ##' # 1 dimensional items
 ##' i1 <- rpf.drm()
 ##' i1.p <- rpf.rparam(i1)
-##' i2 <- rpf.gpcm(outcomes=3)
+##' i2 <- rpf.nrm(outcomes=3)
 ##' i2.p <- rpf.rparam(i2)
 ##' rpf.sample(5, list(i1,i2), list(i1.p, i2.p))
 ##'

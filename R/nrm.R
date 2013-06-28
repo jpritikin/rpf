@@ -49,7 +49,7 @@ build.T <- function(outcomes, got) {
   got
 }
 
-##' Create a nominal response model and associated hyperparameters.
+##' Create a nominal response model
 ##'
 ##' This function instantiates a nominal response model. Bayesian
 ##' priors are only used to generate plausible random parameters.

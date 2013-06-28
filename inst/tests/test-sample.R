@@ -23,7 +23,7 @@ set.seed(1)
 test_that("1 dimensional items", {
   i1 <- rpf.drm()
   i1.p <- rpf.rparam(i1)
-  i2 <- rpf.gpcm(outcomes=3)
+  i2 <- rpf.nrm(outcomes=3)
   i2.p <- rpf.rparam(i2)
   data <- rpf.sample(3, list(i1,i2), list(i1.p, i2.p))
   compare.df(unclass(data), data.frame(i1=c(2,1,1), i2=c(3,3,3)))
@@ -67,7 +67,7 @@ test_that("multidimension, no design", {
 
   data <- rpf.sample(3, items, correct)
   expect_identical(c(simplify2array(data)),
-                   as.character(c(1, 2, 1, 2, 2, 2, 1, 1, 1)),
+                   as.character(c(1, 2, 1, 1, 2, 1, 2, 2, 1)),
                    info=paste(deparse(simplify2array(data)), collapse="\n"))
 })
 

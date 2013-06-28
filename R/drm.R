@@ -1,4 +1,4 @@
-##' Create a dichotomous response model and associated hyperparameters.
+##' Create a dichotomous response model
 ##'
 ##' For discussion on the choice of priors see Cai, Yang, and
 ##' Hansen (2011, p. 246).

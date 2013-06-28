@@ -36,13 +36,15 @@ test_that("3PL ICC", {
                     "M3PL")
 })
 
-test_that("GPCM ICC", {
-  i2 <- rpf.gpcm(outcomes=3)
-  i2.p <- rpf.rparam(i2)
-  checkDim(i2,i2.p)
-  expect_equivalent(t(gpcm(t(i2.p), i2@outcomes, theta)@prob[,-1]),
-                    rpf.prob(i2, i2.p, theta),
-                    "GPCM")
+# Rewrite in terms of nominal model TODO
+#
+## test_that("GPCM ICC", {
+##   i2 <- rpf.gpcm(outcomes=3)
+##   i2.p <- rpf.rparam(i2)
+##   checkDim(i2,i2.p)
+##   expect_equivalent(t(gpcm(t(i2.p), i2@outcomes, theta)@prob[,-1]),
+##                     rpf.prob(i2, i2.p, theta),
+##                     "GPCM")
 
 # Rewrite in terms of nominal model TODO
 #
@@ -52,7 +54,7 @@ test_that("GPCM ICC", {
 # expect_equivalent(rpf.prob(i3, i3.p, theta.2d),
 #     as.matrix(gpcm(t(i3.p),factors=2,cat=3,theta.2d)@prob[,-1:-2]),
 #                    "M-GPCM")
-})
+#})
 
 # broken, different parameterization TODO
 if (0) {

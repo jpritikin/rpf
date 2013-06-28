@@ -11,9 +11,6 @@ param <- list()
 spec [[length(spec) +1]] <- rpf.drm(multidimensional=TRUE)
 param[[length(param)+1]] <- c(1, 0, .05, .95)
 
-#spec [[length(spec) +1]] <- rpf.gpcm(3)
-#param[[length(param)+1]] <- c(1, -10, 10)
-
 spec [[length(spec) +1]] <- rpf.grm(3, multidimensional=TRUE)
 param[[length(param)+1]] <- c(1, 1, -1)
 

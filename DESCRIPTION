@@ -34,10 +34,8 @@ VignetteBuilder: knitr
 Collate:
     'classes.R'
     'drm.R'
-    'gpcm.R'
     'nrm.R'
     'mcm.R'
-    'graded.R'
     'grm.R'
     'sample.R'
     'diagnose.R'
