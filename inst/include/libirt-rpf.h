@@ -30,17 +30,17 @@ enum RPF_ISpec {
 typedef int (*rpf_numSpec_t)(const double *spec);
 typedef int (*rpf_numParam_t)(const double *spec);
 typedef void (*rpf_prob_t)(const double *spec,
-			   const double *restrict param, const double *restrict th,
-			   double *restrict out);
+			   const double *param, const double *th,
+			   double *out);
 typedef void (*rpf_dLL1_t)(const double *spec,
-			   const double *restrict param,
+			   const double *param,
 			   const double *where, const double area,
 			   const double *weight, double *out);
-typedef void (*rpf_dLL2_t)(const double *spec, const double *restrict param, double *out);
-typedef void (*rpf_rescale_t)(const double *spec, double *restrict param, const int *paramMask,
-			      const double *restrict mean, const double *restrict choleskyCov);
+typedef void (*rpf_dLL2_t)(const double *spec, const double *param, double *out);
+typedef void (*rpf_rescale_t)(const double *spec, double *param, const int *paramMask,
+			      const double *mean, const double *choleskyCov);
 typedef void (*rpf_transform_t)(double *spec, double *param);
-typedef void (*rpf_dTheta_t)(const double *spec, const double *restrict param,
+typedef void (*rpf_dTheta_t)(const double *spec, const double *param,
 			     const double *where, const double *dir,
 			     double *grad, double *hess);
 
