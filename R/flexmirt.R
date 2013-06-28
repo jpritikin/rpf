@@ -207,7 +207,7 @@ write.flexmirt <- function(groups, file=NULL, fileEncoding="") {
       spec <- grp$spec[[ix]]
       name <- names(grp$spec)[ix]
       iparam <- grp$param[,ix]
-      if (is.null(name)) name <- paste0("i",ix)
+      if (is.null(name)) name <- paste("i",ix,sep="")
       if (class(spec) == "rpf.mdim.drm") {
         if (iparam[4] < 1) warnings("Nonzero upper bound ignored")
         if (iparam[3] == 0) {

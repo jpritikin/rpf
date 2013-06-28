@@ -118,7 +118,7 @@ rpf.sample <- function(theta, items, params, design, prefix="i",
   ret <- as.data.frame(ret)
   name <- colnames(params)
   if (is.null(name)) name <- names(items)
-  if (is.null(name)) name <- paste0(prefix,1:numItems)
+  if (is.null(name)) name <- paste(prefix,1:numItems,sep="")
   colnames(ret) <- name
   return(ret)
 }

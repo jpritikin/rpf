@@ -5,7 +5,7 @@ data(kct)
 
 context("outfit/infit")
 
-responses <- kct.people[,paste0("V",2:19)]
+responses <- kct.people[,paste("V",2:19, sep="")]
 rownames(responses) <- kct.people$NAME
 responses <- responses[1:34,4:17]
 data <- sapply(responses, unclass) - 1

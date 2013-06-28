@@ -29,7 +29,7 @@ Suggests:
 Depends:
     methods,
     mvtnorm,
-    R (>= 2.15.0)
+    R (>= 2.14.0)
 VignetteBuilder: knitr
 Collate:
     'classes.R'
