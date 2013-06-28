@@ -67,16 +67,13 @@ m2 <- mxModel(model="drm1", ip.mat, spec, Eip, m.mat, cov.mat,
               mxData(observed=data, type="raw"),
               mxExpectationBA81(mean="mean", cov="cov",
                 ItemSpec="ItemSpec",
-                ItemParam="itemParam",
                 EItemParam="EitemParam",
-                qpoints=12,
-                rescale=FALSE),
-              mxFitFunctionBA81())
-
-m2 <- mxOption(m2, "Analytic Gradients", 'yes')
-m2 <- mxOption(m2, "Calculate Hessian", "No")
-m2 <- mxOption(m2, "Standard Errors", "No")
-m2 <- mxOption(m2, "Number of Threads", 1)
+                qpoints=12),
+              mxFitFunctionBA81(ItemParam="itemParam", rescale=FALSE),
+              mxComputeSequence(steps=list(
+                                  mxComputeOnce(expectation='expectation', context='E'),
+                                  mxComputeOnce(fitfunction='fitfunction')  # broken TODO
+                                  )))
 
 spoint <- list(c(1.4, 1, 0, .1, .9),
                c(1.4, 1, .5, -.5),
