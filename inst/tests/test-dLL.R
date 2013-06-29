@@ -71,8 +71,8 @@ m2 <- mxModel(model="drm1", ip.mat, spec, Eip, m.mat, cov.mat,
                 qpoints=12),
               mxFitFunctionBA81(ItemParam="itemParam", rescale=FALSE),
               mxComputeSequence(steps=list(
-                                  mxComputeOnce(expectation='expectation', context='E'),
-                                  mxComputeOnce(fitfunction='fitfunction')  # broken TODO
+                                  mxComputeOnce('expectation', context='E'),
+                                  mxComputeOnce('fitfunction', gradient=TRUE, hessian=TRUE)
                                   )))
 
 spoint <- list(c(1.4, 1, 0, .1, .9),
@@ -99,8 +99,8 @@ for (ii in 1:numItems) {
   deriv <- genD(function(param) {
     np <- length(param)
     m2@matrices$itemParam@values[1:np,ii] <- param
-    m2 <- mxRun(m2, useOptimizer=FALSE, silent=TRUE)
-    m2@output$EM.LL
+    m2 <- mxRun(m2, silent=TRUE)
+    m2@output$minimum
   }, spoint[[ii]], method.args=list(eps=0.01, d=0.01, r=2))
 
   emp.hess <- unpackHession(deriv, np)
