@@ -1,7 +1,7 @@
 /*
   Copyright 2012-2013 Joshua Nathaniel Pritikin and contributors
 
-  libirt-rpf is free software: you can redistribute it and/or modify
+  libifa-rpf is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
@@ -15,8 +15,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _LIBIRT_RPF_
-#define _LIBIRT_RPF_
+#ifndef _LIBIFA_RPF_
+#define _LIBIFA_RPF_
 
 enum RPF_ISpec {
   RPF_ISpecID,

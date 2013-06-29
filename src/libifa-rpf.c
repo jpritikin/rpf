@@ -1,7 +1,7 @@
 /*
   Copyright 2012-2013 Joshua Nathaniel Pritikin and contributors
 
-  libirt-rpf is free software: you can redistribute it and/or modify
+  libifa-rpf is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "../inst/include/libirt-rpf.h"
+#include "../inst/include/libifa-rpf.h"
 
 #ifndef M_LN2
 #define M_LN2           0.693147180559945309417232121458        /* ln(2) */
