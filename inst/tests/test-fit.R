@@ -2,41 +2,27 @@
 library(testthat)
 library(rpf)
 
-set.seed(1)
+context("ot2000")
 
-spec <- list()
-spec[1:3] <- rpf.drm()
+test_that("simple case", {
+  set.seed(1)
 
-gen.p <- matrix(c(1,0,0,1,-1,0,1,1,0), ncol=3, nrow=3)
-data <- rpf.sample(200, spec, gen.p)
-#  write.csv(data, "fit-test.csv", row.names=FALSE, quote=FALSE)
+  spec <- list()
+  spec[1:3] <- rpf.drm(multidimensional=FALSE)
 
-param <- matrix(c(.71,.03,0, 1.53,-.85,0, 0.19,4.26,0), ncol=3, nrow=3)
+  gen.p <- matrix(c(1,0,0,1,
+                    1,-1,0,1,
+                    1,1,0,1), ncol=3, nrow=4)  # note byrow=FALSE
+  data <- rpf.sample(200, spec, gen.p)
+                                        #  write.csv(data, "fit-test.csv", row.names=FALSE, quote=FALSE)
 
-got <- rpf.ot2000.chisq(spec, param, param!=0, data)
+  param <- matrix(c(.71,.03,0, 1,
+                    1.53,-.85, 0, 1,
+                    0.19,4.26,0, 1), ncol=3, nrow=4)
 
-tbl <- round(t(sapply(got, function(row) c(chisq=row$statistic, df=row$df, p=row$p.value))),2)
-expect_equal(sum(tbl[,2]), 3)
-expect_equal(sum(tbl[,1]), 6.79)
+  got <- rpf.ot2000.chisq(spec, param, param!=0 & param!=1, data)
 
-######################
-
-numItems <- 10
-numPersons <- 500
-
-gen.p <- structure(c(1.44709407589418, -0.803558357507768, 0.386608728066216,  1.29639717227091, 0.948739456691646, -0.0565036325646403, 0.933250970552304,  1.80608925390866, 2.56755904452142, 0.429914212555579, 0.502284624314142,  1.57838342842404, 0.831090539659115, -0.139282385567736, 0.331968377856512,  2.23623233054553, 0.692603971518935, -2.77759276392393, -1.03558647376593,  -0.322853958783463, 1.02775449981024, -1.83230284878881, 0.964446254365306,  1.54368491874942, 1.06874030656106, -1.72828721339192, -1.15987103180553,  -1.03340203846113, 0.898215880712383, -1.77583638741353, -1.00193144531418,  1.34839194301861, 1.20344388072359, -0.132750488298142, -0.0139420252131676,  0.0419605863244238, 0.832751791823774, -0.105173946166973, 1.55507762193835,  1.66024437713918), .Dim = c(4L, 10L), .Dimnames = list(c("a",  "b1", "b2", "b3"), NULL))
-i1 <- rpf.gpcm(4)
-#i1 <- rpf.drm(numChoices=4, poor=TRUE)
-items <- list()
-items[1:numItems] <- i1
-
-set.seed(1)
-ability <- rnorm(numPersons)
-data <- rpf.sample(ability, items, gen.p)
-param <- structure(c(2.22843629514544, -0.599521609942681, 0.363362200164802,  0.79026956245215, 1.20244819219151, -0.173331024624201, 0.656457110785939,  1.22177375539083, 3.99000067728128, 0.278159320466832, 0.368695621725286,  1.07661060680734, 1.16495088312033, -0.0518337723981943, 0.205494659953106,  1.50098954326803, 0.879375730714337, -1.8635962488601, -0.811401421094904,  -0.0449495869448207, 1.43389226378566, -1.3619863553623, 0.758168007405782,  1.05459021580726, 1.51006252906572, -1.05548581319379, -0.670390151411637,  -0.82474012759892, 1.16044919932035, -1.38034850310464, -0.640298241676533,  0.961337130693329, 1.60779791954187, -0.0996870816941321, 0.0489617389826358,  0.0500027463925976, 1.23974648120648, -0.211149021054933, 1.0718869329005,  1.27277766668959), .Dim = c(4L, 10L))
-
-got <- rpf.ot2000.chisq(items, param, param!=0, data)
-
-tbl <- round(t(sapply(got, function(row) c(chisq=row$statistic, df=row$df, p=row$p.value))),2)
-expect_equal(sum(tbl[,2]), 513)
-expect_equal(sum(tbl[,1]), 522.33)
+  tbl <- round(t(sapply(got, function(row) c(chisq=row$statistic, df=row$df, p=row$p.value))),2)
+  expect_equal(sum(tbl[,2]), 3)
+  expect_equal(sum(tbl[,1]), 5.71)
+})

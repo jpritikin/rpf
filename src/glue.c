@@ -197,7 +197,8 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 }
 
 static SEXP
-rpf_prior_wrapper(SEXP r_spec, SEXP r_param)
+rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
+		  SEXP r_where, SEXP r_weight)
 {
   if (length(r_spec) < RPF_ISpecCount)
     error("Item spec must be of length %d, not %d", RPF_ISpecCount, length(r_spec));
@@ -215,38 +216,6 @@ rpf_prior_wrapper(SEXP r_spec, SEXP r_param)
   int numParam = (*librpf_model[id].numParam)(spec);
   if (length(r_param) < numParam)
     error("Item has %d parameters, only %d given", numParam, length(r_param));
-
-  SEXP ret;
-  PROTECT(ret = allocVector(REALSXP, 1));
-  REAL(ret)[0] = (*librpf_model[id].prior)(spec, REAL(r_param));
-  if (!isfinite(REAL(ret)[0])) error("Prior not finite");
-  UNPROTECT(1);
-  return ret;
-}
-
-static SEXP
-rpf_gradient_wrapper(SEXP r_spec, SEXP r_param,
-		     SEXP r_where, SEXP r_weight)
-{
-  if (length(r_spec) < RPF_ISpecCount)
-    error("Item spec must be of length %d, not %d", RPF_ISpecCount, length(r_spec));
-
-  double *spec = REAL(r_spec);
-
-  int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
-    error("Item model %d out of range", id);
-
-  int numSpec = (*librpf_model[id].numSpec)(spec);
-  if (length(r_spec) < numSpec)
-    error("Item spec must be of length %d, not %d", numSpec, length(r_spec));
-    
-  int numParam = (*librpf_model[id].numParam)(spec);
-  if (length(r_param) < numParam)
-    error("Item has %d parameters, only %d given", numParam, length(r_param));
-
-  int mask[numParam];
-  for (int px=0; px < numParam; px++) mask[px] = px;
 
   int dims = spec[RPF_ISpecDims];
   if (length(r_where) != dims)
@@ -258,18 +227,111 @@ rpf_gradient_wrapper(SEXP r_spec, SEXP r_param,
     error("Item has %d outcomes, but weight is of length %d",
 	  outcomes, length(r_weight));
 
+  const int numDeriv = numParam + numParam*(numParam+1)/2;
+  SEXP ret;
+  PROTECT(ret = allocVector(REALSXP, numDeriv));
+  memset(REAL(ret), 0, sizeof(double) * numDeriv);
+  (*librpf_model[id].dLL1)(spec, REAL(r_param),
+			    REAL(r_where), 1.0, REAL(r_weight), REAL(ret));
+  for (int px=0; px < numDeriv; px++) {
+    if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 1", px);
+  }
+  (*librpf_model[id].dLL2)(spec, REAL(r_param), REAL(ret));
+  for (int px=0; px < numDeriv; px++) {
+    if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 2", px);
+  }
+  UNPROTECT(1);
+  return ret;
+}
+
+static SEXP
+rpf_dTheta_wrapper(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
+{
+  if (length(r_spec) < RPF_ISpecCount)
+    error("Item spec must be of length %d, not %d", RPF_ISpecCount, length(r_spec));
+
+  double *spec = REAL(r_spec);
+
+  int id = spec[RPF_ISpecID];
+  if (id < 0 || id >= librpf_numModels)
+    error("Item model %d out of range", id);
+
+  int numSpec = (*librpf_model[id].numSpec)(spec);
+  if (length(r_spec) < numSpec)
+    error("Item spec must be of length %d, not %d", numSpec, length(r_spec));
+    
+  int numParam = (*librpf_model[id].numParam)(spec);
+  if (length(r_param) < numParam)
+    error("Item has %d parameters, only %d given", numParam, length(r_param));
+
+  int dims = spec[RPF_ISpecDims];
+  if (length(r_dir) != dims)
+    error("Item has %d dimensions, but dir is of length %d",
+	  dims, length(r_dir));
+  if (length(r_where) != dims)
+    error("Item has %d dimensions, but where is of length %d",
+	  dims, length(r_where));
+
+  SEXP ret, names;
+  PROTECT(ret = allocVector(VECSXP, 2));
+  PROTECT(names = allocVector(STRSXP, 2));
+
+  int outcomes = spec[RPF_ISpecOutcomes];
+  SEXP grad, hess;
+  PROTECT(grad = allocVector(REALSXP, outcomes));
+  PROTECT(hess = allocVector(REALSXP, outcomes));
+  memset(REAL(grad), 0, sizeof(double) * outcomes);
+  memset(REAL(hess), 0, sizeof(double) * outcomes);
+  (*librpf_model[id].dTheta)(spec, REAL(r_param), REAL(r_where), REAL(r_dir),
+			     REAL(grad), REAL(hess));
+  SET_VECTOR_ELT(ret, 0, grad);
+  SET_VECTOR_ELT(ret, 1, hess);
+  SET_STRING_ELT(names, 0, mkChar("gradient"));
+  SET_STRING_ELT(names, 1, mkChar("hessian"));
+  namesgets(ret, names);
+  UNPROTECT(4);
+  return ret;
+}
+
+static SEXP
+rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
+{
+  if (length(r_spec) < RPF_ISpecCount)
+    error("Item spec must be of length %d, not %d", RPF_ISpecCount, length(r_spec));
+
+  double *spec = REAL(r_spec);
+
+  int id = spec[RPF_ISpecID];
+  if (id < 0 || id >= librpf_numModels)
+    error("Item model %d out of range", id);
+
+  int numSpec = (*librpf_model[id].numSpec)(spec);
+  if (length(r_spec) < numSpec)
+    error("Item spec must be of length %d, not %d", numSpec, length(r_spec));
+    
+  int numParam = (*librpf_model[id].numParam)(spec);
+  if (length(r_param) < numParam)
+    error("Item has %d parameters, only %d given", numParam, length(r_param));
+
+  int dims = spec[RPF_ISpecDims];
+  if (length(r_mean) != dims)
+    error("Item has %d dimensions, but mean is of length %d",
+	  dims, length(r_mean));
+
+  int cov_rows, cov_cols;
+  getMatrixDims(r_cov, &cov_rows, &cov_cols);
+  if (cov_rows != dims || cov_rows != dims)
+    error("Item has %d dimensions, but cov is %dx%d",
+	  dims, cov_rows, cov_cols);
+
+  int mask[numParam];
+  memset(mask, 0, sizeof(*mask) * numParam);
+
   SEXP ret;
   PROTECT(ret = allocVector(REALSXP, numParam));
-  (*librpf_model[id].gradient)(spec, REAL(r_param), mask,
-			       REAL(r_where), REAL(r_weight), REAL(ret));
-  for (int px=0; px < numParam; px++) {
-    if (!isfinite(REAL(ret)[px])) error("Gradient not finite at step 1");
-  }
-  (*librpf_model[id].gradient)(spec, REAL(r_param), mask,
-			       NULL, REAL(r_weight), REAL(ret));
-  for (int px=0; px < numParam; px++) {
-    if (!isfinite(REAL(ret)[px])) error("Gradient not finite at step 2");
-  }
+  memcpy(REAL(ret), REAL(r_param), sizeof(double) * numParam);
+  (*librpf_model[id].rescale)(spec, REAL(ret), mask,
+			      REAL(r_mean), REAL(r_cov));
   UNPROTECT(1);
   return ret;
 }
@@ -280,11 +342,12 @@ static R_CallMethodDef flist[] = {
   {"rpf_numParam_wrapper", (DL_FUNC) rpf_numParam_wrapper, 1},
   {"rpf_prob_wrapper", (DL_FUNC) rpf_prob_wrapper, 3},
   {"rpf_logprob_wrapper", (DL_FUNC) rpf_logprob_wrapper, 3},
-  {"rpf_prior_wrapper", (DL_FUNC) rpf_prior_wrapper, 2},
-  {"rpf_gradient_wrapper", (DL_FUNC) rpf_gradient_wrapper, 4},
+  {"rpf_dLL_wrapper", (DL_FUNC) rpf_dLL_wrapper, 4},
+  {"rpf_dTheta_wrapper", (DL_FUNC) rpf_dTheta_wrapper, 4},
+  {"rpf_rescale_wrapper", (DL_FUNC) rpf_rescale_wrapper, 4},
   {"orlando_thissen_2000_wrapper", (DL_FUNC) orlando_thissen_2000, 5},
+  {"kang_chen_2007_wrapper", (DL_FUNC) kang_chen_2007_wrapper, 2},
   {"sumscore_observed", (DL_FUNC) sumscore_observed, 4},
-  {"rpf_GaussHermiteData", (DL_FUNC) omxGaussHermiteData, 1},
   {NULL, NULL, 0}
 };
 
@@ -298,5 +361,5 @@ get_librpf_models(int *version, int *numModels, const struct rpf **model)
 
 void R_init_rpf(DllInfo *info) {
   R_registerRoutines(info, NULL, flist, NULL, NULL);
-  R_RegisterCCallable("rpf", "get_librpf_model", (DL_FUNC) get_librpf_models);
+  R_RegisterCCallable("rpf", "get_librpf_model_GPL", (DL_FUNC) get_librpf_models);
 }

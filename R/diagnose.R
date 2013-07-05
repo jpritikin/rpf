@@ -1,6 +1,6 @@
-##' Calculate cell moments
+##' Calculate cell central moments
 ##' 
-##' Popular moments include 2 (variance) and 4 (kurtosis).
+##' Popular central moments include 2 (variance) and 4 (kurtosis).
 ##' 
 ##' @param spec list of item models
 ##' @param params data frame of item parameters, 1 per row
@@ -13,9 +13,9 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
   out <- array(dim=c(length(scores), length(spec)))
   for (ix in 1:length(spec)) {
     i <- spec[[ix]]
-    prob <- rpf.prob(i, params[ix,], scores)
-    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@numOutcomes-1)))
-    grid <- t(array(0:(i@numOutcomes-1), dim=c(i@numOutcomes, length(scores))))
+    prob <- t(rpf.prob(i, params[,ix], scores))  # remove t() TODO
+    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@outcomes-1)))
+    grid <- t(array(0:(i@outcomes-1), dim=c(i@outcomes, length(scores))))
     out[,ix] <- apply((grid - Escore)^m * prob, 1, sum)
   }
   out
@@ -34,11 +34,14 @@ rpf.1dim.residual <- function(spec, params, responses, scores) {
   Zscore <- array(dim=c(length(scores), length(spec)))
   for (ix in 1:length(spec)) {
     i <- spec[[ix]]
-    prob <- rpf.prob(i, params[ix,], scores)
-    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@numOutcomes-1)))
+    prob <- t(rpf.prob(i, params[,ix], scores))  # remove t() TODO
+    Escore <- apply(prob, 1, function(r) sum(r * 0:(i@outcomes-1)))
     data <- responses[,ix]
-    if (!is.ordered(data)) { stop(paste("Column",ix,"is not an ordered factor")) }
-    data <- unclass(data) - 1
+    if (is.ordered(data)) {
+      data <- unclass(data) - 1
+    } else if (is.factor(data)) {
+      stop(paste("Column",ix,"is an unordered factor"))
+    }
     Zscore[,ix] <- data - Escore
   }
   Zscore
@@ -59,7 +62,10 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
   res / sqrt(variance)
 }
 
-##' Calculate item and person fit statistics
+##' Calculate item and person Rasch fit statistics
+##'
+##' Note: These statistics are only appropriate if all discrimination
+##' parameters are fixed equal and there is no missing data.
 ##'
 ##' Exact distributional properties of these statistics are unknown
 ##' (Masters & Wright, 1997, p. 112).  For details on the calculation,
@@ -69,11 +75,10 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' To adjust Z scores for fewer items use wh.exact=FALSE.
 ##'
 ##' @param spec list of item models
-##' @param params data frame of item parameters, 1 per row
+##' @param params matrix of item parameters, 1 per column
 ##' @param responses persons in rows and items in columns
 ##' @param scores model derived person scores
 ##' @param margin for people 1, for items 2
-##' @param na.rm remove NAs (default TRUE)
 ##' @param wh.exact whether to use the exact Wilson-Hilferty transformation (default TRUE)
 ##' @references Masters, G. N. & Wright, B. D. (1997). The Partial
 ##' Credit Model. In W. van der Linden & R. K. Kambleton (Eds.),
@@ -87,25 +92,34 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
 ##' Analysis.} Chicago: Mesa Press.
 ##' @export
-rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh.exact=TRUE) {
-# why permit na.rm=FALSE ? TODO
+rpf.1dim.fit <- function(spec, params, responses, scores, margin, wh.exact=TRUE) {
+  if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")  # true? TODO
+  na.rm=TRUE
   r.var <- rpf.1dim.moment(spec, params, scores,2)
   r.k <- rpf.1dim.moment(spec, params, scores,4)
   r.z <- rpf.1dim.stdresidual(spec, params, responses, scores)
-  wms.var <- apply(r.k - r.var^2, margin, sum, na.rm=na.rm)/
-    apply(r.var, margin, sum, na.rm=na.rm)^2
-  wms.sd <- sqrt(wms.var)
-  fudge <- wms.sd/3
-  if (!wh.exact) fudge <- 0
+  outfit.n <- apply(r.var, margin, function(l) sum(!is.na(l)))
+  outfit.sd <- NA
+# copied from mirt; doesn't work TODO
+#  outfit.sd <- sqrt(apply(r.k / r.var^2, margin, sum, na.rm=na.rm) /
+#                    outfit.n^2 - 1/outfit.n)
+  outfit.fudge <- outfit.sd/3
+  infit.sd <- sqrt(apply(r.k - r.var^2, margin, sum, na.rm=na.rm)/
+    apply(r.var, margin, sum, na.rm=na.rm)^2)
+  infit.fudge <- infit.sd/3
+  if (!wh.exact) {
+    infit.fudge <- 0
+    outfit.fudge <- 0
+  }
   outfit <- apply(r.z^2, margin, sum, na.rm=na.rm)/
                        apply(r.z, margin, function (l) sum(!is.na(l)))
-  outfit.z <- (outfit^(1/3) - 1)*(3/wms.sd) + fudge
+  outfit.z <- (outfit^(1/3) - 1)*(3/outfit.sd) + outfit.fudge
   infit <- apply(r.z^2 * r.var, margin, sum, na.rm=na.rm)/
                      apply(r.var, margin, sum, na.rm=na.rm)
-  infit.z <- (infit^(1/3) - 1)*(3/wms.sd) + fudge
+  infit.z <- (infit^(1/3) - 1)*(3/infit.sd) + infit.fudge
   df <- data.frame(infit, infit.z, outfit, outfit.z)
   if (margin == 2) {
-    df$name <- rownames(params)    
+    df$name <- colnames(params)
   } else {
     df$name <- rownames(responses)
   }
@@ -114,12 +128,14 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, na.rm=TRUE, wh
 
 ##' Find the point where an item provides mean maximum information
 ##'
+##' WARNING: This function is experimental and may disappear.
+##'
 ##' @param spec an item spec
 ##' @param iparam an item parameter vector
 ##' @param grain the step size for numerical integration (optional)
 rpf.mean.info1 <- function(spec, iparam, grain=.1) {
   range <- 9
-  dim <- spec@dimensions
+  dim <- spec@factors
   if (dim != 1) stop("Not implemented")
   grid <- seq(-range, range, grain)
   info <- rpf.info(spec, iparam, grid)
@@ -166,7 +182,7 @@ rpf.mean.info <- function(spec, param, grain=.1) {
 ##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
 ##' @param item the item of interest
 ##' @param observed a matrix of observed raw scores by the outcome of the item of interest
-##' @param quad the quadrature rule (default is G-H with 49 points)
+##' @param quad the quadrature rule (default is equally spaced intervals with 49 points)
 ##'
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
@@ -176,18 +192,30 @@ rpf.mean.info <- function(spec, param, grain=.1) {
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
 rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
-  if (missing(quad)) quad <- rpf.GaussHermiteData(49)
+  if (missing(quad)) {
+    n <- 49
+    width <- 6
+    x <- seq(-width, width, length.out=n)
+    quad <- list(x=x, w=dnorm(x)/sum(dnorm(x)))
+  }
   c.spec <- lapply(spec, function(m) {
-    if (length(m@spec)==0) { stop("Not implemented") }
+    if (length(m@spec)==0) { stop("Item model",m,"is not fully implemented") }
     else { m@spec }
   })
 
+  max.param <- max(vapply(spec, rpf.numParam, 0))
+  if (dim(param)[1] < max.param) {
+    stop(paste("param matrix must have", max.param ,"rows"))
+  }
   out <- .Call(orlando_thissen_2000_wrapper, c.spec, param, item, observed, quad)
-  observed <- c(out$observed)
-  expected <- c(out$expected)
+  out$orig.observed <- out$observed
+  out$orig.expected <- out$expected
+  kc <- .Call(kang_chen_2007_wrapper, out$orig.observed, out$orig.expected)
+  out$observed <- observed <- kc$observed
+  out$expected <- expected <- kc$expected
   mask <- expected!=0
   out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-  out$df <- out$df - free;
+  out$df <- out$df - free - kc$collapsed;
   out$p.value <- dchisq(out$statistic, out$df)
   out
 }
@@ -197,15 +225,22 @@ rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
 ##' Runs \code{\link{rpf.ot2000.chisq1}} for every item and accumulates
 ##' the results.
 ##'
+##' TODO: Handle multiple factors with mean and covariance parameters.
+##'
 ##' @param spec a list of item specifications
 ##' @param param item paramters in columns
 ##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
 ##' @param data a data frame or matrix of response patterns, 1 per row
-##' @param quad the quadrature rule (default is G-H with 49 points)
+##' @param quad the quadrature rule (default is equally spaced intervals with 49 points)
 ##' @return
 ##' a list of output from \code{\link{rpf.ot2000.chisq1}}
 rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
-  if (missing(quad)) quad <- rpf.GaussHermiteData(49)
+  if (missing(quad)) {
+    n <- 49
+    width <- 6
+    x <- seq(-width, width, length.out=n)
+    quad <- list(x=x, w=dnorm(x)/sum(dnorm(x)))
+  }
   if (is.data.frame(data)) {
     data <- sapply(data, unclass)
   }
@@ -217,36 +252,17 @@ rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
     if (0) {
       # hard to persuade R to do this correctly
       ob.table <- table(apply(data[,context[context != interest]], 1, sum), data[,interest])
-      sumscores <- (length(spec)-1):(sum(sapply(spec, function(m) slot(m,'numOutcomes'))) - spec[[interest]]@numOutcomes)
-      observed <- array(0, dim=c(length(sumscores), spec[[interest]]@numOutcomes))
+      sumscores <- (length(spec)-1):(sum(sapply(spec, function(m) slot(m,'outcomes'))) - spec[[interest]]@outcomes)
+      observed <- array(0, dim=c(length(sumscores), spec[[interest]]@outcomes))
       rowmap <- match(sumscores, rownames(ob.table))
       rowmap <- rowmap[!is.na(rowmap)]
       observed[rowmap,] <- ob.table
     } else {
-      observed <- .Call(sumscore_observed, sum(sapply(spec, function(m) slot(m,'numOutcomes'))),
-                        data, interest, spec[[interest]]@numOutcomes)
+      observed <- .Call(sumscore_observed, sum(sapply(spec, function(m) slot(m,'outcomes'))),
+                        data, interest, spec[[interest]]@outcomes)
     }
     ot.out <- rpf.ot2000.chisq1(spec, param, sum(free[,interest]), interest, observed, quad)
     got[[interest]] <- ot.out
   }
   got
 }
-
-##' Compute Gauss-Hermite quadrature rule
-##'
-##' Computes Gauss-Hermite quadrature rule of requested order using the
-##' Golub-Welsch algorithm. This is very fast and numerically
-##' stable. It can handle quadrature of order 1000+.
-##' @param
-##' n Order of Gauss-Hermite rule to compute (number of nodes)
-##' @return A list containing the node positions (x) and the
-##' quadrature weights (w) for the requested rule.
-##' @author
-##' Alexander W Blocker <ablocker@@gmail.com>
-##' @aliases
-##' rpf_GaussHermiteData
-##' @references
-##' Golub, G. H. and Welsch, J. H. (1969). Calculation of
-##' Gauss Quadrature Rules. Mathematics of Computation 23 (106):
-##' 221-230
-rpf.GaussHermiteData <- function(n) .Call(rpf_GaussHermiteData, n)

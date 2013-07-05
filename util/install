@@ -13,5 +13,5 @@ pkg=rpf
 
 rm -f ${pkg}_*.tar.gz
 ./util/rox
-R CMD build .
+R CMD build --no-build-vignettes .
 R CMD INSTALL ${pkg}_*.tar.gz

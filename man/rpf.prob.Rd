@@ -7,7 +7,6 @@
 \alias{rpf.prob,rpf.base,data.frame,numeric-method}
 \alias{rpf.prob,rpf.base,matrix,matrix-method}
 \alias{rpf.prob,rpf.base,matrix,numeric-method}
-\alias{rpf.prob,rpf.mdim.gpcm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.grm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.grm,numeric,numeric-method}
 \alias{rpf.prob,rpf.mdim.mcm,numeric,matrix-method}

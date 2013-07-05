@@ -13,7 +13,6 @@
   (optional)}
 }
 \description{
-  Find the point where an item provides mean maximum
-  information
+  WARNING: This function is experimental and may disappear.
 }
 

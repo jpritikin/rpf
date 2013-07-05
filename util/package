@@ -18,7 +18,8 @@ pkg=rpf
 
 rm -f ${pkg}_*.tar.gz
 ./util/rox
-R CMD build .
-R CMD check $cran ${pkg}_*.tar.gz || true
+R CMD build --no-build-vignettes .
+# inconsolata is not available from tlmgr; set R_RD4PDF to avoid it
+R_RD4PDF="times,hyper" R CMD check $cran ${pkg}_*.tar.gz || true
 cat ${pkg}.Rcheck/00install.out
 echo Manual is here, ${pkg}.Rcheck/${pkg}-manual.pdf

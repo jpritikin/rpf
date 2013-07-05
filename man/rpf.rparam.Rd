@@ -15,8 +15,7 @@
   item parameters
 }
 \description{
-  This function generates random item parameters taking the
-  Bayesian priors into account.
+  This function generates random item parameters.
 }
 \examples{
 i1 <- rpf.drm()

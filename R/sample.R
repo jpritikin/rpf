@@ -16,15 +16,19 @@
 ##' @param items a list of item models
 ##' @param params a list or matrix of item parameters. If omitted, random item
 ##' parameters are generated for each item model.
-##' @param design a matrix assigning person abilities to item dimensions
-##' @param prefix prefix for column label (optional)
+##' @param design a matrix assigning person abilities to item factors
+##' @param prefix Column names are taken from param or items.
+##' If no column names are available, some will be generated using
+##' the given prefix.
+##' @param mean mean vector of latent distribution (optional)
+##' @param cov covariance matrix of latent distribution (optional)
 ##' @return Returns a data frame of response patterns
 ##' @export
 ##' @examples
 ##' # 1 dimensional items
 ##' i1 <- rpf.drm()
 ##' i1.p <- rpf.rparam(i1)
-##' i2 <- rpf.gpcm(numOutcomes=3)
+##' i2 <- rpf.nrm(outcomes=3)
 ##' i2.p <- rpf.rparam(i2)
 ##' rpf.sample(5, list(i1,i2), list(i1.p, i2.p))
 ##'
@@ -33,8 +37,8 @@
 ##' items <- vector("list", numItems)
 ##' correct <- vector("list", numItems)
 ##'
-##' i1 <- rpf.drm(dimensions=2)
-##' i2 <- rpf.drm(dimensions=1, multidimensional=TRUE)
+##' i1 <- rpf.drm(factors=2)
+##' i2 <- rpf.drm(factors=1, multidimensional=TRUE)
 ##'
 ##' for (ix in 1:(numItems-1)) {
 ##'   items[[ix]] <- i1
@@ -50,13 +54,14 @@
 ##' @references
 ##' Cai, L. (2010). A two-tier full-information item factor analysis
 ##' model with applications. \emph{Psychometrika, 75}, 581-612.
-rpf.sample <- function(theta, items, params, design, prefix="i") {
+rpf.sample <- function(theta, items, params, design, prefix="i",
+                       mean=NULL, cov=NULL) {
   numItems <- length(items)
-  maxDim <- max(vapply(items, function(i) i@dimensions, 0))
+  maxDim <- max(vapply(items, function(i) i@factors, 0))
   if (missing(design)) {
     if (maxDim > 1) {
       design <- matrix(rep(1:maxDim, numItems), nrow=maxDim)
-      design[sapply(items, function(i) 1:maxDim > i@dimensions)] <- NA
+      design[sapply(items, function(i) 1:maxDim > i@factors)] <- NA
     } else {
       design <- matrix(rep(1, numItems), nrow=1)
     }
@@ -71,20 +76,22 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
   if (is.numeric(theta) && length(theta) == 1) {
     if (theta <= 1) stop("Request at least 2 samples")
     numPeople <- theta
-    # mean & covariance TODO
-    theta <- array(rnorm(numPeople * maxAbilities),
-                   dim=c(numPeople, maxAbilities))
+    if (missing(mean)) mean <- rep(0, maxAbilities)
+    if (missing(cov)) cov <- diag(maxAbilities)
+    theta <- array(t(rmvnorm(numPeople, mean=mean, sigma=cov)),
+                   dim=c(maxAbilities, numPeople))
   } else if (maxDim == 1 && is.vector(theta)) {
     numPeople <- length(theta)
-    theta <- array(theta, dim=c(numPeople, maxAbilities))
+    theta <- array(theta, dim=c(maxAbilities, numPeople))
   } else {
-    numPeople <- dim(theta)[1]
+    numPeople <- dim(theta)[2]
   }
 
   if (missing(params)) {
     params <- lapply(items, rpf.rparam)
   }
-  outcomes <- vapply(items, function(i) i@numOutcomes, 0)
+
+  outcomes <- vapply(items, function(i) i@outcomes, 0)
   
   ret <- list()
   for (ix in 1:numItems) {
@@ -95,14 +102,23 @@ rpf.sample <- function(theta, items, params, design, prefix="i") {
     } else {
       param <- params[,ix]  # item parameters are in columns
     }
+
+    if (length(param) < rpf.numParam(i)) {
+      stop(paste("Item",class(i),"needs",rpf.numParam(i),
+                 "parameters but only",length(param),"given"))
+    }
+
     cols <- design[,ix]
     cols <- cols[!is.na(cols)]
-    i.theta <- as.matrix(theta[,cols])
-    P <- rpf.prob(i, param[1:i@numParam], i.theta)
+    i.theta <- as.matrix(theta[cols,])
+    P <- rpf.prob(i, param[1:rpf.numParam(i)], i.theta)
 #    if (any(is.na(P))) stop(paste("Item", i@spec, "with param", param," produced NAs"))
-    ret[[ix]] <- as.ordered(apply(P, c(1), sample, x=1:i@numOutcomes, size=1, replace=F))
+    ret[[ix]] <- as.ordered(apply(P, 2, sample, x=1:i@outcomes, size=1, replace=F))
   }
   ret <- as.data.frame(ret)
-  colnames(ret) <- paste0(prefix,1:numItems)
+  name <- colnames(params)
+  if (is.null(name)) name <- names(items)
+  if (is.null(name)) name <- paste(prefix,1:numItems,sep="")
+  colnames(ret) <- name
   return(ret)
 }

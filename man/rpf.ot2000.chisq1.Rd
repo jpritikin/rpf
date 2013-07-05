@@ -18,8 +18,8 @@
   \item{observed}{a matrix of observed raw scores by the
   outcome of the item of interest}
 
-  \item{quad}{the quadrature rule (default is G-H with 49
-  points)}
+  \item{quad}{the quadrature rule (default is equally
+  spaced intervals with 49 points)}
 }
 \description{
   Implements the Kang & Chen (2007) polytomous extension to

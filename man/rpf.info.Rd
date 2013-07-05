@@ -1,18 +1,19 @@
-\docType{methods}
 \name{rpf.info}
 \alias{rpf.info}
-\alias{rpf.info,rpf.1dim.drm,numeric,numeric-method}
-\alias{rpf.info,rpf.1dim.graded,numeric,numeric-method}
-\alias{rpf.info,rpf.base,data.frame,numeric-method}
-\alias{rpf.info,rpf.mdim.drm,numeric,numeric-method}
 \title{Map an item model, item parameters, and person trait score into a
 information vector}
+\usage{
+  rpf.info(ii, ii.p, where, basis = 1)
+}
 \arguments{
-  \item{m}{an item model}
+  \item{ii}{an item model}
 
-  \item{param}{item parameters}
+  \item{ii.p}{item parameters}
 
-  \item{theta}{the trait score(s)}
+  \item{where}{the location in the latent distribution}
+
+  \item{basis}{if more than 1 factor, a positive basis
+  vector}
 }
 \value{
   Fisher information
@@ -23,13 +24,13 @@ information vector}
 }
 \examples{
 i1 <- rpf.drm()
-i1.p <- c(.6,1,.1)
+i1.p <- c(.6,1,.1,.95)
 theta <- seq(0,3,.05)
-plot(theta, rpf.info(i1, i1.p, theta), type="l")
+plot(theta, rpf.info(i1, i1.p, t(theta)), type="l")
 }
 \references{
-  Muraki, E. (1993) Information functions of the
-  generalized partial credit model. Applied Psychological
-  Measurement, 17(4), 351-363.
+  Dodd, B. G., De Ayala, R. J. & Koch, W. R. (1995).
+  Computerized adaptive testing with polytomous items.
+  \emph{Applied psychological measurement 19}(1), 5-22.
 }
 

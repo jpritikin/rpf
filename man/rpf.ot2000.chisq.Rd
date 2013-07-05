@@ -15,8 +15,8 @@
   \item{data}{a data frame or matrix of response patterns,
   1 per row}
 
-  \item{quad}{the quadrature rule (default is G-H with 49
-  points)}
+  \item{quad}{the quadrature rule (default is equally
+  spaced intervals with 49 points)}
 }
 \value{
   a list of output from \code{\link{rpf.ot2000.chisq1}}
@@ -24,5 +24,9 @@
 \description{
   Runs \code{\link{rpf.ot2000.chisq1}} for every item and
   accumulates the results.
+}
+\details{
+  TODO: Handle multiple factors with mean and covariance
+  parameters.
 }
 

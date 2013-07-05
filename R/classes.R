@@ -9,36 +9,34 @@
 ##' parameters to response probabilities for dichotomous (1PL, 2PL and
 ##' 3PL) \code{\link{rpf.drm}} and polytomous (graded response
 ##' \code{\link{rpf.grm}}, partial credit/generalized partial credit
-##' \code{\link{rpf.gpcm}}, nominal \code{\link{rpf.nrm}}, and
-##' multiple-choice model \code{\link{rpf.mcm}}) items. Both
+##' (via the nominal model), and nominal \code{\link{rpf.nrm}} items. Both
 ##' unidimensional and multidimensional versions of the models are
 ##' available.
 ##'
 ##' Item model parameters are passed around as a numeric vector. A 1D
 ##' matrix is also acceptable. Regardless of model, parameters are
-##' always ordered as follows: discrimination ("a"), difficulty ("b"),
-##' and guessing ("c"). If person ability ranges from low negative to
-##' high positive then probabilities are output from incorrect to
-##' correct. That is, a low ability person (e.g., ability = -2) will
-##' be more likely to get an item incorrect than correct. For example,
-##' a dichotomous model that returns [.25, .75] indicates a
-##' probability of .25 for incorrect and .75 for correct.  A
-##' polytomous model will have the most incorrect probability at index
-##' 1 and the most correct probability at the maximum index.
+##' always ordered as follows: discrimination/slope ("a"),
+##' difficulty/intercept ("b"), and guessing/lower-bound ("c"). If
+##' person ability ranges from low negative to high positive then
+##' probabilities are output from incorrect to correct. That is, a low
+##' ability person (e.g., ability = -2) will be more likely to get an
+##' item incorrect than correct. For example, a dichotomous model that
+##' returns [.25, .75] indicates a probability of .25 for incorrect
+##' and .75 for correct.  A polytomous model will have the most
+##' incorrect probability at index 1 and the most correct probability
+##' at the maximum index.
 ##' 
 ##' All models are always in the logistic metric. To obtain normal
 ##' ogive discrimination parameters, divide slope parameters by
 ##' \code{\link{rpf.ogive}}. Item models are estimated in
 ##' slope-intercept form unless the traditional parameterization is
-##' specifically requested.
+##' specifically requested. Input/output matrices arranged in the way
+##' most convenient for processing in C. Typically this means that
+##' item data is in columns vectors.
 ##'
 ##' This package could also accrete functions to support plotting (but
 ##' not the actual plot functions).
 ##'
-##' @section Warning: The API is not stable at this time. You have
-##' been warned. In particular, I anticipating transposing some of the
-##' input and output matrices.
-##' 
 ##' @docType package
 ##' @rdname rpf.introduction
 ##' @name An introduction
@@ -59,9 +57,8 @@ NULL
 ##' @export
 setClass("rpf.base",
          representation(spec="numeric",
-                        numOutcomes="numeric",
-                        numParam="numeric",
-                        dimensions="numeric",
+                        outcomes="numeric",
+                        factors="numeric",
                         "VIRTUAL"))
 
 ##' The base class for 1 dimensional response probability functions.
@@ -103,29 +100,10 @@ setGeneric("rpf.numParam", function(m) standardGeneric("rpf.numParam"))
 
 setMethod("rpf.numParam", signature(m="rpf.base"),
           function(m) {
-            if (length(m@spec)==0) {
-              m@numParam
-            } else {
-              .Call(rpf_numParam_wrapper, m@spec)
-            }
+            .Call(rpf_numParam_wrapper, m@spec)
           })
 
-##' Log likelihood of the item model parameters given the Bayesian prior
-##' @aliases
-##' rpf.prior,rpf.base,numeric-method
-##' rpf_prior_wrapper
-setGeneric("rpf.prior", function(m, param) standardGeneric("rpf.prior"))
-
-setMethod("rpf.prior", signature(m="rpf.base", param="numeric"),
-          function(m, param) {
-            if (length(m@spec)==0) {
-              stop("Not implemented")
-            } else {
-              .Call(rpf_prior_wrapper, m@spec, param)
-            }
-          })
-
-##' Item parameter gradients
+##' Item parameter derivatives
 ##'
 ##' Evaluate the partial derivatives of the log likelihood with
 ##' respect to each parameter at \code{where} with \code{weight}.
@@ -134,19 +112,85 @@ setMethod("rpf.prior", signature(m="rpf.base", param="numeric"),
 ##' @param param item parameters
 ##' @param where location in the latent space
 ##' @param weight per outcome weights (typically derived by observation)
-##' @return derivative of the log likelihood with respect to each parameter evaluated at \code{where}
+##' @return first and second order partial derivatives of the log
+##' likelihood evaluated at \code{where} organized in the same manner
+##' as Bates and Watts. For p parameters, the first p values are the
+##' first derivative and the next p(p+1)/2 columns are the lower
+##' triangle of the second derivative.
+##' @references Bates, D. M. & Watts, D. (1980). Relative curvature
+##' measures of nonlinearity. \emph{Journal of the Royal Statistical
+##' Society. Series B (Methodological), 42}, 1-25.
+##' @seealso
+##' The numDeriv package.
 ##' @aliases
-##' rpf.gradient,rpf.base,numeric,numeric,numeric-method
-##' rpf_gradient_wrapper
-setGeneric("rpf.gradient", function(m, param, where, weight) standardGeneric("rpf.gradient"))
+##' rpf.dLL,rpf.base,numeric,numeric,numeric-method
+##' rpf_dLL_wrapper
+setGeneric("rpf.dLL", function(m, param, where, weight) standardGeneric("rpf.dLL"))
 
-setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
-                                    where="numeric", weight="numeric"),
+setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
+                                 where="numeric", weight="numeric"),
           function(m, param, where, weight) {
             if (length(m@spec)==0) {
               stop("Not implemented")
             } else {
-              .Call(rpf_gradient_wrapper, m@spec, param, where, weight)
+              .Call(rpf_dLL_wrapper, m@spec, param, where, weight)
+            }
+          })
+
+##' Item derivatives with respect to ability
+##'
+##' Evaluate the partial derivatives of the response probability with
+##' respect to ability.
+##' 
+##' @param m item model
+##' @param param item parameters
+##' @param where location in the latent distribution
+##' @param dir if more than 1 factor, a basis vector]
+##' @aliases
+##' rpf_dTheta_wrapper
+##' rpf.dTheta,rpf.base,numeric,numeric,numeric-method
+##' rpf.dTheta,rpf.base,numeric,matrix,numeric-method
+setGeneric("rpf.dTheta", function(m, param, where, dir) standardGeneric("rpf.dTheta"))
+
+setMethod("rpf.dTheta", signature(m="rpf.base", param="numeric",
+                                  where="numeric", dir="numeric"),
+          function(m, param, where, dir) {
+            if (length(m@spec)==0) {
+              stop("Not implemented")
+            } else {
+              .Call(rpf_dTheta_wrapper, m@spec, param, where, dir)
+            }
+          })
+
+setMethod("rpf.dTheta", signature(m="rpf.base", param="numeric",
+                                  where="matrix", dir="numeric"),
+          function(m, param, where, dir) {
+            dP.raw <- apply(where, 2, function(w) rpf.dTheta(m, param, w, dir))
+            list(gradient=sapply(dP.raw, function(deriv) deriv$gradient),
+                 hessian=sapply(dP.raw, function(deriv) deriv$hessian))
+          })
+
+##' Rescale item parameters
+##'
+##' Adjust item parameters for changes in mean and covariance of the
+##' latent distribution.
+##' 
+##' @param m item model
+##' @param param item parameters
+##' @param mean vector of means
+##' @param cov covariance matrix
+##' @aliases
+##' rpf_rescale_wrapper
+##' rpf.rescale,rpf.base,numeric,numeric,matrix-method
+setGeneric("rpf.rescale", function(m, param, mean, cov) standardGeneric("rpf.rescale"))
+
+setMethod("rpf.rescale", signature(m="rpf.base", param="numeric",
+                                   mean="numeric", cov="matrix"),
+          function(m, param, mean, cov) {
+            if (length(m@spec)==0) {
+              stop("Not implemented")
+            } else {
+              .Call(rpf_rescale_wrapper, m@spec, param, mean, cov)
             }
           })
 
@@ -174,7 +218,6 @@ setMethod("rpf.gradient", signature(m="rpf.base", param="numeric",
 ##' rpf.prob,rpf.1dim,numeric,matrix-method
 ##' rpf.prob,rpf.1dim.grm,numeric,numeric-method
 ##' rpf.prob,rpf.mdim.grm,numeric,numeric-method
-##' rpf.prob,rpf.mdim.gpcm,numeric,matrix-method
 ##' rpf.prob,rpf.mdim.nrm,numeric,matrix-method
 ##' rpf.prob,rpf.mdim.mcm,numeric,matrix-method
 ##' rpf.prob,rpf.mdim.grm,numeric,matrix-method
@@ -207,7 +250,7 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf_logprob_wrapper
 ##' @export
 ##' @examples
-##' i1 <- rpf.gpcm()
+##' i1 <- rpf.drm()
 ##' i1.p <- rpf.rparam(i1)
 ##' rpf.logprob(i1, c(i1.p), -1)   # low trait score
 ##' rpf.logprob(i1, c(i1.p), c(0,1))    # average and high trait score
@@ -218,7 +261,7 @@ setMethod("rpf.logprob", signature(m="rpf.1dim", param="numeric", theta="numeric
             if (length(m@spec)==0) {
               stop("Not implemented")
             } else {
-              t(.Call(rpf_logprob_wrapper, m@spec, param, theta))
+              .Call(rpf_logprob_wrapper, m@spec, param, theta)
             }
           })
 
@@ -227,7 +270,7 @@ setMethod("rpf.logprob", signature(m="rpf.mdim", param="numeric", theta="matrix"
             if (length(m@spec)==0) {
               stop("Not implemented")
             } else {
-              t(.Call(rpf_logprob_wrapper, m@spec, param, t(theta)))
+              .Call(rpf_logprob_wrapper, m@spec, param, theta)
             }
           })
 
@@ -246,7 +289,7 @@ setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric", theta="numeric"),
             if (length(m@spec)==0) {
               exp(rpf.logprob(m, param, theta))
             } else {
-              t(.Call(rpf_prob_wrapper, m@spec, param, theta))
+              .Call(rpf_prob_wrapper, m@spec, param, theta)
             }
           })
 
@@ -255,7 +298,7 @@ setMethod("rpf.prob", signature(m="rpf.mdim", param="numeric", theta="matrix"),
             if (length(m@spec)==0) {
               exp(rpf.logprob(m, param, theta))
             } else {
-              t(.Call(rpf_prob_wrapper, m@spec, param, t(theta)))
+              .Call(rpf_prob_wrapper, m@spec, param, theta)
             }
           })
 
@@ -287,36 +330,33 @@ setMethod("rpf.prob", signature(m="rpf.mdim", param="numeric", theta="numeric"),
 ##' Map an item model, item parameters, and person trait score into a
 ##' information vector
 ##'
-##' @param m an item model
-##' @param param item parameters
-##' @param theta the trait score(s)
+##' @param ii an item model
+##' @param ii.p item parameters
+##' @param where the location in the latent distribution
+##' @param basis if more than 1 factor, a positive basis vector
 ##' @return Fisher information
-##' @docType methods
-##' @aliases
-##' rpf.info,rpf.base,data.frame,numeric-method
-##' rpf.info,rpf.1dim.drm,numeric,numeric-method
-##' rpf.info,rpf.mdim.drm,numeric,numeric-method
-##' rpf.info,rpf.1dim.graded,numeric,numeric-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
-##' i1.p <- c(.6,1,.1)
+##' i1.p <- c(.6,1,.1,.95)
 ##' theta <- seq(0,3,.05)
-##' plot(theta, rpf.info(i1, i1.p, theta), type="l")
-##' @references
-##' Muraki, E. (1993) Information functions of the generalized partial credit model.
-##' Applied Psychological Measurement, 17(4), 351-363.
-setGeneric("rpf.info", function(m, param, theta) standardGeneric("rpf.info"))
-
-setMethod("rpf.info", signature(m="rpf.base", param="data.frame", theta="numeric"),
-          function(m, param, theta) {
-            rpf.info(m, as.numeric(param), theta)
-          })
+##' plot(theta, rpf.info(i1, i1.p, t(theta)), type="l")
+##' @references Dodd, B. G., De Ayala, R. J. & Koch,
+##' W. R. (1995). Computerized adaptive testing with polytomous items.
+##' \emph{Applied psychological measurement 19}(1), 5-22.
+rpf.info <- function(ii, ii.p, where, basis=1) {
+  if (any(basis < 0)) warning("All components of the basis vector should be positive")
+  if (!missing(basis)) {
+    basis <- basis/sqrt(sum(basis^2))
+  }
+  P <- rpf.prob(ii, ii.p, where)
+  dP <- rpf.dTheta(ii, ii.p, where, basis)
+  colSums(dP$gradient^2 / P - dP$hessian)
+}
 
 ##' Generates item parameters
 ##'
-##' This function generates random item parameters taking the Bayesian
-##' priors into account.
+##' This function generates random item parameters.
 ##' 
 ##' @param m an item model
 ##' @return item parameters
@@ -389,16 +429,7 @@ setClass("rpf.mdim.graded", contains='rpf.mdim',
 ##' @name Class rpf.1dim.grm
 ##' @rdname rpf.1dim.grm-class
 ##' @aliases rpf.1dim.grm-class
-setClass("rpf.1dim.grm", contains='rpf.1dim.graded',
-         representation(a.prior.sdlog="numeric"))
-
-##' The unidimensional generalized partial credit item model.
-##'
-##' @export
-##' @name Class rpf.1dim.gpcm
-##' @rdname rpf.1dim.gpcm-class
-##' @aliases rpf.1dim.gpcm-class
-setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded')
+setClass("rpf.1dim.grm", contains='rpf.1dim.graded')
 
 ##' Unidimensional dichotomous item models (1PL, 2PL, and 3PL).
 ##'
@@ -406,8 +437,7 @@ setClass("rpf.1dim.gpcm", contains='rpf.1dim.graded')
 ##' @name Class rpf.1dim.drm
 ##' @rdname rpf.1dim.drm-class
 ##' @aliases rpf.1dim.drm-class
-setClass("rpf.1dim.drm", contains='rpf.1dim',
-         representation(c.prior.logit="numeric"))
+setClass("rpf.1dim.drm", contains='rpf.1dim')
 
 ##' Multidimensional dichotomous item models (M1PL, M2PL, and M3PL).
 ##'
@@ -415,8 +445,7 @@ setClass("rpf.1dim.drm", contains='rpf.1dim',
 ##' @name Class rpf.mdim.drm
 ##' @rdname rpf.mdim.drm-class
 ##' @aliases rpf.mdim.drm-class
-setClass("rpf.mdim.drm", contains='rpf.mdim',
-         representation(c.prior.logit="numeric"))
+setClass("rpf.mdim.drm", contains='rpf.mdim')
 
 ##' The multidimensional graded response item model.
 ##'
@@ -424,16 +453,7 @@ setClass("rpf.mdim.drm", contains='rpf.mdim',
 ##' @name Class rpf.mdim.grm
 ##' @rdname rpf.mdim.grm-class
 ##' @aliases rpf.mdim.grm-class
-setClass("rpf.mdim.grm", contains='rpf.mdim.graded',
-         representation(a.prior.sdlog="numeric"))
-
-##' The multidimensional generalized partial credit item model.
-##'
-##' @export
-##' @name Class rpf.mdim.gpcm
-##' @rdname rpf.mdim.gpcm-class
-##' @aliases rpf.mdim.gpcm-class
-setClass("rpf.mdim.gpcm", contains='rpf.mdim.graded')
+setClass("rpf.mdim.grm", contains='rpf.mdim.graded')
 
 ##' The nominal response item model (both unidimensional and
 ##' multidimensional models have the same parameterization).
@@ -442,8 +462,7 @@ setClass("rpf.mdim.gpcm", contains='rpf.mdim.graded')
 ##' @name Class rpf.mdim.nrm
 ##' @rdname rpf.mdim.nrm-class
 ##' @aliases rpf.mdim.nrm-class
-setClass("rpf.mdim.nrm", contains='rpf.mdim',
-         representation(a.prior.sdlog="numeric"))
+setClass("rpf.mdim.nrm", contains='rpf.mdim')
 
 ##' The multiple-choice response item model (both unidimensional and
 ##' multidimensional models have the same parameterization).
@@ -452,15 +471,11 @@ setClass("rpf.mdim.nrm", contains='rpf.mdim',
 ##' @name Class rpf.mdim.mcm
 ##' @rdname rpf.mdim.mcm-class
 ##' @aliases rpf.mdim.mcm-class
-setClass("rpf.mdim.mcm", contains='rpf.mdim',
-         representation(a.prior.sdlog="numeric",
-                        c.prior.alpha="numeric",
-                        c.prior.beta="numeric"))
+setClass("rpf.mdim.mcm", contains='rpf.mdim')
 
 ##' Convert an IRT item model name to an ID
 ##'
-##' drm1 is the standard 3PL. drm is the multidimensional version of
-##' the 3PL. gpcm1 is the Generalized Partial Credit Model.
+##' This is an internal function and should not be used.
 ##'
 ##' @param name name of the item model (string)
 ##' @return the integer ID assigned to the given model

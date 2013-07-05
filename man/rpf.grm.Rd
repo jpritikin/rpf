@@ -1,39 +1,34 @@
 \name{rpf.grm}
 \alias{rpf.grm}
-\title{Create a graded response model and associated hyperparameters.}
+\title{Create a graded response model}
 \usage{
-  rpf.grm(numOutcomes = 2, dimensions = 1,
-    multidimensional)
+  rpf.grm(outcomes = 2, factors = 1,
+    multidimensional = TRUE)
 }
 \arguments{
-  \item{numOutcomes}{The number of choices available}
+  \item{outcomes}{The number of choices available}
 
-  \item{dimensions}{the number of dimensions}
+  \item{factors}{the number of factors}
 
   \item{multidimensional}{whether to use a multidimensional
-  model. Defaults to \code{TRUE} when \code{dimensions>1}
-  and \code{FALSE} when \code{dimensions==1}.}
+  model. Defaults to \code{TRUE} when \code{factors>1} and
+  \code{FALSE} when \code{factors==1}.}
 }
 \value{
   an item model
 }
 \description{
   This function instantiates a graded response model.
-  Bayesian priors are only used to generate plausible
-  random parameters.
 }
 \details{
   The graded response model was designed for a item with a
   series of dependent parts where a higher score implies
   that easier parts of the item were surmounted. If there
   is any chance your polytomous item has independent parts
-  then consider \code{\link{rpf.gpcm}}. If your categories
+  then consider \code{\link{rpf.nrm}}. If your categories
   cannot cross then the graded response model provides a
-  little more information than the GPCM. Stronger a priori
-  assumptions offer provide more power at the cost of
-  flexibility.
-}
-\author{
-  Jonathan Weeks <weeksjp@gmail.com>
+  little more information than the nominal model. Stronger
+  a priori assumptions offer provide more power at the cost
+  of flexibility.
 }
 

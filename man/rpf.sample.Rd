@@ -2,7 +2,8 @@
 \alias{rpf.sample}
 \title{Randomly sample response patterns given a list of items}
 \usage{
-  rpf.sample(theta, items, params, design, prefix = "i")
+  rpf.sample(theta, items, params, design, prefix = "i",
+    mean = NULL, cov = NULL)
 }
 \arguments{
   \item{theta}{either a vector (for 1 dimension) or a
@@ -16,9 +17,17 @@
   item model.}
 
   \item{design}{a matrix assigning person abilities to item
-  dimensions}
+  factors}
 
-  \item{prefix}{prefix for column label (optional)}
+  \item{prefix}{Column names are taken from param or items.
+  If no column names are available, some will be generated
+  using the given prefix.}
+
+  \item{mean}{mean vector of latent distribution
+  (optional)}
+
+  \item{cov}{covariance matrix of latent distribution
+  (optional)}
 }
 \value{
   Returns a data frame of response patterns
@@ -39,7 +48,7 @@
 # 1 dimensional items
 i1 <- rpf.drm()
 i1.p <- rpf.rparam(i1)
-i2 <- rpf.gpcm(numOutcomes=3)
+i2 <- rpf.nrm(outcomes=3)
 i2.p <- rpf.rparam(i2)
 rpf.sample(5, list(i1,i2), list(i1.p, i2.p))
 
@@ -48,8 +57,8 @@ numItems <- 4
 items <- vector("list", numItems)
 correct <- vector("list", numItems)
 
-i1 <- rpf.drm(dimensions=2)
-i2 <- rpf.drm(dimensions=1, multidimensional=TRUE)
+i1 <- rpf.drm(factors=2)
+i2 <- rpf.drm(factors=1, multidimensional=TRUE)
 
 for (ix in 1:(numItems-1)) {
   items[[ix]] <- i1

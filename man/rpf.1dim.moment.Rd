@@ -1,7 +1,7 @@
 \docType{methods}
 \name{rpf.1dim.moment}
 \alias{rpf.1dim.moment}
-\title{Calculate cell moments}
+\title{Calculate cell central moments}
 \usage{
   rpf.1dim.moment(spec, params, scores, m)
 }
@@ -18,6 +18,7 @@
   moment matrix
 }
 \description{
-  Popular moments include 2 (variance) and 4 (kurtosis).
+  Popular central moments include 2 (variance) and 4
+  (kurtosis).
 }
 

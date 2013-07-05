@@ -44,10 +44,10 @@ plot.gradients <- function(df, px) {
   df2 <- df[df$px == px,]
   df2 <- df2[,c('empirical', 'grid')]
   colnames(df2)[[1]] <- "dLL"
-  df2$name <- paste0("empirical", px)
+  df2$name <- paste("empirical", px, sep="")
   df3 <- df[,c('analytic', 'grid', 'px')]
   colnames(df3)[[1]] <- "dLL"
-  df3$name <- paste0("analytic", df3$px)
+  df3$name <- paste("analytic", df3$px, sep="")
   df3$px <- NULL
   plot.data <- rbind(df2, df3)
   plot.data$name <- factor(plot.data$name)

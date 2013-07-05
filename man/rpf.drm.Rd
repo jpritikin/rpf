@@ -1,20 +1,16 @@
 \name{rpf.drm}
 \alias{rpf.drm}
-\title{Create a dichotomous response model and associated hyperparameters.}
+\title{Create a dichotomous response model}
 \usage{
-  rpf.drm(numChoices = 5, dimensions = 1, multidimensional,
-    a.prior.sdlog = 0.5, poor = FALSE)
+  rpf.drm(factors = 1, multidimensional = TRUE,
+    poor = FALSE)
 }
 \arguments{
-  \item{numChoices}{the number of choices in the question}
-
-  \item{dimensions}{the number of dimensions}
+  \item{factors}{the number of factors}
 
   \item{multidimensional}{whether to use a multidimensional
-  model. Defaults to \code{TRUE} when \code{dimensions>1}
-  and \code{FALSE} when \code{dimensions==1}.}
-
-  \item{a.prior.sdlog}{under construction}
+  model. Defaults to \code{TRUE} when \code{factors>1} and
+  \code{FALSE} when \code{factors==1}.}
 
   \item{poor}{if TRUE, use the traditional parameterization
   of the 1d model instead of the slope-intercept

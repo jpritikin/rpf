@@ -23,8 +23,8 @@ pda(const double *ar, int rows, int cols) {
 
 static const double KANG_CHEN_MIN_EXPECTED = 1.0;  // customizable parameter?
 
-static int find_smallcol(int rows, int cols, double *expected, int rx,
-			 int *goodcol, int *smallcol)
+static void find_smallcol(int rows, int cols, double *expected, int rx,
+			  int *goodcol, int *smallcol)
 {
   *goodcol = 0;
   *smallcol = -1;
@@ -132,6 +132,49 @@ static int kang_chen_2007_collapse(int rows, int cols, int *observed, double *ex
     }
   }
   return collapsed;
+}
+
+SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
+{
+  int rows, cols;
+  getMatrixDims(r_expected_orig, &rows, &cols);
+
+  {
+    int orows, ocols;
+    getMatrixDims(r_observed_orig, &orows, &ocols);
+    if (rows != orows || cols != ocols)
+      error("Observed and expected matrices must have same dimensions");
+  }
+
+  SEXP r_observed, r_expected;
+  PROTECT(r_observed = allocMatrix(INTSXP, rows, cols));
+  PROTECT(r_expected = allocMatrix(REALSXP, rows, cols));
+
+  int *observed = INTEGER(r_observed);
+  double *expected = REAL(r_expected);
+  memcpy(observed, INTEGER(r_observed_orig), sizeof(int) * rows * cols);
+  memcpy(expected, REAL(r_expected_orig), sizeof(double) * rows * cols);
+
+  int collapsed = kang_chen_2007_collapse(rows, cols, observed, expected);
+
+  const int returnCount = 3;
+  SEXP names, ans;
+  PROTECT(names = allocVector(STRSXP, returnCount));
+  PROTECT(ans = allocVector(VECSXP, returnCount));
+
+  int ansC = -1;
+  SET_STRING_ELT(names, ++ansC, mkChar("observed"));
+  SET_VECTOR_ELT(ans,   ansC, r_observed);
+  SET_STRING_ELT(names, ++ansC, mkChar("expected"));
+  SET_VECTOR_ELT(ans,   ansC, r_expected);
+  SET_STRING_ELT(names, ++ansC, mkChar("collapsed"));
+  SET_VECTOR_ELT(ans,   ansC, ScalarInteger(collapsed));
+  if (ansC != returnCount-1) error("Memory corruption");
+
+  namesgets(ans, names);
+  UNPROTECT(4);
+
+  return ans;
 }
 
 static const int CRAZY_VERSION = 0;  // remove TODO
@@ -303,43 +346,32 @@ SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observe
   Free(lk1);
   Free(lk2);
 
-  SEXP r_observed, r_expected;
-  PROTECT(r_observed = allocMatrix(INTSXP, outRows, curOutcomes));
-  PROTECT(r_expected = allocMatrix(REALSXP, outRows, curOutcomes));
-  int *observed = INTEGER(r_observed);
-  double *expected = REAL(r_expected);
-  memcpy(observed, observed_orig, outRows * curOutcomes * sizeof(int));
-  memcpy(expected, expected_orig, outRows * curOutcomes * sizeof(double));
-
   int df = outRows * (curOutcomes-1);
-  df -= kang_chen_2007_collapse(outRows, curOutcomes, observed, expected);
 
-  const int returnCount = 5;
+  const int returnCount = 3;
   SEXP names, ans;
   PROTECT(names = allocVector(STRSXP, returnCount));
   PROTECT(ans = allocVector(VECSXP, returnCount));
 
-  int ansC = 0;
-  SET_STRING_ELT(names, ansC, mkChar("orig.observed"));
-  SET_VECTOR_ELT(ans,   ansC, r_observed_orig);
-  SET_STRING_ELT(names, ++ansC, mkChar("orig.expected"));
-  SET_VECTOR_ELT(ans,   ansC, r_expected_orig);
+  int ansC = -1;
   SET_STRING_ELT(names, ++ansC, mkChar("observed"));
-  SET_VECTOR_ELT(ans,   ansC, r_observed);
+  SET_VECTOR_ELT(ans,   ansC, r_observed_orig);
   SET_STRING_ELT(names, ++ansC, mkChar("expected"));
-  SET_VECTOR_ELT(ans,   ansC, r_expected);
+  SET_VECTOR_ELT(ans,   ansC, r_expected_orig);
   SET_STRING_ELT(names, ++ansC, mkChar("df"));
   SET_VECTOR_ELT(ans,   ansC, ScalarInteger(df));
   if (ansC != returnCount-1) error("Memory corruption");
 
   namesgets(ans, names);
-  UNPROTECT(5);
+  UNPROTECT(3);
 
   return ans;
 }
 
 SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes)
 {
+  if (!isInteger(r_data)) error("Data must be of integer type");
+
   int data_rows;
   int data_cols;
   getMatrixDims(r_data, &data_rows, &data_cols);

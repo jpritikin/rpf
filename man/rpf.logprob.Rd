@@ -27,7 +27,7 @@ probability vector}
   score into a probability vector
 }
 \examples{
-i1 <- rpf.gpcm()
+i1 <- rpf.drm()
 i1.p <- rpf.rparam(i1)
 rpf.logprob(i1, c(i1.p), -1)   # low trait score
 rpf.logprob(i1, c(i1.p), c(0,1))    # average and high trait score

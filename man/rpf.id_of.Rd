@@ -11,8 +11,6 @@
   the integer ID assigned to the given model
 }
 \description{
-  drm1 is the standard 3PL. drm is the multidimensional
-  version of the 3PL. gpcm1 is the Generalized Partial
-  Credit Model.
+  This is an internal function and should not be used.
 }
 

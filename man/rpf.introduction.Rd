@@ -14,38 +14,36 @@
   map parameters to response probabilities for dichotomous
   (1PL, 2PL and 3PL) \code{\link{rpf.drm}} and polytomous
   (graded response \code{\link{rpf.grm}}, partial
-  credit/generalized partial credit \code{\link{rpf.gpcm}},
-  nominal \code{\link{rpf.nrm}}, and multiple-choice model
-  \code{\link{rpf.mcm}}) items. Both unidimensional and
-  multidimensional versions of the models are available.
+  credit/generalized partial credit (via the nominal
+  model), and nominal \code{\link{rpf.nrm}} items. Both
+  unidimensional and multidimensional versions of the
+  models are available.
 
   Item model parameters are passed around as a numeric
   vector. A 1D matrix is also acceptable. Regardless of
   model, parameters are always ordered as follows:
-  discrimination ("a"), difficulty ("b"), and guessing
-  ("c"). If person ability ranges from low negative to high
-  positive then probabilities are output from incorrect to
-  correct. That is, a low ability person (e.g., ability =
-  -2) will be more likely to get an item incorrect than
-  correct. For example, a dichotomous model that returns
-  [.25, .75] indicates a probability of .25 for incorrect
-  and .75 for correct.  A polytomous model will have the
-  most incorrect probability at index 1 and the most
-  correct probability at the maximum index.
+  discrimination/slope ("a"), difficulty/intercept ("b"),
+  and guessing/lower-bound ("c"). If person ability ranges
+  from low negative to high positive then probabilities are
+  output from incorrect to correct. That is, a low ability
+  person (e.g., ability = -2) will be more likely to get an
+  item incorrect than correct. For example, a dichotomous
+  model that returns [.25, .75] indicates a probability of
+  .25 for incorrect and .75 for correct.  A polytomous
+  model will have the most incorrect probability at index 1
+  and the most correct probability at the maximum index.
 
   All models are always in the logistic metric. To obtain
   normal ogive discrimination parameters, divide slope
   parameters by \code{\link{rpf.ogive}}. Item models are
   estimated in slope-intercept form unless the traditional
-  parameterization is specifically requested.
+  parameterization is specifically requested. Input/output
+  matrices arranged in the way most convenient for
+  processing in C. Typically this means that item data is
+  in columns vectors.
 
   This package could also accrete functions to support
   plotting (but not the actual plot functions).
-}
-\section{Warning}{
-  The API is not stable at this time. You have been warned.
-  In particular, I anticipating transposing some of the
-  input and output matrices.
 }
 \references{
   Thissen, D. and Steinberg, L. (1986). A taxonomy of item

@@ -1,14 +1,14 @@
 \name{rpf.1dim.fit}
 \alias{rpf.1dim.fit}
-\title{Calculate item and person fit statistics}
+\title{Calculate item and person Rasch fit statistics}
 \usage{
   rpf.1dim.fit(spec, params, responses, scores, margin,
-    na.rm = TRUE, wh.exact = TRUE)
+    wh.exact = TRUE)
 }
 \arguments{
   \item{spec}{list of item models}
 
-  \item{params}{data frame of item parameters, 1 per row}
+  \item{params}{matrix of item parameters, 1 per column}
 
   \item{responses}{persons in rows and items in columns}
 
@@ -16,18 +16,20 @@
 
   \item{margin}{for people 1, for items 2}
 
-  \item{na.rm}{remove NAs (default TRUE)}
-
   \item{wh.exact}{whether to use the exact Wilson-Hilferty
   transformation (default TRUE)}
 }
 \description{
+  Note: These statistics are only appropriate if all
+  discrimination parameters are fixed equal and there is no
+  missing data.
+}
+\details{
   Exact distributional properties of these statistics are
   unknown (Masters & Wright, 1997, p. 112).  For details on
   the calculation, refer to Wright & Masters (1982, p.
   100).
-}
-\details{
+
   The Wilson-Hilferty transformation is biased for less
   than 25 items. To adjust Z scores for fewer items use
   wh.exact=FALSE.

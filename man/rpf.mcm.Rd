@@ -1,23 +1,25 @@
 \name{rpf.mcm}
 \alias{rpf.mcm}
-\title{Create a multiple-choice response model and associated hyperparameters.}
+\title{Create a multiple-choice response model}
 \usage{
-  rpf.mcm(numOutcomes = 2, numChoices = 5, dimensions = 1)
+  rpf.mcm(outcomes = 2, numChoices = 5, factors = 1)
 }
 \arguments{
-  \item{numOutcomes}{the number of possible outcomes}
+  \item{outcomes}{the number of possible outcomes}
 
   \item{numChoices}{the number of choices available}
 
-  \item{dimensions}{the number of dimensions}
+  \item{factors}{the number of factors}
 }
 \value{
   an item model
 }
 \description{
+  WARNING: This model is mostly not implemented.
+}
+\details{
   This function instantiates a multiple-choice response
-  model. Bayesian priors are only used to generate
-  plausible random parameters.
+  model.
 }
 \author{
   Jonathan Weeks <weeksjp@gmail.com>
