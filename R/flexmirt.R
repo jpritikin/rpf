@@ -47,6 +47,7 @@ read.flexmirt <- function(fname) {
     index <- (prm[,3] == g)
     thisGroup <- prm[index,]
 
+    g.name <- "?"
     g.dist <- list()
     g.label <- list()
     g.spec <- list()
@@ -56,10 +57,7 @@ read.flexmirt <- function(fname) {
       spec <- NULL
       param <- c()
       
-      if (thisGroup[i,4] > 1) {
-        print("Cannot handle MIRT.")
-        break
-      }
+      dims <- thisGroup[i,4]
 
       if (thisGroup[i,1] == 1) { # item
         if (thisGroup[i,5] == 1) { # 3PL
@@ -78,10 +76,10 @@ read.flexmirt <- function(fname) {
           for (k in 1:(nc-1)) {
             c[k] <- thisGroup[i,6+k]
           }
-          a <- thisGroup[i,6+nc]
+          a <- thisGroup[i,(6+nc):(6+nc+dims-1)]
 
-          spec <- rpf.grm(multidimensional=TRUE, outcomes=nc)
-          param <- c(a, c)
+          spec <- rpf.grm(multidimensional=TRUE, outcomes=nc, factors=dims)
+          param <- c(unlist(a), c)
         }
         if (thisGroup[i,5] == 3) { # nominal
           offset <- 6
@@ -139,11 +137,17 @@ read.flexmirt <- function(fname) {
           g.param[[i]] <- param
         }
       } else { # group
-        if (thisGroup[i,4] > 1) {
-          print("Cannot handle MIRT.")
-          break
+        cov <- matrix(NA, nrow=dims, ncol=dims)
+        col <- 6+dims
+        for (rx in 1:dims) {
+          for (cx in 1:rx) {
+            cov[rx,cx] <- thisGroup[i,col]
+            if (rx != cx) cov[cx,rx] <- thisGroup[i,col]
+            col <- col+1
+          }
         }
-        g.dist <- list(mean=thisGroup[i,6], cov=thisGroup[i,7])
+        g.dist <- list(mean=unlist(thisGroup[i,6:(6+dims-1)]), cov=cov)
+        g.name <- thisGroup[i,2]
       }
     } # for every item
 
@@ -155,6 +159,7 @@ read.flexmirt <- function(fname) {
     }
     colnames(pmat) <- g.label
     groups[[g]] <- list(spec=g.spec, param=pmat, mean=g.dist$mean, cov=g.dist$cov)
+    names(groups)[[g]] <- as.character(g.name)
   }  # for every group
 
   groups
@@ -202,9 +207,9 @@ write.flexmirt <- function(groups, file=NULL, fileEncoding="") {
   
   for (gx in 1:length(groups)) {
     grp <- groups[[gx]]
-    nfact <- 1
     for (ix in 1:length(grp$spec)) {
       spec <- grp$spec[[ix]]
+      nfact <- spec@factors
       name <- names(grp$spec)[ix]
       iparam <- grp$param[,ix]
       if (is.null(name)) name <- paste("i",ix,sep="")
@@ -221,8 +226,8 @@ write.flexmirt <- function(groups, file=NULL, fileEncoding="") {
         }
       } else if (class(spec) == "rpf.mdim.grm") {
         if (spec@outcomes > 2) stop("Not implemented")
-        cat(paste(1, name, gx, nfact, 2, spec@outcomes, iparam[2:length(iparam)], iparam[1], sep="\t"),
-            file=file, fill=TRUE)
+        cat(c(1, name, gx, nfact, 2, spec@outcomes, iparam[(nfact+1):length(iparam)],
+                  iparam[1:nfact]), sep="\t", file=file, fill=TRUE)
       } else if (class(spec) == "rpf.mdim.nrm") {
         T.a <- serialize.T(spec, getT(spec, 0))
         T.c <- serialize.T(spec, getT(spec, 1))
@@ -235,7 +240,15 @@ write.flexmirt <- function(groups, file=NULL, fileEncoding="") {
         stop(paste("Not implemented for", class(spec)))
       }
     }
-    cat(paste(0, names(groups)[gx], gx, nfact, 0, grp$mean, grp$cov, sep="\t"),
-        file=file, fill=TRUE)
+    tri <- rep(NA, nfact*(nfact+1)/2)
+    tx <- 1
+    for (rx in 1:nfact) {
+      for (cx in 1:rx) {
+        tri[tx] <- grp$cov[rx,cx]
+        tx <- tx+1
+      }
+    }
+    cat(c(0, names(groups)[gx], gx, nfact, 0, grp$mean, tri),
+        sep="\t", file=file, fill=TRUE)
   }
 }
