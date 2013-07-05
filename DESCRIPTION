@@ -24,8 +24,7 @@ Suggests:
     ggplot2,
     reshape2,
     gridExtra,
-    numDeriv,
-    OpenMx
+    numDeriv
 Depends:
     methods,
     mvtnorm,
