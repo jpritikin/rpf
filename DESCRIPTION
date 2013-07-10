@@ -9,6 +9,7 @@ Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     person("Li", family="Cai", role=c('ctb')), person("Carrie",
     family="Houts", role=c('ctb')), person("Phil", "Chalmers", email =
     "rphilip.chalmers@gmail.com", role = c("ctb")))
+Maintainer: Joshua Pritikin <jpritikin@pobox.com>
 Description: The purpose of this package is to factor out logic and math common
     to Item Response Theory fitting, diagnostics, and analysis. It is
     envisioned as core support code suitable for more specialized IRT packages
