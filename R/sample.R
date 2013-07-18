@@ -113,7 +113,10 @@ rpf.sample <- function(theta, items, params, design, prefix="i",
     i.theta <- as.matrix(theta[cols,])
     P <- rpf.prob(i, param[1:rpf.numParam(i)], i.theta)
 #    if (any(is.na(P))) stop(paste("Item", i@spec, "with param", param," produced NAs"))
-    ret[[ix]] <- as.ordered(apply(P, 2, sample, x=1:i@outcomes, size=1, replace=F))
+    ret1 <- apply(P, 2, sample, x=1:i@outcomes, size=1, replace=F)
+    ret1 <- factor(ret1, levels=1:i@outcomes, ordered=TRUE)
+    attr(ret1, 'mxFactor') <- TRUE  # for OpenMx
+    ret[[ix]] <- ret1
   }
   ret <- as.data.frame(ret)
   name <- colnames(params)
