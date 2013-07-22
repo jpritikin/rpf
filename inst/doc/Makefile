@@ -1,4 +1,4 @@
-PDFS= diag-1dim.pdf
+PDFS=flexmirt-plots.pdf
 R_HOME ?= /usr
 
 all: $(PDFS) 
