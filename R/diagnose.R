@@ -94,23 +94,30 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' @export
 rpf.1dim.fit <- function(spec, params, responses, scores, margin, wh.exact=TRUE) {
   if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")  # true? TODO
+  # automatically exclude min/max score persons or items with some categories unrepresented TODO
+
   na.rm=TRUE
   r.var <- rpf.1dim.moment(spec, params, scores,2)
   r.k <- rpf.1dim.moment(spec, params, scores,4)
   r.z <- rpf.1dim.stdresidual(spec, params, responses, scores)
+
+  outfit.var <- r.var
+  outfit.var[r.var^2 < 1e-5] <- sqrt(1e-5)
   outfit.n <- apply(r.var, margin, function(l) sum(!is.na(l)))
-  outfit.sd <- NA
-# copied from mirt; doesn't work TODO
-#  outfit.sd <- sqrt(apply(r.k / r.var^2, margin, sum, na.rm=na.rm) /
-#                    outfit.n^2 - 1/outfit.n)
+  outfit.sd <- sqrt(apply(r.k / outfit.var^2, margin, sum, na.rm=na.rm) /
+                    outfit.n^2 - 1/outfit.n)
+  outfit.sd[outfit.sd > 1.4142] <- 1.4142
   outfit.fudge <- outfit.sd/3
+
   infit.sd <- sqrt(apply(r.k - r.var^2, margin, sum, na.rm=na.rm)/
     apply(r.var, margin, sum, na.rm=na.rm)^2)
+  infit.sd[infit.sd > 1.4142] <- 1.4142
   infit.fudge <- infit.sd/3
   if (!wh.exact) {
     infit.fudge <- 0
     outfit.fudge <- 0
   }
+
   outfit <- apply(r.z^2, margin, sum, na.rm=na.rm)/
                        apply(r.z, margin, function (l) sum(!is.na(l)))
   outfit.z <- (outfit^(1/3) - 1)*(3/outfit.sd) + outfit.fudge
