@@ -1,7 +1,7 @@
 library(testthat)
 library(rpf)
 library(numDeriv)
-options(error = utils::recover)
+#options(error = utils::recover)
 
 context("dTheta")
 
@@ -30,8 +30,8 @@ for (ii in items) {
       deriv[,ox] <- got$D
     }
     if (ii@factors == 1) {
-      expect_equal(analytic$gradient, c(deriv[1,]))
-      expect_equal(analytic$hessian, c(deriv[2,]))
+      expect_equal(analytic$gradient, c(deriv[1,]), 1e-6)
+      expect_equal(analytic$hessian, c(deriv[2,]), 1e-6)
     } else {
       expect_equal(analytic$gradient,
                    c(dir %*% deriv[c(1:ii@factors),]), 1e-6)

@@ -2,7 +2,7 @@ library(testthat)
 library(OpenMx)  # an unrelease version of OpenMx is required for this test
 library(rpf)
 library(numDeriv)
-options(error = utils::recover)
+#options(error = utils::recover)
 
 context("dLL")
 
