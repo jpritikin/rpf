@@ -94,7 +94,37 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' @export
 rpf.1dim.fit <- function(spec, params, responses, scores, margin, wh.exact=TRUE) {
   if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")  # true? TODO
-  # automatically exclude min/max score persons or items with some categories unrepresented TODO
+
+  exclude.col <- c()
+  outcomes <- sapply(spec, function(s) s@outcomes)
+  for (ix in 1:dim(responses)[2]) {
+    kat <- sum(table(responses[,ix]) > 0)
+    if (kat != outcomes[ix]) {
+      exclude.col <- c(exclude.col, ix)
+      warning(paste("Excluding item", colnames(responses)[ix], "because outcomes !=", outcomes[ix]))
+    }
+  }
+
+  if (length(exclude.col)) {
+    responses <- responses[,-exclude.col]
+    spec <- spec[-exclude.col]
+    params <- params[,-exclude.col]
+    outcomes <- outcomes[-exclude.col]
+  }
+
+  exclude.row <- c()
+  for (ix in 1:dim(responses)[1]) {
+    r1 <- sapply(responses[ix,], unclass)
+    if (all(r1 == 1) || all(r1 == outcomes)) {
+      exclude.row <- c(exclude.row, ix)
+      warning(paste("Excluding response", rownames(responses)[ix], "because minimum or maximum"))
+    }
+  }
+
+  if (length(exclude.row)) {
+    responses <- responses[-exclude.row,]
+    scores <- scores[-exclude.row]
+  }
 
   na.rm=TRUE
   r.var <- rpf.1dim.moment(spec, params, scores,2)
