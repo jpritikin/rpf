@@ -35,15 +35,6 @@ items[[3]] <- rpf.nrm(outcomes=4, factors=2,
 # This is not a cause for concern.
 data <- rpf.sample(200, items)
 
-max.spec.len <- max(vapply(items, function(m) length(m@spec), 0))
-
-spec <- mxMatrix(name="ItemSpec", nrow=max.spec.len, ncol=numItems,
-                 values=NA, free=FALSE, byrow=TRUE)
-for (ix in 1:length(items)) {
-  svec <- items[[ix]]@spec
-  spec@values[1:length(svec),ix] <- svec
-}
-
 starting <- list(c(1.4, 1, 0, .1, .9),
                  c(1.4, 1, -.5, -1),
                  c(1.4,  1,  rep(0,6)))
@@ -63,15 +54,15 @@ Eip <- mxMatrix(name="EitemParam", nrow=dim(ip.mat@values)[1], ncol=numItems,
 
 m.mat <- mxMatrix(name="mean", nrow=1, ncol=2, values=0, free=FALSE)
 cov.mat <- mxMatrix(name="cov", nrow=2, ncol=2, values=diag(2), free=FALSE)
-m2 <- mxModel(model="drm1", ip.mat, spec, Eip, m.mat, cov.mat,
+m2 <- mxModel(model="drm1", ip.mat, Eip, m.mat, cov.mat,
               mxData(observed=data, type="raw"),
               mxExpectationBA81(mean="mean", cov="cov",
-                ItemSpec="ItemSpec",
-                EItemParam="EitemParam",
-                qpoints=12),
-              mxFitFunctionBA81(ItemParam="itemParam", rescale=FALSE),
+                                ItemSpec=items,
+                                ItemParam="itemParam", EItemParam="EitemParam",
+                qpoints=13),
+              mxFitFunctionML(),
               mxComputeSequence(steps=list(
-                                  mxComputeOnce('expectation', context='E'),
+                                  mxComputeOnce('expectation', context='EM'),
                                   mxComputeOnce('fitfunction', gradient=TRUE, hessian=TRUE)
                                   )))
 
@@ -85,7 +76,7 @@ for (ii in 1:numItems) {
   m2@matrices$itemParam@values <- Eip@values
   
   m2@matrices$itemParam@values[1:np,ii] <- spoint[[ii]]
-  m2 <- mxRun(m2, useOptimizer=FALSE, silent=TRUE)
+  m2 <- mxRun(m2, silent=TRUE)
   
   offset <- 1
   if (ii > 1) offset <- sum(c(1,spoint.len[1:(ii-1)]))
