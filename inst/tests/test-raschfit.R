@@ -16,7 +16,7 @@ test_that("kct", {
   items<-list()
   items[1:18] <- rpf.drm(multidimensional=FALSE)
 
-  expect_warning(fit <- rpf.1dim.fit(items, t(params), responses, scores, 2),
+  expect_warning(fit <- rpf.1dim.fit(items, t(params), responses, scores, 2, wh.exact=TRUE),
                  "Excluding response Helen")
 
   expect_equal(fit$infit, kct.items$IN.MSQ[4:17], tolerance=.002)
@@ -24,7 +24,7 @@ test_that("kct", {
   expect_equal(fit$outfit, kct.items$OUT.MSQ[4:17], tolerance=.002)
   expect_equal(fit$outfit.z, kct.items$OUT.ZSTD[4:17], .01)
 
-  expect_warning(fit <- rpf.1dim.fit(items, t(params), responses, scores, 1),
+  expect_warning(fit <- rpf.1dim.fit(items, t(params), responses, scores, 1, wh.exact=TRUE),
                  "Excluding item 1= 1-4")
   
   expect_equal(fit$infit, kct.people$IN.MSQ[1:34], tolerance=.002)
@@ -57,7 +57,7 @@ test_that("sf", {
   responses <- sfpf[,iorder]
   rownames(responses) <- sfpf$NAME
   
-  expect_warning(fit <- rpf.1dim.fit(spec, param, responses, sfpf$MEASURE, 2),
+  expect_warning(fit <- rpf.1dim.fit(spec, param, responses, sfpf$MEASURE, 2, wh.exact=TRUE),
                  "Excluding item GO TO MUSEUM")
   
   expect_equal(fit$infit, sfif$IN.MSQ[-12], .002)
@@ -65,7 +65,7 @@ test_that("sf", {
   expect_equal(fit$outfit, sfif$OUT.MSQ[-12], .002)
   expect_equal(fit$outfit.z, sfif$OUT.ZSTD[-12], .005)
 
-  expect_warning(fit <- rpf.1dim.fit(spec, param, responses, sfpf$MEASURE, 1),
+  expect_warning(fit <- rpf.1dim.fit(spec, param, responses, sfpf$MEASURE, 1, wh.exact=TRUE),
                  "Excluding response ROSSNER, LAWRENCE")
   
   expect_equal(fit$infit, sfpf$IN.MSQ[-2], .02)
@@ -92,7 +92,7 @@ test_that("mirt", {
   params[,2] <- params[,2] / -params[,1]
   scores <- scores.full[,'F1']
   data.f <- as.data.frame(lapply(as.data.frame(data), ordered))
-  fit <- rpf.1dim.fit(spec, t(params), data.f, scores, 2)
+  fit <- rpf.1dim.fit(spec, t(params), data.f, scores, 2, wh.exact=TRUE)
 
   expect_equal(mirt.fit$infit, fit$infit, tolerance=10^-4)
   expect_equal(mirt.fit$z.infit, fit$infit.z, tolerance=10^-3)
