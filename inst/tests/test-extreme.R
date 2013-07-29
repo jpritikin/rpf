@@ -35,3 +35,14 @@ for (ix in 1:length(spec)) {
     for (wh in where) rpf.dLL(ispec, iparam, wh, w)
   })
 }
+
+for (ix in 1:length(spec)) {
+  ispec <- spec[[ix]]
+  iparam <- param[[ix]]
+  test_that(paste("score=NA", class(ispec)), {
+    v <- rpf.prob(ispec, iparam, as.numeric(c(NA,NA)))
+    expect_true(all(is.na(v)))
+    v <- rpf.logprob(ispec, iparam, as.numeric(c(NA,NA)))
+    expect_true(all(is.na(v)))
+  })
+}

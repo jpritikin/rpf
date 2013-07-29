@@ -112,9 +112,8 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     int skip=0;
     for (int dx=0; dx < dims; dx++) {
       if (!isfinite((theta+px*numAbilities)[dx])) {
-	warning("rpf.prob ignored NAs for person %d", px);
 	for (int ox=0; ox < numOutcomes; ox++) {
-	  out[px*numAbilities + ox] = nan("");
+	  out[px*numOutcomes + ox] = NA_REAL;
 	}
 	skip=1;
 	break;
@@ -174,9 +173,8 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     int skip=0;
     for (int dx=0; dx < dims; dx++) {
       if (!isfinite((theta+px*numAbilities)[dx])) {
-	warning("rpf.logprob ignored NAs for person %d", px);
 	for (int ox=0; ox < numOutcomes; ox++) {
-	  out[px*numAbilities + ox] = nan("");
+	  out[px*numOutcomes + ox] = NA_REAL;
 	}
 	skip=1;
 	break;
