@@ -16,10 +16,10 @@ unpackHession <- function(deriv, np) {
   hess
 }
 
-myseed <- as.integer(runif(1) * 1e7)
+#myseed <- as.integer(runif(1) * 1e7)
 #print(paste("set.seed =",myseed))
-set.seed(myseed)
-#set.seed(3090526)
+#set.seed(myseed)
+set.seed(2845451)
 
 numItems <- 3
 items <- list()
@@ -31,8 +31,6 @@ T.c <- matrix(rnorm(9),3,3) + diag(3)
 items[[3]] <- rpf.nrm(outcomes=4, factors=2,
                       T.a=T.a, T.c=T.c)
 
-# If not all outcomes are represented then lots of warnings result.
-# This is not a cause for concern.
 data <- rpf.sample(200, items)
 
 starting <- list(c(1.4, 1, 0, .1, .9),

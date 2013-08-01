@@ -230,7 +230,7 @@ rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
   PROTECT(ret = allocVector(REALSXP, numDeriv));
   memset(REAL(ret), 0, sizeof(double) * numDeriv);
   (*librpf_model[id].dLL1)(spec, REAL(r_param),
-			    REAL(r_where), 1.0, REAL(r_weight), REAL(ret));
+			    REAL(r_where), REAL(r_weight), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
     if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 1", px);
   }
@@ -352,7 +352,7 @@ static R_CallMethodDef flist[] = {
 static void
 get_librpf_models(int *version, int *numModels, const struct rpf **model)
 {
-  *version = 4;
+  *version = 5;
   *numModels = librpf_numModels;
   *model = librpf_model;
 }
