@@ -31,7 +31,7 @@ T.c <- matrix(rnorm(9),3,3) + diag(3)
 items[[3]] <- rpf.nrm(outcomes=4, factors=2,
                       T.a=T.a, T.c=T.c)
 
-data <- rpf.sample(200, items)
+data <- rpf.sample(200, items)  # small sample size will only work with some seeds
 
 starting <- list(c(1.4, 1, 0, .1, .9),
                  c(1.4, 1, -.5, -1),
@@ -70,43 +70,49 @@ spoint <- list(c(1.4, 1, 0, .1, .9),
 spoint.len <- vapply(spoint, length, 0)
 
 for (ii in 1:numItems) {
-  np <- length(spoint[[ii]])
-  m2@matrices$itemParam@values <- Eip@values
-  
-  m2@matrices$itemParam@values[1:np,ii] <- spoint[[ii]]
-  m2 <- mxRun(m2, silent=TRUE)
-  
-  offset <- 1
-  if (ii > 1) offset <- sum(c(1,spoint.len[1:(ii-1)]))
-  offset.i <- seq(offset,offset+np-1)
-
-  grad1 <- m2@output$gradient[offset.i]
-  names(grad1) <- NULL
-  hess <- m2@output$hessian[offset.i, offset.i]
-  for (cx in 2:dim(hess)[1]) for (rx in 1:cx) hess[rx,cx] <- hess[cx,rx]
-  
-  deriv <- genD(function(param) {
-    np <- length(param)
-    m2@matrices$itemParam@values[1:np,ii] <- param
+  test_that(paste("item",ii), {
+    np <- length(spoint[[ii]])
+    m2@matrices$itemParam@values <- Eip@values
+    
+    m2@matrices$itemParam@values[1:np,ii] <- spoint[[ii]]
     m2 <- mxRun(m2, silent=TRUE)
-    m2@output$minimum
-  }, spoint[[ii]], method.args=list(eps=0.01, d=0.01, r=2))
+    
+    offset <- 1
+    if (ii > 1) offset <- sum(c(1,spoint.len[1:(ii-1)]))
+    offset.i <- seq(offset,offset+np-1)
 
-  emp.hess <- unpackHession(deriv, np)
-  emp.hess[is.na(emp.hess)] <- 0
+    grad1 <- m2@output$gradient[offset.i]
+    names(grad1) <- NULL
+    hess <- m2@output$hessian[offset.i, offset.i]
 
-  if (0) {
-    print(paste("Item", ii))
-    print(grad1)
-    print(deriv$D[1:np])
-    cat("T.a=",deparse(T.a),"\n")
-    cat("T.c=",deparse(T.c),"\n")
-    cat("an=",deparse(hess),"\n")
-    cat("emp=",deparse(emp.hess),"\n")
-    print(round(hess - emp.hess, 2))
-  }
-  
-  expect_equal(deriv$D[1:np], grad1, tolerance=1e-6)
-  expect_equal(emp.hess, hess, tolerance=1e-4)
+    deriv <- genD(function(param) {
+      np <- length(param)
+      m2@matrices$itemParam@values[1:np,ii] <- param
+      lModel <- mxModel(m2,
+                        mxComputeSequence(steps=list(
+                                            mxComputeOnce('expectation', context='EM'),
+                                            mxComputeOnce('fitfunction')
+                                            )))
+      fit <- mxRun(lModel, silent=TRUE)
+      fit@output$minimum
+    }, spoint[[ii]], method.args=list(eps=0.01, d=0.01, r=2))
+
+    emp.hess <- unpackHession(deriv, np)
+    emp.hess[is.na(emp.hess)] <- 0
+
+    if (0) {
+      print(paste("Item", ii))
+      print(grad1)
+      print(deriv$D[1:np])
+      cat("T.a=",deparse(T.a),"\n")
+      cat("T.c=",deparse(T.c),"\n")
+      cat("an=",deparse(hess),"\n")
+      cat("emp=",deparse(emp.hess),"\n")
+      print(round(hess - emp.hess, 2))
+    }
+    
+    expect_equal(deriv$D[1:np], grad1, tolerance=1e-6)
+    expect_equal(emp.hess, hess, tolerance=1e-4)
+  })
 }
 #warnings()
