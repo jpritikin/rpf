@@ -410,12 +410,12 @@ irt_rpf_mdim_drm_rescale(const double *spec, double *restrict param, const int *
 {
   int numDims = spec[RPF_ISpecDims];
 
+  double madj = dotprod(param, mean, numDims);
+
   for (int d1=0; d1 < numDims; d1++) {
     if (paramMask[d1] < 0) continue;
     param[d1] = dotprod(param+d1, cov + d1 * numDims + d1, numDims-d1);
   }
-
-  double madj = dotprod(param, mean, numDims);
 
   param[numDims] += madj;
 }
@@ -698,12 +698,12 @@ irt_rpf_mdim_grm_rescale(const double *spec, double *restrict param, const int *
   int numDims = spec[RPF_ISpecDims];
   int nzeta = spec[RPF_ISpecOutcomes] - 1;
 
+  double madj = dotprod(param, mean, numDims);
+
   for (int d1=0; d1 < numDims; d1++) {
     if (paramMask[d1] < 0) continue;
     param[d1] = dotprod(param+d1, cov + d1 * numDims + d1, numDims-d1);
   }
-
-  double madj = dotprod(param, mean, numDims);
 
   for (int tx=0; tx < nzeta; tx++) {
     int px = numDims + tx;
@@ -1172,12 +1172,12 @@ irt_rpf_mdim_nrm_rescale(const double *spec, double *restrict param, const int *
   const double *Tc  = spec + RPF_ISpecCount + nzeta * nzeta;
   const double *iTc = spec + RPF_ISpecCount + 3 * nzeta * nzeta;
 
+  double madj = dotprod(param, mean, numDims);
+
   for (int d1=0; d1 < numDims; d1++) {
     if (paramMask[d1] < 0) continue;
     param[d1] = dotprod(param+d1, cov + d1 * numDims + d1, numDims-d1);
   }
-
-  double madj = dotprod(param, mean, numDims);
 
   double ak[nzeta];
   double ck[nzeta];
