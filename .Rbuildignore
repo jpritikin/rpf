@@ -2,3 +2,4 @@
 .Rhistory
 .gdbinit
 .*.tar.gz
+vignettes/auto
