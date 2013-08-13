@@ -21,7 +21,8 @@ rpf.drm <- function(factors=1, multidimensional=TRUE, poor=FALSE) {
   m <- NULL
   id <- -1
   if (!multidimensional) {
-    id <- rpf.id_of(ifelse(poor, "drm1-", "drm1"))
+    if (!poor) stop("The old parameterization is no longer available")
+    id <- rpf.id_of("drm1-")
     m <- new("rpf.1dim.drm",
              outcomes=2,
              factors=1)

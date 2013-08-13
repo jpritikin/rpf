@@ -14,7 +14,8 @@ test_that("kct", {
   params <- cbind(1, kct.items$MEASURE, 0, 1)
   rownames(params) <- kct.items$NAME
   items<-list()
-  items[1:18] <- rpf.drm(multidimensional=FALSE)
+  items[1:18] <- rpf.drm()
+  params[,2] <- -params[,2]
 
   expect_warning(fit <- rpf.1dim.fit(items, t(params), responses, scores, 2, wh.exact=TRUE),
                  "Excluding response Helen")
@@ -87,9 +88,8 @@ test_that("mirt", {
   scores.full <- fscores(raschfit, full.scores=TRUE)
 
   spec <- list()
-  spec[1:20] <- rpf.drm(multidimensional=FALSE)
+  spec[1:20] <- rpf.drm()
   params <- t(simplify2array(coef(raschfit)[1:20]))[,1:4]
-  params[,2] <- params[,2] / -params[,1]
   scores <- scores.full[,'F1']
   data.f <- as.data.frame(lapply(as.data.frame(data), ordered))
   fit <- rpf.1dim.fit(spec, t(params), data.f, scores, 2, wh.exact=TRUE)

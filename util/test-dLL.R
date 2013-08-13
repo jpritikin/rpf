@@ -21,7 +21,6 @@ unpackHession <- function(deriv, np) {
 #set.seed(myseed)
 set.seed(2845451)
 
-numItems <- 3
 items <- list()
 items[[1]] <- rpf.drm(factors=2)
 items[[2]] <- rpf.grm(outcomes=3, factors=2)
@@ -30,6 +29,7 @@ T.c <- matrix(rnorm(9),3,3) + diag(3)
 
 items[[3]] <- rpf.nrm(outcomes=4, factors=2,
                       T.a=T.a, T.c=T.c)
+numItems <- length(items)
 
 data <- rpf.sample(200, items)  # small sample size will only work with some seeds
 
@@ -46,17 +46,17 @@ for (sx in 1:length(starting)) {
   ip.mat@values[1:length(v),sx] <- v
   ip.mat@free[1:length(v),sx] <- TRUE
 }
-
-Eip <- mxMatrix(name="EitemParam", nrow=dim(ip.mat@values)[1], ncol=numItems,
-                values=ip.mat@values)
+starting.mat <- ip.mat@values
+starting.free <- ip.mat@free
 
 m.mat <- mxMatrix(name="mean", nrow=1, ncol=2, values=0, free=FALSE)
 cov.mat <- mxMatrix(name="cov", nrow=2, ncol=2, values=diag(2), free=FALSE)
-m2 <- mxModel(model="drm1", ip.mat, Eip, m.mat, cov.mat,
+m2 <- mxModel(model="drm1", ip.mat, m.mat, cov.mat,
               mxData(observed=data, type="raw"),
               mxExpectationBA81(mean="mean", cov="cov",
                                 ItemSpec=items,
-                                ItemParam="itemParam", EItemParam="EitemParam",
+                                ItemParam="itemParam", EItemParam=starting.mat,
+#                                design=matrix(c(1L,2L,1L,2L,1L,2L,1L,NA),nrow=2),
                 qpoints=13),
               mxFitFunctionML(),
               mxComputeSequence(steps=list(
@@ -72,18 +72,15 @@ spoint.len <- vapply(spoint, length, 0)
 for (ii in 1:numItems) {
   test_that(paste("item",ii), {
     np <- length(spoint[[ii]])
-    m2@matrices$itemParam@values <- Eip@values
-    
+    m2@matrices$itemParam@free[,] <- FALSE
+    m2@matrices$itemParam@values <- starting.mat
     m2@matrices$itemParam@values[1:np,ii] <- spoint[[ii]]
+    m2@matrices$itemParam@free[,ii] <- starting.free[,ii]
     m2 <- mxRun(m2, silent=TRUE)
     
-    offset <- 1
-    if (ii > 1) offset <- sum(c(1,spoint.len[1:(ii-1)]))
-    offset.i <- seq(offset,offset+np-1)
-
-    grad1 <- m2@output$gradient[offset.i]
+    grad1 <- m2@output$gradient
     names(grad1) <- NULL
-    hess <- m2@output$hessian[offset.i, offset.i]
+    hess <- m2@output$hessian
 
     deriv <- genD(function(param) {
       np <- length(param)
@@ -94,11 +91,12 @@ for (ii in 1:numItems) {
                                             mxComputeOnce('fitfunction')
                                             )))
       fit <- mxRun(lModel, silent=TRUE)
-      fit@output$minimum
+      got <- fit@fitfunction@result
+      got
     }, spoint[[ii]], method.args=list(eps=0.01, d=0.01, r=2))
 
     emp.hess <- unpackHession(deriv, np)
-    emp.hess[is.na(emp.hess)] <- 0
+#    emp.hess[is.na(emp.hess)] <- 0
 
     if (0) {
       print(paste("Item", ii))

@@ -25,10 +25,7 @@ rpf.grm <- function(outcomes=2, factors=1, multidimensional=TRUE) {
   m <- NULL
   id <- -1
   if (!multidimensional) {
-    id <- rpf.id_of("grm1")
-    m <- new("rpf.1dim.grm",
-             outcomes=outcomes,
-             factors=1)
+    stop("The old parameterization is no longer available")
   } else {
     id <- rpf.id_of("grm")
     m <- new("rpf.mdim.grm",

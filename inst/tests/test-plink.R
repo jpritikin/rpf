@@ -77,11 +77,12 @@ expect_equivalent(rpf.prob(i4, i4.p, theta.2d),
 #                    "MCM")
 
 test_that("GRM ICC", {
-  i6 <- rpf.grm(outcomes=4, multidimensional=FALSE)
+  i6 <- rpf.grm(outcomes=4)
   i6.p <- rpf.rparam(i6)
   checkDim(i6,i6.p)
+  grm.pl <- c(i6.p[1], i6.p[2:4] / -i6.p[1])  # switch parameterization
   expect_equivalent(rpf.prob(i6, i6.p, theta),
-                    t(grm(t(i6.p), factors=1,cat=4, theta=theta, catprob=TRUE)@prob[,-1]))
+                    t(grm(t(grm.pl), factors=1,cat=4, theta=theta, catprob=TRUE)@prob[,-1]))
 
   i7 <- rpf.grm(factors=2, outcomes=3)
   i7.p <- rpf.rparam(i7)

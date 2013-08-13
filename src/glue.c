@@ -390,7 +390,7 @@ static R_CallMethodDef flist[] = {
 static void
 get_librpf_models(int *version, int *numModels, const struct rpf **model)
 {
-  *version = 7;
+  *version = 8;
   *numModels = librpf_numModels;
   *model = librpf_model;
 }
