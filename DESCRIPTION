@@ -25,7 +25,8 @@ Suggests:
     ggplot2,
     reshape2,
     gridExtra,
-    numDeriv
+    numDeriv,
+    mirt
 Depends:
     methods,
     mvtnorm,
