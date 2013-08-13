@@ -3,3 +3,4 @@
 .gdbinit
 .*.tar.gz
 vignettes/auto
+src/Makevars$
