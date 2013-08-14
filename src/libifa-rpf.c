@@ -408,7 +408,6 @@ irt_rpf_mdim_grm_paramInfo(const double *spec, const int param,
 			   int *type, double *upper, double *lower)
 {
 	int numDims = spec[RPF_ISpecDims];
-	const int numOutcomes = spec[RPF_ISpecOutcomes];
 	*upper = nan("unset");
 	*lower = nan("unset");
 	if (param >= 0 && param < numDims) {
@@ -417,6 +416,31 @@ irt_rpf_mdim_grm_paramInfo(const double *spec, const int param,
 	} else {
 		*type = RPF_Intercept;
 	}
+}
+
+static void _grm_fix_crazy_stuff(const double *spec, const int numOutcomes, double *out)
+{
+  int bigk = -1;
+  double big = 0;
+
+  for (int bx=0; bx < numOutcomes; bx++) {
+    if (out[bx] > big) {
+      bigk = bx;
+      big = out[bx];
+    }
+  }
+
+  for (int fx=0; fx < numOutcomes; fx++) {
+    if (out[fx] < 0) {
+      set_deriv_nan(spec, out);
+      return;
+    }
+    if (out[fx] == 0) {
+      double small = exp(-EXP_STABLE_DOMAIN);
+      out[bigk] -= small;
+      out[fx] += small;
+    }
+  }
 }
 
 static void
@@ -446,28 +470,9 @@ irt_rpf_mdim_grm_prob(const double *spec,
     out[kx] = tmp;
   }
 
-  // look for crazy stuff
   for (int kx=0; kx < numOutcomes; kx++) {
     if (out[kx] <= 0) {
-      int bigk = -1;
-      double big = 0;
-      for (int bx=0; bx < numOutcomes; bx++) {
-	if (out[bx] > big) {
-	  bigk = bx;
-	  big = out[bx];
-	}
-      }
-      for (int fx=0; fx < numOutcomes; fx++) {
-	      if (out[fx] < 0) {
-		      set_deriv_nan(spec, out);
-		      return;
-	      }
-	if (out[fx] == 0) {
-	  double small = 1 / (1 + exp(EXP_STABLE_DOMAIN));
-	  out[bigk] -= small;
-	  out[fx] += small;
-	}
-      }
+      _grm_fix_crazy_stuff(spec, numOutcomes, out);
       return;
     }
   }

@@ -160,7 +160,10 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     (*librpf_model[id].prob)(spec, REAL(r_param), theta+px*numAbilities,
 				out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
-      if (!isfinite(out[px*numOutcomes + ox])) error("Probability not finite");
+      double prob = out[px*numOutcomes + ox];
+      if (!isfinite(prob)) {
+	out[px*numOutcomes + ox] = NA_REAL;  // legitimate (e.g., grm thresholds misordered)
+      }
     }
   }
 
@@ -221,8 +224,9 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     (*librpf_model[id].logprob)(spec, REAL(r_param), theta+px*numAbilities,
 				out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
-      if (!isfinite(out[px*numOutcomes + ox])) {
-	error("Probability not finite for item model %d", id);
+      double prob = out[px*numOutcomes + ox];
+      if (!isfinite(prob)) {
+	out[px*numOutcomes + ox] = NA_REAL;  // legitimate (e.g., grm thresholds misordered)
       }
     }
   }
