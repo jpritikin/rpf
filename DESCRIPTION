@@ -26,6 +26,7 @@ Suggests:
     reshape2,
     gridExtra,
     numDeriv,
+    knitr,
     mirt
 Depends:
     methods,
