@@ -148,74 +148,13 @@ set_deriv_nan(const double *spec, double *out)
   }
 }
 
-/**
- * irf(a,b,c,th) := c+(1-c)/(1+exp(-a*(th - b)))
- * diff(log(1-irf(a,b,c,th)),a);  // 0
- * diff(log(irf(a,b,c,th)),a);    // 1
- * diff(log(1-irf(a,b,c,th)),b);  // 0
- * diff(log(irf(a,b,c,th)),b);    // 1
- * ratsimp(diff(log(1-irf(a,b,c,th)),c));
- * diff(log(irf(a,b,c,th)),c);
- */
-static void
-irt_rpf_1dim_drm_deriv1(const double *spec,
-			const double *restrict param,
-			const double *where, const double area,
-			const double *weight, double *out)
-{
-  double aa = param[0];
-  double bb = param[1];
-  double cc = param[2];
-  double th = where[0];
-  double athb = -aa * (th - bb);
-
-  if (athb < -GRADIENT_STABLE_DOMAIN) athb = -GRADIENT_STABLE_DOMAIN;
-  else if (athb > GRADIENT_STABLE_DOMAIN) athb = GRADIENT_STABLE_DOMAIN;
-
-  double Eathb = exp(athb);
-  double Eathb2 = (Eathb+1)*(Eathb+1);
-  double w0 = Eathb2 * (-(1-cc)/(Eathb+1) - cc + 1);
-  double w1 = Eathb2 * ((1-cc)/(Eathb+1) + cc);
-
-  out[0] += area * ((weight[0] * (bb-th)*Eathb / w0 +
-		     weight[1] * -(bb-th)*Eathb / w1));
-  out[1] += area * ((weight[0] * Eathb / w0 +
-		     weight[1] * -Eathb / w1));
-  double ratio = (1-(1/(Eathb+1))) / ((1-cc)/(Eathb+1) + cc);
-  out[2] += area * ((weight[0] * (1/(cc-1)) +
-		     weight[1] * ratio));
-}
-
-static void
-irt_rpf_1dim_drm_deriv2(const double *spec, const double *restrict param,
-			double *out)
-{
-  double aa = param[0];
-  double cc = param[2];
-  const double *prior = spec + RPF_ISpecCount;
-  if (aa <= 0 || cc < 0 || cc >= 1) {
-    set_deriv_nan(spec, out);
-    return;
-  }
-
-  out[0] *= (1-cc);
-  //out[0] += lognormal_gradient(aa, prior[0]);
-
-  out[1] *= aa * (1-cc);
-  if (cc == 0) { out[2] = nan("I"); }
-  else {
-    out[2] += logitnormal_gradient(cc, prior[1], prior[2]);
-  }
-  for (int px=3; px < 9; px++) out[px] = nan("I");
-}
-
 static void
 irt_rpf_1dim_drm_rescale(const double *spec, double *restrict param, const int *paramMask,
-			 const double *restrict mean, const double *restrict choleskyCov)
+			 const double *restrict mean, const double *restrict cov)
 {
   double thresh = param[1] * -param[0];
   if (paramMask[0] >= 0) {
-    param[0] *= choleskyCov[0];
+    param[0] *= cov[0];
   }
   if (paramMask[1] >= 0) {
     thresh += param[0] * mean[0];
@@ -232,15 +171,19 @@ irt_rpf_mdim_drm_numParam(const double *spec)
 { return 3 + spec[RPF_ISpecDims]; }
 
 static void
-irt_rpf_mdim_drm_paramBound(const double *spec, const int param,
-			    double *upper, double *lower)
+irt_rpf_mdim_drm_paramInfo(const double *spec, const int param,
+			   int *type, double *upper, double *lower)
 {
 	int numDims = spec[RPF_ISpecDims];
 	*upper = nan("unset");
 	*lower = nan("unset");
 	if (param >= 0 && param < numDims) {
+		*type = RPF_Slope;
 		*lower = 1e-6;
+	} else if (param == numDims) {
+		*type = RPF_Intercept;
 	} else if (param == numDims+1 || param == numDims+2) {
+		*type = RPF_Bound;
 		*lower = 1e-6;
 		*upper = 1 - 1e-6;
 	}
@@ -288,7 +231,7 @@ irt_rpf_mdim_drm_prob2(const double *spec,
 static void
 irt_rpf_mdim_drm_deriv1(const double *spec,
 		       const double *restrict param,
-		       const double *where, const double area,
+		       const double *where,
 		       const double *weight, double *out)
 {
   int numDims = spec[RPF_ISpecDims];
@@ -304,11 +247,11 @@ irt_rpf_mdim_drm_deriv1(const double *spec,
   double r2_Q = r2/PQ[1];
   double r2_Q2 = r2/(PQ[1] * PQ[1]);
   for (int dx=0; dx < numDims; dx++) {
-    out[dx] -= area * where[dx] * PQstar[0] * PQstar[1] * (upper-cc) * (r1_P - r2_Q);
+    out[dx] += where[dx] * PQstar[0] * PQstar[1] * (upper-cc) * (r1_P - r2_Q);
   }
-  out[numDims] -= area * (upper-cc) * PQstar[0] * PQstar[1] * (r1_P - r2_Q);
-  out[numDims+1] -= area * PQstar[0] * (r1_P - r2_Q);
-  out[numDims+2] -= area * PQstar[1] * (r1_P - r2_Q);
+  out[numDims] += (upper-cc) * PQstar[0] * PQstar[1] * (r1_P - r2_Q);
+  out[numDims+1] += PQstar[0] * (r1_P - r2_Q);
+  out[numDims+2] += PQstar[1] * (r1_P - r2_Q);
 
   int ox = numDims+2;
   double ugD2 = (upper-cc);  // can factor out TODO
@@ -321,7 +264,7 @@ irt_rpf_mdim_drm_deriv1(const double *spec,
 
   for(int ix=0; ix < numDims; ix++) {
     for(int jx=0; jx <= ix; jx++) {
-      out[++ox] += area * (r1_P * (ugD2 * where[ix] * where[jx] *
+      out[++ox] -= (r1_P * (ugD2 * where[ix] * where[jx] *
 				   (Pstar - 3*Pstar2 + 2*Pstar3)) -
 			   r1_P2 * (ugD * where[ix] * (Pstar - Pstar2) *
 				    (ugD * where[jx] * (Pstar - Pstar2))) +
@@ -332,7 +275,7 @@ irt_rpf_mdim_drm_deriv1(const double *spec,
     }
   }
   for(int ix=0; ix < numDims; ix++) {
-    out[++ox] += area * (r1_P * (ugD2 * where[ix] * (Pstar - 3*Pstar2 + 2*Pstar3)) -
+    out[++ox] -= (r1_P * (ugD2 * where[ix] * (Pstar - 3*Pstar2 + 2*Pstar3)) -
 			 r1_P2 * (ugD * where[ix] * (Pstar - Pstar2) *
 				  (ugD * (Pstar - Pstar2))) +
 			 r2_Q * (ugD2 * where[ix] * (-Pstar + 3*Pstar2 - 2*Pstar3)) -
@@ -340,36 +283,36 @@ irt_rpf_mdim_drm_deriv1(const double *spec,
 				  (ugD * (-Pstar + Pstar2))));
   }
   double chunk1 = ugD * (Pstar - Pstar2);
-  out[++ox] += area * (r1_P * (ugD2 * (Pstar - 3*Pstar2 + 2*Pstar3)) -
+  out[++ox] -= (r1_P * (ugD2 * (Pstar - 3*Pstar2 + 2*Pstar3)) -
 		       r1_P2 * chunk1*chunk1 +
 		       r2_Q * (ugD2 * (-Pstar + 3*Pstar2 - 2*Pstar3)) -
 		       r2_Q2 * chunk1*chunk1);
   for(int ix=0; ix < numDims; ix++) {
-    out[++ox] += area * (r1_P * (where[ix] * (Pstar - Pstar2)) -
+    out[++ox] -= (r1_P * (where[ix] * (Pstar - Pstar2)) -
 			 r1_P2 * (ugD * where[ix] * (Pstar - Pstar2)) * Pstar +
 			 r2_Q * (where[ix] * (-Pstar + Pstar2)) +
 			 r2_Q2 * (ugD * where[ix] * (-Pstar + Pstar2) ) * Pstar);
   }
-  out[++ox] += area * (r1_P * (Pstar - Pstar2) -
+  out[++ox] -= (r1_P * (Pstar - Pstar2) -
 		       r1_P2 * (ugD * (Pstar - Pstar2)) * Pstar +
 		       r2_Q * (-Pstar + Pstar2) +
 		       r2_Q2 * (ugD * (-Pstar + Pstar2)) * Pstar);
-  out[++ox] -= area * Pstar2 * (r1_P2 + r2_Q2);
+  out[++ox] += Pstar2 * (r1_P2 + r2_Q2);
 
   for(int ix=0; ix < numDims; ix++) {
-    out[++ox] += area * (r1_P * (where[ix] * (-Pstar + Pstar2)) -
+    out[++ox] -= (r1_P * (where[ix] * (-Pstar + Pstar2)) -
 			 r1_P2 * (ugD * where[ix] * (Pstar - Pstar2)) * Qstar +
 			 r2_Q * (where[ix] * (Pstar - Pstar2)) -
 			 r2_Q2 * (ugD * where[ix] * (-Pstar + Pstar2) ) * (-1 + Pstar));
   }
 
-  out[++ox] += area * (r1_P * (-Pstar + Pstar2) -
+  out[++ox] -= (r1_P * (-Pstar + Pstar2) -
 		       r1_P2 * (ugD * (Pstar - Pstar2)) * Qstar +
 		       r2_Q * (Pstar - Pstar2) -
 		       r2_Q2 * (ugD * (-Pstar + Pstar2)) * -Qstar);
 
-  out[++ox] += area * (-r1_P2 * Pstar * Qstar + r2_Q2 * Pstar * (-1 + Pstar));
-  out[++ox] -= area * Qstar2 * (r1_P2 + r2_Q2);
+  out[++ox] -= (-r1_P2 * Pstar * Qstar + r2_Q2 * Pstar * (-1 + Pstar));
+  out[++ox] += Qstar2 * (r1_P2 + r2_Q2);
 }
 
 static void
@@ -402,16 +345,16 @@ irt_rpf_mdim_drm_deriv2(const double *spec,
 
 static void
 irt_rpf_mdim_drm_rescale(const double *spec, double *restrict param, const int *paramMask,
-			 const double *restrict mean, const double *restrict choleskyCov)
+			 const double *restrict mean, const double *restrict cov)
 {
   int numDims = spec[RPF_ISpecDims];
 
+  double madj = dotprod(param, mean, numDims);
+
   for (int d1=0; d1 < numDims; d1++) {
     if (paramMask[d1] < 0) continue;
-    param[d1] = dotprod(param+d1, choleskyCov + d1 * numDims + d1, numDims-d1);
+    param[d1] = dotprod(param+d1, cov + d1 * numDims + d1, numDims-d1);
   }
-
-  double madj = dotprod(param, mean, numDims);
 
   param[numDims] += madj;
 }
@@ -452,33 +395,6 @@ irt_rpf_1dim_drm_dTheta(const double *spec, const double *restrict param,
   irt_rpf_mdim_drm_dTheta(spec, nparam, where, dir, grad, hess);
 }
 
-static void
-irt_rpf_1dim_grm_prob(const double *spec,
-		      const double *restrict param, const double *restrict th,
-		      double *restrict out)
-{
-  const int numOutcomes = spec[RPF_ISpecOutcomes];
-  const double slope = param[0];
-  const double theta = th[0];
-  const double *kat = param + (int) spec[RPF_ISpecDims];
-
-  double athb = -slope * (theta - kat[0]);
-  if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
-  else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
-  double tmp = 1 / (1 + exp(athb));
-  out[0] = 1-tmp;
-  out[1] = tmp;
-
-  for (int kx=2; kx < numOutcomes; kx++) {
-    double athb = -slope * (theta - kat[kx-1]);
-    if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
-    else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
-    double tmp = 1 / (1 + exp(athb));
-    out[kx-1] -= tmp;
-    out[kx] = tmp;
-  }
-}
-
 static int
 irt_rpf_mdim_grm_numSpec(const double *spec)
 { return RPF_ISpecCount; }
@@ -488,15 +404,43 @@ irt_rpf_mdim_grm_numParam(const double *spec)
 { return spec[RPF_ISpecOutcomes] + spec[RPF_ISpecDims] - 1; }
 
 static void
-irt_rpf_mdim_grm_paramBound(const double *spec, const int param,
-			    double *upper, double *lower)
+irt_rpf_mdim_grm_paramInfo(const double *spec, const int param,
+			   int *type, double *upper, double *lower)
 {
 	int numDims = spec[RPF_ISpecDims];
 	*upper = nan("unset");
 	*lower = nan("unset");
 	if (param >= 0 && param < numDims) {
+		*type = RPF_Slope;
 		*lower = 1e-6;
+	} else {
+		*type = RPF_Intercept;
 	}
+}
+
+static void _grm_fix_crazy_stuff(const double *spec, const int numOutcomes, double *out)
+{
+  int bigk = -1;
+  double big = 0;
+
+  for (int bx=0; bx < numOutcomes; bx++) {
+    if (out[bx] > big) {
+      bigk = bx;
+      big = out[bx];
+    }
+  }
+
+  for (int fx=0; fx < numOutcomes; fx++) {
+    if (out[fx] < 0) {
+      set_deriv_nan(spec, out);
+      return;
+    }
+    if (out[fx] == 0) {
+      double small = exp(-EXP_STABLE_DOMAIN);
+      out[bigk] -= small;
+      out[fx] += small;
+    }
+  }
 }
 
 static void
@@ -526,25 +470,9 @@ irt_rpf_mdim_grm_prob(const double *spec,
     out[kx] = tmp;
   }
 
-  // look for crazy stuff
   for (int kx=0; kx < numOutcomes; kx++) {
     if (out[kx] <= 0) {
-      int bigk = -1;
-      double big = 0;
-      for (int bx=0; bx < numOutcomes; bx++) {
-	if (out[bx] > big) {
-	  bigk = bx;
-	  big = out[bx];
-	}
-      }
-      for (int fx=0; fx < numOutcomes; fx++) {
-	if (out[fx] < 0) error("GRM categories are out of order");
-	if (out[fx] == 0) {
-	  double small = 1 / (1 + exp(EXP_STABLE_DOMAIN));
-	  out[bigk] -= small;
-	  out[fx] += small;
-	}
-      }
+      _grm_fix_crazy_stuff(spec, numOutcomes, out);
       return;
     }
   }
@@ -574,7 +502,7 @@ irt_rpf_mdim_grm_rawprob(const double *spec,
 static void
 irt_rpf_mdim_grm_deriv1(const double *spec,
 			const double *restrict param,
-			const double *where, const double area,
+			const double *where,
 			const double *weight, double *out)
 {
   int nfact = spec[RPF_ISpecDims];
@@ -602,24 +530,24 @@ irt_rpf_mdim_grm_deriv1(const double *spec,
       if(Pk_Pkp1 < 1e-10) Pk_Pkp1 = 1e-10;
       double dif2 = weight[jx+1] / Pk_Pkp1;
       double dif2sq = weight[jx+1] / (Pk_Pkp1 * Pk_Pkp1);
-      out[nfact + jx] -= area * PQ * (dif1 - dif2);
+      out[nfact + jx] += PQ * (dif1 - dif2);
 
       int d2base = (nfact + nzeta) + (nfact+jx) * (nfact+jx+1)/2;
-      out[d2base + nfact + jx] += area * (-1 * PQ * PQ * (dif1sq + dif2sq) -
+      out[d2base + nfact + jx] -= (-1 * PQ * PQ * (dif1sq + dif2sq) -
 					  (dif1 - dif2) * (Pk * (1.0 - Pk) * (1.0 - 2.0*Pk)));
       if (jx < (nzeta - 1)) {
 	int d2base1 = (nfact + nzeta) + (nfact+jx+1) * (nfact+jx+2)/2;
-	out[d2base1 + nfact + jx] += area * dif2sq * PQ_p1 * PQ;
+	out[d2base1 + nfact + jx] -= dif2sq * PQ_p1 * PQ;
       }
       double tmp1 = (-1.0) * dif2sq * PQ * (PQ - PQ_p1);
       double tmp2 = dif1sq * PQ * (PQ_1 - PQ);
       double tmp3 = (dif1 - dif2) * (Pk * (1.0 - Pk) * (1.0 - 2.0*Pk));
       for(int kx = 0; kx < nfact; kx++){
-	out[d2base + kx] += area * (tmp1 + tmp2 - tmp3) * where[kx];
+	out[d2base + kx] -= (tmp1 + tmp2 - tmp3) * where[kx];
       }
     }
     for(int kx = 0; kx < nfact; kx++) {
-      out[kx] += area * dif1 * (PQ_1 - PQ) * where[kx];
+      out[kx] -= dif1 * (PQ_1 - PQ) * where[kx];
     }
 
     double temp[nfact];
@@ -630,7 +558,7 @@ irt_rpf_mdim_grm_deriv1(const double *spec,
     for(int i = 0; i < nfact; i++) {
       for(int j = 0; j <= i; j++) {
 	double outer = where[i]*where[j];
-	out[d2x++] += area * (-1 * dif1sq * temp[i] * temp[j] +
+	out[d2x++] -= (-1 * dif1sq * temp[i] * temp[j] +
 			      (dif1 * (Pk_1 * (1.0 - Pk_1) * (1.0 - 2.0 * Pk_1) * 
 				       outer - Pk * (1.0 - Pk) * (1.0 - 2.0 * Pk) * outer)));
       }
@@ -685,17 +613,17 @@ irt_rpf_mdim_grm_dTheta(const double *spec, const double *restrict param,
 
 static void
 irt_rpf_mdim_grm_rescale(const double *spec, double *restrict param, const int *paramMask,
-			 const double *restrict mean, const double *restrict choleskyCov)
+			 const double *restrict mean, const double *restrict cov)
 {
   int numDims = spec[RPF_ISpecDims];
   int nzeta = spec[RPF_ISpecOutcomes] - 1;
 
+  double madj = dotprod(param, mean, numDims);
+
   for (int d1=0; d1 < numDims; d1++) {
     if (paramMask[d1] < 0) continue;
-    param[d1] = dotprod(param+d1, choleskyCov + d1 * numDims + d1, numDims-d1);
+    param[d1] = dotprod(param+d1, cov + d1 * numDims + d1, numDims-d1);
   }
-
-  double madj = dotprod(param, mean, numDims);
 
   for (int tx=0; tx < nzeta; tx++) {
     int px = numDims + tx;
@@ -717,14 +645,20 @@ irt_rpf_nominal_numParam(const double *spec)
 
 
 static void
-irt_rpf_nominal_paramBound(const double *spec, const int param,
-			   double *upper, double *lower)
+irt_rpf_nominal_paramInfo(const double *spec, const int param,
+			  int *type, double *upper, double *lower)
 {
 	int numDims = spec[RPF_ISpecDims];
+	const int numOutcomes = spec[RPF_ISpecOutcomes];
 	*upper = nan("unset");
 	*lower = nan("unset");
 	if (param >= 0 && param < numDims) {
+		*type = RPF_Slope;
 		*lower = 1e-6;
+	} else if (param < numDims + numOutcomes - 1) {
+		*type = RPF_Slope;
+	} else {
+		*type = RPF_Intercept;
 	}
 }
 
@@ -829,7 +763,7 @@ static double makeOffterm2(const double *dat, const double p1, const double p2,
 static void
 irt_rpf_nominal_deriv1(const double *spec,
 		       const double *restrict param,
-		       const double *where, const double area,
+		       const double *where,
 		       const double *weight, double *out)
 {
   int nfact = spec[RPF_ISpecDims];
@@ -878,15 +812,15 @@ irt_rpf_nominal_deriv1(const double *spec,
       tmpvec += dat_num[i] * (ak[i] * where[jx] * P[i] -
 			      P[i] * numakDTheta_numsum[jx]) * numsum;
     }
-    out[jx] += area * tmpvec;
+    out[jx] -= tmpvec;
   }
   for(int i = 1; i < ncat; i++) {
     double offterm = makeOffterm(weight, P[i], aTheta, ncat, i);
     double offterm2 = makeOffterm(weight, P[i], 1, ncat, i);
     double tmpvec = dat_num[i] * (aTheta * P[i] - P2[i] * aTheta) * numsum - offterm;
     double tmpvec2 = dat_num[i] * (P[i] - P2[i]) * numsum - offterm2;
-    out[nfact + i - 1] += area * tmpvec;
-    out[nfact + ncat + i - 2] += area * tmpvec2;
+    out[nfact + i - 1] -= tmpvec;
+    out[nfact + ncat + i - 2] -= tmpvec2;
   }
 
   int hessbase = nfact + (ncat-1)*2;
@@ -906,7 +840,7 @@ irt_rpf_nominal_deriv1(const double *spec,
 	  dat_num[i] * (ak[i] * where[j] * P[i] - P[i] * numakDTheta_numsum[j]) *
 	  numakD * where[k];
       }
-      out[hessbase + d2ind++] += area * tmpvec;
+      out[hessbase + d2ind++] -= tmpvec;
     }
   }
   //a's with ak and d
@@ -939,8 +873,8 @@ irt_rpf_nominal_deriv1(const double *spec,
 	    weight[i]*P[k]*numakDTheta_numsum[j];
 	}
       }
-      out[akrow + j] += area * tmpvec;
-      out[dkrow + j] += area * tmpvec2;
+      out[akrow + j] -= tmpvec;
+      out[dkrow + j] -= tmpvec2;
     }
   }
   //ak's and d's
@@ -955,14 +889,14 @@ irt_rpf_nominal_deriv1(const double *spec,
     tmpvec2 = makeOffterm(weight, P[j], 1, ncat, j);
     double offterm2 = tmpvec - tmpvec2;
 
-    out[akrow + nfact + j - 1] +=
-      area * (dat_num[j]*(aTheta2*P[j] - 3*aTheta2*P2[j] +
+    out[akrow + nfact + j - 1] -=
+      (dat_num[j]*(aTheta2*P[j] - 3*aTheta2*P2[j] +
 			  2*aTheta2*P3[j])*numsum - weight[j]/num[j] *
 	      (aTheta*P[j] - aTheta*P2[j])*numsum*aTheta + weight[j] *
 	      (aTheta*P[j] - aTheta*P2[j])*aTheta + offterm);
 
-    out[dkrow + nfact + ncat + j - 2] +=
-      area * (dat_num[j]*(P[j] - 3*P2[j] + 2*P3[j])*numsum - weight[j]/num[j] *
+    out[dkrow + nfact + ncat + j - 2] -=
+      (dat_num[j]*(P[j] - 3*P2[j] + 2*P3[j])*numsum - weight[j]/num[j] *
 	      (P[j] - P2[j])*numsum + weight[j] *
 	      (P[j] - P2[j]) + offterm2);
 
@@ -974,8 +908,8 @@ irt_rpf_nominal_deriv1(const double *spec,
 	  dat_num[i] * (aTheta*P[i] - P2[i] * aTheta)*aTheta*num[j]+offterm;
 	tmpvec2 = dat_num[i] * (-P[i]*P[j] + 2*P2[i] *P[j]) * numsum +
 	  dat_num[i] * (P[i] - P2[i]) * num[j] + offterm2;
-	out[akrow + nfact + i - 1] += area * tmpvec;
-	out[dkrow + nfact + ncat + i - 2] += area * tmpvec2;
+	out[akrow + nfact + i - 1] -= tmpvec;
+	out[dkrow + nfact + ncat + i - 2] -= tmpvec2;
       }
       if (abs(j-i) == 0) {
 	tmpvec = makeOffterm(weight, P2[i], aTheta, ncat, i);
@@ -985,12 +919,12 @@ irt_rpf_nominal_deriv1(const double *spec,
 			     2*aTheta*P3[i]) * numsum - dat_num[i] *
 	  (aTheta*P[i] - aTheta*P2[i])*numsum + weight[i] *
 	  (P[i] - P2[i])*aTheta + offterm;
-	out[dkrow + nfact + i - 1] += area * tmpvec;
+	out[dkrow + nfact + i - 1] -= tmpvec;
       } else {
 	offterm = makeOffterm2(weight, P[j], P[i], aTheta, ncat, i);
 	tmpvec = dat_num[i] * (-aTheta*P[i]*P[j] + 2*P2[i] *aTheta*P[j]) * numsum + 
 	  dat_num[i] * (P[i] - P2[i]) * aTheta * num[j] + offterm;
-	out[dkrow + nfact + i - 1] += area * tmpvec;
+	out[dkrow + nfact + i - 1] -= tmpvec;
       }
     }
   }
@@ -1148,7 +1082,7 @@ irt_rpf_mdim_nrm_dTheta(const double *spec, const double *param,
 
 static void
 irt_rpf_mdim_nrm_rescale(const double *spec, double *restrict param, const int *paramMask,
-			 const double *restrict mean, const double *restrict choleskyCov)
+			 const double *restrict mean, const double *restrict cov)
 {
   int numDims = spec[RPF_ISpecDims];
   int nzeta = spec[RPF_ISpecOutcomes] - 1;
@@ -1158,12 +1092,12 @@ irt_rpf_mdim_nrm_rescale(const double *spec, double *restrict param, const int *
   const double *Tc  = spec + RPF_ISpecCount + nzeta * nzeta;
   const double *iTc = spec + RPF_ISpecCount + 3 * nzeta * nzeta;
 
+  double madj = dotprod(param, mean, numDims);
+
   for (int d1=0; d1 < numDims; d1++) {
     if (paramMask[d1] < 0) continue;
-    param[d1] = dotprod(param+d1, choleskyCov + d1 * numDims + d1, numDims-d1);
+    param[d1] = dotprod(param+d1, cov + d1 * numDims + d1, numDims-d1);
   }
-
-  double madj = dotprod(param, mean, numDims);
 
   double ak[nzeta];
   double ck[nzeta];
@@ -1202,40 +1136,18 @@ const struct rpf librpf_model[] = {
   { "drm1-",
     irt_rpf_1dim_drm_numSpec,
     irt_rpf_1dim_drm_numParam,
-    irt_rpf_mdim_drm_paramBound,
+    irt_rpf_mdim_drm_paramInfo,
     irt_rpf_1dim_drm_prob,
     irt_rpf_logprob_adapter,
-    irt_rpf_1dim_drm_deriv1,
-    irt_rpf_1dim_drm_deriv2,
+    notimplemented,
+    notimplemented,
     notimplemented,
     irt_rpf_1dim_drm_rescale,
-  },
-  { "drm1",
-    irt_rpf_1dim_drm_numSpec,
-    irt_rpf_1dim_drm_numParam,
-    irt_rpf_mdim_drm_paramBound,
-    irt_rpf_1dim_drm_prob,
-    irt_rpf_logprob_adapter,
-    notimplemented,
-    notimplemented,
-    irt_rpf_1dim_drm_dTheta,
-    notimplemented,
-  },
-  { "drm1+",
-    irt_rpf_mdim_drm_numSpec,
-    irt_rpf_mdim_drm_numParam,
-    irt_rpf_mdim_drm_paramBound,
-    irt_rpf_mdim_drm_prob,
-    irt_rpf_logprob_adapter,
-    irt_rpf_mdim_drm_deriv1,
-    irt_rpf_mdim_drm_deriv2,
-    notimplemented,
-    irt_rpf_mdim_drm_rescale,
   },
   { "drm",
     irt_rpf_mdim_drm_numSpec,
     irt_rpf_mdim_drm_numParam,
-    irt_rpf_mdim_drm_paramBound,
+    irt_rpf_mdim_drm_paramInfo,
     irt_rpf_mdim_drm_prob,
     irt_rpf_logprob_adapter,
     irt_rpf_mdim_drm_deriv1,
@@ -1243,21 +1155,10 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_drm_dTheta,
     irt_rpf_mdim_drm_rescale,
   },
-  { "grm1",
-    irt_rpf_mdim_grm_numSpec,
-    irt_rpf_mdim_grm_numParam,
-    irt_rpf_mdim_grm_paramBound,
-    irt_rpf_1dim_grm_prob,
-    irt_rpf_logprob_adapter,
-    noop, // TODO fill in pre/post transformation
-    noop,
-    notimplemented,
-    noop,
-  },
   { "grm",
     irt_rpf_mdim_grm_numSpec,
     irt_rpf_mdim_grm_numParam,
-    irt_rpf_mdim_grm_paramBound,
+    irt_rpf_mdim_grm_paramInfo,
     irt_rpf_mdim_grm_prob,
     irt_rpf_logprob_adapter,
     irt_rpf_mdim_grm_deriv1,
@@ -1268,7 +1169,7 @@ const struct rpf librpf_model[] = {
   { "nominal",
     irt_rpf_nominal_numSpec,
     irt_rpf_nominal_numParam,
-    irt_rpf_nominal_paramBound,
+    irt_rpf_nominal_paramInfo,
     irt_rpf_nominal_prob,
     irt_rpf_nominal_logprob,
     irt_rpf_nominal_deriv1,

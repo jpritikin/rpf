@@ -65,7 +65,11 @@ build.T <- function(outcomes, got) {
 ##' Nominal Categories Item Response Model. In M. L. Nering &
 ##' R. Ostini (Eds.), \emph{Handbook of Polytomous Item Response
 ##' Theory Models} (pp. 43--75). Routledge.
+##' @examples
+##' # typical parameterization for the Generalized Partial Credit Model
+##' gpcm <- function(outcomes) rpf.nrm(outcomes, T.c=lower.tri(diag(outcomes-1),TRUE) * -1)
 rpf.nrm <- function(outcomes=3, factors=1, T.a="trend", T.c="trend") {
+  if (outcomes < 3) stop("Minimum number of outcomes is 3")
   T.a <- build.T(outcomes, T.a)
   T.c <- build.T(outcomes, T.c)
   id <- rpf.id_of("nominal")

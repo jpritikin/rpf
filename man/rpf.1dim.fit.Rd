@@ -17,7 +17,7 @@
   \item{margin}{for people 1, for items 2}
 
   \item{wh.exact}{whether to use the exact Wilson-Hilferty
-  transformation (default TRUE)}
+  transformation}
 }
 \description{
   Note: These statistics are only appropriate if all
@@ -31,8 +31,8 @@
   100).
 
   The Wilson-Hilferty transformation is biased for less
-  than 25 items. To adjust Z scores for fewer items use
-  wh.exact=FALSE.
+  than 25 items. Consider wh.exact=FALSE for less than 25
+  items.
 }
 \references{
   Masters, G. N. & Wright, B. D. (1997). The Partial Credit

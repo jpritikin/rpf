@@ -24,6 +24,10 @@
   specified as "trend" for a Fourier basis or as "id" for
   an identity basis.
 }
+\examples{
+# typical parameterization for the Generalized Partial Credit Model
+gpcm <- function(outcomes) rpf.nrm(outcomes, T.c=lower.tri(diag(outcomes-1),TRUE) * -1)
+}
 \references{
   Thissen, D., Cai, L., & Bock, R. D. (2010). The Nominal
   Categories Item Response Model. In M. L. Nering & R.

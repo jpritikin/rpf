@@ -72,14 +72,14 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' refer to Wright & Masters (1982, p. 100).
 ##'
 ##' The Wilson-Hilferty transformation is biased for less than 25 items.
-##' To adjust Z scores for fewer items use wh.exact=FALSE.
+##' Consider wh.exact=FALSE for less than 25 items.
 ##'
 ##' @param spec list of item models
 ##' @param params matrix of item parameters, 1 per column
 ##' @param responses persons in rows and items in columns
 ##' @param scores model derived person scores
 ##' @param margin for people 1, for items 2
-##' @param wh.exact whether to use the exact Wilson-Hilferty transformation (default TRUE)
+##' @param wh.exact whether to use the exact Wilson-Hilferty transformation
 ##' @references Masters, G. N. & Wright, B. D. (1997). The Partial
 ##' Credit Model. In W. van der Linden & R. K. Kambleton (Eds.),
 ##' \emph{Handbook of modern item response theory}
@@ -94,30 +94,85 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' @export
 rpf.1dim.fit <- function(spec, params, responses, scores, margin, wh.exact=TRUE) {
   if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")  # true? TODO
+
+  if (dim(params)[2] < 25 && wh.exact) {
+    if (missing(wh.exact)) {
+      wh.exact <- FALSE
+      warning("Consider wh.exact=FALSE for less than 25 items")
+    }
+  }
+  if (dim(params)[2] > 25 && !wh.exact) {
+    if (missing(wh.exact)) {
+      wh.exact <- TRUE
+      warning("Consider wh.exact=TRUE for more than 25 items")
+    }
+  }
+
+  exclude.col <- c()
+  outcomes <- sapply(spec, function(s) s@outcomes)
+  for (ix in 1:dim(responses)[2]) {
+    kat <- sum(table(responses[,ix]) > 0)
+    if (kat != outcomes[ix]) {
+      exclude.col <- c(exclude.col, ix)
+      warning(paste("Excluding item", colnames(responses)[ix], "because outcomes !=", outcomes[ix]))
+    }
+  }
+
+  if (length(exclude.col)) {
+    responses <- responses[,-exclude.col]
+    spec <- spec[-exclude.col]
+    params <- params[,-exclude.col]
+    outcomes <- outcomes[-exclude.col]
+  }
+
+  exclude.row <- c()
+  for (ix in 1:dim(responses)[1]) {
+    r1 <- sapply(responses[ix,], unclass)
+    if (any(is.na(r1))) next
+    if (all(r1 == 1) || all(r1 == outcomes)) {
+      exclude.row <- c(exclude.row, ix)
+      warning(paste("Excluding response", rownames(responses)[ix], "because minimum or maximum"))
+    }
+  }
+
+  if (length(exclude.row)) {
+    responses <- responses[-exclude.row,]
+    scores <- scores[-exclude.row]
+  }
+
   na.rm=TRUE
-  r.var <- rpf.1dim.moment(spec, params, scores,2)
-  r.k <- rpf.1dim.moment(spec, params, scores,4)
   r.z <- rpf.1dim.stdresidual(spec, params, responses, scores)
+  r.var <- rpf.1dim.moment(spec, params, scores,2)
+  r.var[is.na(r.z)] <- NA
+  r.k <- rpf.1dim.moment(spec, params, scores,4)
+  r.k[is.na(r.z)] <- NA
+
+  outfit.var <- r.var
+  outfit.var[r.var^2 < 1e-5] <- sqrt(1e-5)
   outfit.n <- apply(r.var, margin, function(l) sum(!is.na(l)))
-  outfit.sd <- NA
-# copied from mirt; doesn't work TODO
-#  outfit.sd <- sqrt(apply(r.k / r.var^2, margin, sum, na.rm=na.rm) /
-#                    outfit.n^2 - 1/outfit.n)
+  outfit.sd <- sqrt(apply(r.k / outfit.var^2, margin, sum, na.rm=na.rm) /
+                    outfit.n^2 - 1/outfit.n)
+  outfit.sd[outfit.sd > 1.4142] <- 1.4142
   outfit.fudge <- outfit.sd/3
+
   infit.sd <- sqrt(apply(r.k - r.var^2, margin, sum, na.rm=na.rm)/
     apply(r.var, margin, sum, na.rm=na.rm)^2)
+  infit.sd[infit.sd > 1.4142] <- 1.4142
   infit.fudge <- infit.sd/3
   if (!wh.exact) {
     infit.fudge <- 0
     outfit.fudge <- 0
   }
+
   outfit <- apply(r.z^2, margin, sum, na.rm=na.rm)/
                        apply(r.z, margin, function (l) sum(!is.na(l)))
   outfit.z <- (outfit^(1/3) - 1)*(3/outfit.sd) + outfit.fudge
+
   infit <- apply(r.z^2 * r.var, margin, sum, na.rm=na.rm)/
                      apply(r.var, margin, sum, na.rm=na.rm)
   infit.z <- (infit^(1/3) - 1)*(3/infit.sd) + infit.fudge
-  df <- data.frame(infit, infit.z, outfit, outfit.z)
+
+  df <- data.frame(n=outfit.n, infit, infit.z, outfit, outfit.z)
   if (margin == 2) {
     df$name <- colnames(params)
   } else {

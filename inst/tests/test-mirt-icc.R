@@ -13,7 +13,7 @@ i.count <- 5
 spec <- list()
 
 test_that("3PL", {
-  spec[1:i.count] <- rpf.drm(multidimensional=TRUE)
+  spec[1:i.count] <- rpf.drm()
   data <- rpf.sample(100, spec)
   data <- simplify2array(lapply(data, unclass)) - 1
 

@@ -74,7 +74,7 @@ for (dims in 1:3) {
       expect_equal(prob.adj, prob[[ix]], 1e-3, label="Covariance scaled params", info=info)
       
       padj <- rpf.rescale(spec[[ix]], param[[ix]], move, cov)
-      prob.adj <- rpf.prob(spec[[ix]], padj, t(test.point %*% Icov)-move)
+      prob.adj <- rpf.prob(spec[[ix]], padj, t(t(test.point-move) %*% Icov))
       expect_equal(prob.adj, prob[[ix]], 1e-3,
                    label="Moved and covariance scaled params", info=info)
     }

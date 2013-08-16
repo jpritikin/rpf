@@ -27,16 +27,22 @@ enum RPF_ISpec {
 
 #define RPF_ISpecFacts RPF_ISpecDims
 
+enum RPF_ParamType {
+	RPF_Slope,
+	RPF_Intercept,
+	RPF_Bound      // split into upper & lower?
+};
+
 typedef int (*rpf_numSpec_t)(const double *spec);
 typedef int (*rpf_numParam_t)(const double *spec);
-typedef void (*rpf_paramBound_t)(const double *spec, const int param,
-				 double *upper, double *lower);
+typedef void (*rpf_paramInfo_t)(const double *spec, const int param,
+				int *type, double *upper, double *lower);
 typedef void (*rpf_prob_t)(const double *spec,
 			   const double *param, const double *th,
 			   double *out);
 typedef void (*rpf_dLL1_t)(const double *spec,
 			   const double *param,
-			   const double *where, const double area,
+			   const double *where,
 			   const double *weight, double *out);
 typedef void (*rpf_dLL2_t)(const double *spec, const double *param, double *out);
 typedef void (*rpf_rescale_t)(const double *spec, double *param, const int *paramMask,
@@ -49,7 +55,7 @@ struct rpf {
   const char name[10];
   rpf_numSpec_t numSpec;
   rpf_numParam_t numParam;
-  rpf_paramBound_t paramBound;
+  rpf_paramInfo_t paramInfo;
   rpf_prob_t prob;
   rpf_prob_t logprob;
   rpf_dLL1_t dLL1;

@@ -103,6 +103,27 @@ setMethod("rpf.numParam", signature(m="rpf.base"),
             .Call(rpf_numParam_wrapper, m@spec)
           })
 
+##' Retrieve a description of the given parameter
+##' @return a list containing the type, upper bound, and lower bound
+##' @aliases
+##' rpf.paramInfo,rpf.base-method
+##' rpf_paramInfo_wrapper
+setGeneric("rpf.paramInfo", function(m, num=NULL) standardGeneric("rpf.paramInfo"))
+
+setMethod("rpf.paramInfo", signature(m="rpf.base"),
+          function(m, num=NULL) {
+            if (missing(num)) {
+              num <- 1:rpf.numParam(m)
+            }
+            if (length(num) == 0) {
+              stop("Which parameter?")
+            } else if (length(num) == 1) {
+              .Call(rpf_paramInfo_wrapper, m@spec, num-1)
+            } else {
+              sapply(num, function (px) .Call(rpf_paramInfo_wrapper, m@spec, px-1))
+            }
+          })
+
 ##' Item parameter derivatives
 ##'
 ##' Evaluate the partial derivatives of the log likelihood with

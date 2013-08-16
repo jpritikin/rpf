@@ -71,6 +71,43 @@ rpf_numParam_wrapper(SEXP r_spec)
 }
 
 static SEXP
+rpf_paramInfo_wrapper(SEXP r_spec, SEXP r_paramNum)
+{
+  if (length(r_spec) < RPF_ISpecCount)
+    error("Item spec must be of length %d, not %d", RPF_ISpecCount, length(r_spec));
+
+  double *spec = REAL(r_spec);
+
+  int id = spec[RPF_ISpecID];
+  if (id < 0 || id >= librpf_numModels)
+    error("Item model %d out of range", id);
+
+  int pnum = asInteger(r_paramNum);
+  int numParam = (*librpf_model[id].numParam)(spec);
+  if (pnum < 0 || pnum >= numParam) error("Item model %d has %d parameters", id, numParam);
+
+  int type;
+  double upper, lower;
+  (*librpf_model[id].paramInfo)(spec, pnum, &type, &upper, &lower);
+
+  int len = 3;
+  SEXP names, ans;
+  PROTECT(names = allocVector(STRSXP, len));
+  PROTECT(ans = allocVector(VECSXP, len));
+  int lx = 0;
+  SET_STRING_ELT(names, lx, mkChar("type"));
+  SET_VECTOR_ELT(ans,   lx, ScalarInteger(type));
+  SET_STRING_ELT(names, ++lx, mkChar("upper"));
+  SET_VECTOR_ELT(ans,   lx, ScalarReal(isfinite(upper)? upper : NA_REAL));
+  SET_STRING_ELT(names, ++lx, mkChar("lower"));
+  SET_VECTOR_ELT(ans,   lx, ScalarReal(isfinite(lower)? lower : NA_REAL));
+  namesgets(ans, names);
+  UNPROTECT(2);
+
+  return ans;
+}
+
+static SEXP
 rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 {
   if (length(r_spec) < RPF_ISpecCount)
@@ -112,9 +149,8 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     int skip=0;
     for (int dx=0; dx < dims; dx++) {
       if (!isfinite((theta+px*numAbilities)[dx])) {
-	warning("rpf.prob ignored NAs for person %d", px);
 	for (int ox=0; ox < numOutcomes; ox++) {
-	  out[px*numAbilities + ox] = nan("");
+	  out[px*numOutcomes + ox] = NA_REAL;
 	}
 	skip=1;
 	break;
@@ -124,7 +160,10 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     (*librpf_model[id].prob)(spec, REAL(r_param), theta+px*numAbilities,
 				out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
-      if (!isfinite(out[px*numOutcomes + ox])) error("Probability not finite");
+      double prob = out[px*numOutcomes + ox];
+      if (!isfinite(prob)) {
+	out[px*numOutcomes + ox] = NA_REAL;  // legitimate (e.g., grm thresholds misordered)
+      }
     }
   }
 
@@ -174,9 +213,8 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     int skip=0;
     for (int dx=0; dx < dims; dx++) {
       if (!isfinite((theta+px*numAbilities)[dx])) {
-	warning("rpf.logprob ignored NAs for person %d", px);
 	for (int ox=0; ox < numOutcomes; ox++) {
-	  out[px*numAbilities + ox] = nan("");
+	  out[px*numOutcomes + ox] = NA_REAL;
 	}
 	skip=1;
 	break;
@@ -186,8 +224,9 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     (*librpf_model[id].logprob)(spec, REAL(r_param), theta+px*numAbilities,
 				out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
-      if (!isfinite(out[px*numOutcomes + ox])) {
-	error("Probability not finite for item model %d", id);
+      double prob = out[px*numOutcomes + ox];
+      if (!isfinite(prob)) {
+	out[px*numOutcomes + ox] = NA_REAL;  // legitimate (e.g., grm thresholds misordered)
       }
     }
   }
@@ -232,7 +271,7 @@ rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
   PROTECT(ret = allocVector(REALSXP, numDeriv));
   memset(REAL(ret), 0, sizeof(double) * numDeriv);
   (*librpf_model[id].dLL1)(spec, REAL(r_param),
-			    REAL(r_where), 1.0, REAL(r_weight), REAL(ret));
+			    REAL(r_where), REAL(r_weight), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
     if (!isfinite(REAL(ret)[px])) error("Deriv %d not finite at step 1", px);
   }
@@ -340,6 +379,7 @@ static R_CallMethodDef flist[] = {
   {"get_model_names", (DL_FUNC) get_model_names, 1},
   {"rpf_numSpec_wrapper", (DL_FUNC) rpf_numSpec_wrapper, 1},
   {"rpf_numParam_wrapper", (DL_FUNC) rpf_numParam_wrapper, 1},
+  {"rpf_paramInfo_wrapper", (DL_FUNC) rpf_paramInfo_wrapper, 2},
   {"rpf_prob_wrapper", (DL_FUNC) rpf_prob_wrapper, 3},
   {"rpf_logprob_wrapper", (DL_FUNC) rpf_logprob_wrapper, 3},
   {"rpf_dLL_wrapper", (DL_FUNC) rpf_dLL_wrapper, 4},
@@ -354,7 +394,7 @@ static R_CallMethodDef flist[] = {
 static void
 get_librpf_models(int *version, int *numModels, const struct rpf **model)
 {
-  *version = 4;
+  *version = 8;
   *numModels = librpf_numModels;
   *model = librpf_model;
 }
