@@ -14,8 +14,7 @@
 ##' @param outcomes The number of choices available
 ##' @param factors the number of factors
 ##' @param multidimensional whether to use a multidimensional model.
-##' Defaults to \code{TRUE} when \code{factors>1} and
-##' \code{FALSE} when \code{factors==1}.
+##' Defaults to \code{TRUE}.
 ##' @return an item model
 ##' @export
 rpf.grm <- function(outcomes=2, factors=1, multidimensional=TRUE) {

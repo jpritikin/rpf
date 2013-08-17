@@ -5,8 +5,7 @@
 ##'
 ##' @param factors the number of factors
 ##' @param multidimensional whether to use a multidimensional model.
-##' Defaults to \code{TRUE} when \code{factors>1} and
-##' \code{FALSE} when \code{factors==1}.
+##' Defaults to \code{TRUE}.
 ##' @param poor if TRUE, use the traditional parameterization of
 ##' the 1d model instead of the slope-intercept parameterization
 ##' @return an item model
