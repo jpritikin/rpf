@@ -431,11 +431,11 @@ static void _grm_fix_crazy_stuff(const double *spec, const int numOutcomes, doub
   }
 
   for (int fx=0; fx < numOutcomes; fx++) {
-    if (out[fx] < 0) {
+    if (out[fx] < -6.3e-16) {
       set_deriv_nan(spec, out);
       return;
     }
-    if (out[fx] == 0) {
+    if (out[fx] < 1e-20) {
       double small = exp(-EXP_STABLE_DOMAIN);
       out[bigk] -= small;
       out[fx] += small;
