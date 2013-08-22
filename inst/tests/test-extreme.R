@@ -1,10 +1,6 @@
 library(rpf)
 library(testthat)
 
-# Windows 32bit fails on this test. If you figure out
-# why, let me know.
-if (Sys.info()[['sysname']] == "Windows") q()
-
 context("extremes")
 
 test_that("param info", {

@@ -9,8 +9,7 @@
   \item{factors}{the number of factors}
 
   \item{multidimensional}{whether to use a multidimensional
-  model. Defaults to \code{TRUE} when \code{factors>1} and
-  \code{FALSE} when \code{factors==1}.}
+  model. Defaults to \code{TRUE}.}
 
   \item{poor}{if TRUE, use the traditional parameterization
   of the 1d model instead of the slope-intercept
