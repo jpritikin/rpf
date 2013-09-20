@@ -321,3 +321,139 @@ rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
   }
   got
 }
+
+thetaComb <- function(theta, nfact)  #copied from mirt
+{
+  if (nfact == 1L){
+    Theta <- matrix(theta)
+  } else {
+    thetalist <- vector('list', nfact)
+    for(i in 1L:nfact)
+      thetalist[[i]] <- theta
+    Theta <- as.matrix(expand.grid(thetalist))
+  }	
+  return(Theta)
+}
+
+gamma.cor <- function(mat) .Call(gamma_cor_wrapper, mat)
+
+# root mean squared statistic (sqrt omitted)
+ms <- function(observed, expected, draws) {
+  draws * sum((observed - expected)^2)
+}
+
+P.cdf.fn <- function(x, g.var, t) {
+  sapply(t, function (t1) {
+    n <- length(g.var)
+    num <- exp(1-t1) * exp(1i * t1 * sqrt(n))
+    den <- pi * (t1 - 1/(1-1i*sqrt(n)))
+    pterm <- prod(sqrt(1 - 2*(t1-1)*g.var/x + 2i*t1*g.var*sqrt(n)/x))
+    Im(num / (den * pterm))
+  })
+}
+
+ptw2011.gof.test <- function(observed, expected) {
+  orig.draws <- sum(observed)
+  observed <- observed / orig.draws
+  expected <- expected / orig.draws
+
+  X <- ms(observed, expected, orig.draws)
+  if (X == 0) return(1)
+
+  n <- prod(dim(observed))
+  D <- diag(1/c(expected))
+  P <- matrix(-1/n, n,n)
+  diag(P) <- 1 - 1/n
+  B <- P %*% D %*% P
+  g.var <- 1 / eigen(B, only.values=TRUE)$values[-n]
+  
+  # Eqn 8 needs n variances, but matrix B (Eqn 6) only has n-1 non-zero
+  # eigenvalues. Perhaps n-1 degrees of freedom?
+  
+#  plot(function(t) P.cdf.fn(X, g.var, t), 0, 40)
+  # 310 points should be good enough for 500 bins
+  # Perkins, Tygert, Ward (2011, p. 10)
+  got <- integrate(function(t) P.cdf.fn(X, g.var, t), 0, 40, subdivisions=310L)
+  p.value <- 1 - got$value
+  if (p.value < 0) p.value <- 0
+  p.value
+}
+
+chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, method="rms") {
+  if (is.null(colnames(grp$param))) stop("Item parameter columns must be named")
+
+  if (method != "rms" && method != "pearson") stop(paste("Unknown method", method))
+  if (missing(inames)) {
+    inames <- colnames(grp$param)
+  }
+  if (length(inames) < 2) stop("At least 2 items are required")
+
+  spec <- grp$spec
+  if (length(spec) < dim(grp$param)[2]) {
+      if (dim(grp$param)[2] %% length(spec) != 0) stop("Length of spec must match # of items")
+      rep <- dim(grp$param)[2] %/% length(spec)
+      while (rep > 1) {
+          spec <- c(spec, grp$spec)
+          rep <- rep - 1
+      }
+  }
+
+  if (!is.data.frame(data)) {
+      data <- as.data.frame(data)  #safe? TODO
+  }
+
+  theta <- thetaComb(seq(-qwidth,qwidth,length.out=qpoints), length(grp$mean))
+  prior <- mvtnorm::dmvnorm(theta, grp$mean, grp$cov)
+  prior <- prior/sum(prior) # two-tier optimization TODO
+  thetaT <- t(theta)
+
+  # assume param and data in the same order? TODO
+  items <- match(inames, colnames(grp$param))
+
+  result <- list()
+  raw <- matrix(NA, length(items), length(items))
+  dimnames(raw) <- list(inames, inames)
+  std <- matrix(NA, length(items), length(items))
+  dimnames(std) <- list(inames, inames)
+  pval <- matrix(NA, length(items), length(items))
+  dimnames(pval) <- list(inames, inames)
+
+  for (iter1 in 2:length(items)) {
+    for (iter2 in 1:(iter1-1)) {
+      i1 <- items[iter1]
+      i2 <- items[iter2]
+      observed <- table(data[,c(i1,i2)])
+      N <- sum(observed)
+      s1 <- spec[[i1]]
+      s2 <- spec[[i2]]
+      expected <- matrix(NA, s1@outcomes, s2@outcomes)
+      dimnames(expected) <- dimnames(observed)
+      p1 <- rpf.prob(s1, grp$param[,i1], thetaT)
+      p2 <- rpf.prob(s2, grp$param[,i2], thetaT)
+      for (o1 in 1:s1@outcomes) {
+        for (o2 in 1:s2@outcomes) {
+          expected[o1,o2] <- N * sum(p1[o1,] * p2[o2,] * prior)
+        }
+      }
+      s <- gamma.cor(observed) - gamma.cor(expected)
+      if (!is.finite(s) || is.na(s) || s==0) s <- 1
+      info <- list(observed=observed, expected=expected, sign=sign(s))
+
+      if (method == "rms") {
+          pval[iter1, iter2] <- sign(s) * -log(ptw2011.gof.test(observed, expected))
+      } else {
+          x2 <- sum((observed - expected)^2 / expected)
+          df <- (s1@outcomes-1) * (s2@outcomes-1)
+          info <- c(info, x2=x2, df=df)
+
+          raw[iter1, iter2] <- sign(s) * x2
+          std[iter1, iter2] <- sign(s) * abs((x2 - df)/sqrt(2*df))
+          pval[iter1, iter2] <- sign(s) * -pchisq(x2, df, lower.tail=FALSE, log.p=TRUE)
+      }
+
+      result[[paste(inames[iter1], inames[iter2], sep=":")]] <- info
+    }
+  }
+  list(pval=pval, std=std, raw=raw, detail=result)
+}
+

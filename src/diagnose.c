@@ -406,3 +406,55 @@ SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcome
   UNPROTECT(1);
   return r_ans;
 }
+
+static double table_concordance(double *mat, int rows, int cols, int ii, int jj)
+{
+  double sum=0;
+  for (int hh=ii+1; hh < rows; ++hh) {
+    for (int kk=jj+1; kk < cols; ++kk) {
+      sum += mat[kk * rows + hh];
+    }
+  }
+  return sum;
+}
+
+static double table_discordance(double *mat, int rows, int cols, int ii, int jj)
+{
+  double sum=0;
+  for (int hh=ii+1; hh < rows; ++hh) {
+    for (int kk=0; kk < jj; ++kk) {
+      sum += mat[kk * rows + hh];
+    }
+  }
+  return sum;
+}
+
+/* See Agresti (1990, p. 22) */
+SEXP gamma_cor(SEXP r_mat)
+{
+  int rows;
+  int cols;
+  getMatrixDims(r_mat, &rows, &cols);
+  SEXP realmat;
+  PROTECT(realmat = coerceVector(r_mat, REALSXP));
+  double *mat = REAL(realmat);
+
+  double concord = 0;
+  for (int ii=0; ii < rows-1; ++ii) {
+    for (int jj=0; jj < cols-1; ++jj) {
+      concord += mat[jj * rows + ii] * table_concordance(mat, rows, cols, ii, jj);
+    }
+  }
+
+  double discord = 0;
+  for (int ii=0; ii < rows-1; ++ii) {
+    for (int jj=1; jj < cols; ++jj) {
+      discord += mat[jj * rows + ii] * table_discordance(mat, rows, cols, ii, jj);
+    }
+  }
+
+  UNPROTECT(1);
+
+  double gamma = (concord - discord) / (concord + discord);
+  return ScalarReal(gamma);
+}
