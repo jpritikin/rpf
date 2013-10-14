@@ -45,10 +45,17 @@ for (ix in 1:length(spec)) {
     for (wh in where) {
       v <- rpf.prob(ispec, iparam, wh)
       expect_equal(sum(v), 1)
+      if (wh != 0) {
+        sep <- sort(-v)[1:2]
+        expect_true(abs(sep[1] - sep[2]) > .89,
+                    info=paste(c(wh, sep), collapse=" "))
+      }
     }
     for (wh in where) {
       v <- rpf.logprob(ispec, iparam, wh)
-      expect_equal(sum(exp(v)), 1)
+      if (all(v > -35 & v < 35)) {
+        expect_equal(sum(exp(v)), 1)
+      }
     }
     w <- rchisq(ispec@outcomes, df=6)
     for (wh in where) rpf.dLL(ispec, iparam, wh, w)
