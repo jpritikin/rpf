@@ -65,7 +65,9 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' Calculate item and person Rasch fit statistics
 ##'
 ##' Note: These statistics are only appropriate if all discrimination
-##' parameters are fixed equal and there is no missing data.
+##' parameters are fixed equal and items are conditionally independent
+##' (see \code{\link{chen.thissen.1997}}).  A best effort is made to
+##' cope with missing data.
 ##'
 ##' Exact distributional properties of these statistics are unknown
 ##' (Masters & Wright, 1997, p. 112).  For details on the calculation,
@@ -335,7 +337,12 @@ thetaComb <- function(theta, nfact)  #copied from mirt
   return(Theta)
 }
 
-gamma.cor <- function(mat) .Call(gamma_cor_wrapper, mat)
+##' Compute the ordinal gamma association statistic
+##'
+##' @param mat a cross tabulation matrix
+##' @references
+##' Agresti, A. (1990). Categorical data analysis. New York: Wiley.
+ordinal.gamma <- function(mat) .Call(ordinal_gamma_wrapper, mat)
 
 # root mean squared statistic (sqrt omitted)
 ms <- function(observed, expected, draws) {
@@ -351,6 +358,32 @@ P.cdf.fn <- function(x, g.var, t) {
     Im(num / (den * pterm))
   })
 }
+
+##' Compute the P value that the observed and expected tables come from the same distribution
+##'
+##' This method dramatically improves upon Pearson's X^2
+##' goodness-of-fit test.  In contrast to Pearson's X^2, no cell
+##' collapsing is needed to avoid an inflated false positive rate.
+##' The statistic rapidly converges to the Monte-Carlo estimate
+##' as the number of draws increases. In contrast to Pearson's
+##' X^2, the order of the matrices doesn't matter. This test is
+##' commutative with respect to its arguments.
+##' 
+##' @param observed observed matrix
+##' @param expected expected matrix
+##' @return The P value indicating whether the two tables come from
+##' the same distribution. For example, a significant result (P <
+##' alpha level) rejects the hypothesis that the two matrices are from
+##' the same distribution.
+##' @references Perkins, W., Tygert, M., & Ward, R. (2011). Computing
+##' the confidence levels for a root-mean-square test of
+##' goodness-of-fit. \emph{Applied Mathematics and Computations,
+##' 217}(22), 9072-9084.
+##' @examples
+##' draws <- 17
+##' observed <- matrix(c(.294, .176, .118, .411), nrow=2) * draws
+##' expected <- matrix(c(.235, .235, .176, .353), nrow=2) * draws
+##' ptw2011.gof.test(observed, expected)  # not signficiant
 
 ptw2011.gof.test <- function(observed, expected) {
   orig.draws <- sum(observed)
@@ -379,6 +412,43 @@ ptw2011.gof.test <- function(observed, expected) {
   p.value
 }
 
+##' Computes local dependence indices for all pairs of items
+##'
+##' Item Factor Analysis makes two assumptions: (1) that the latent
+##' distribution is reasonably approximated by the multivariate Normal
+##' and (2) that items are conditionally independent. This test
+##' examines the second assumption. The presence of locally dependent
+##' items can inflate the precision of estimates causing the test to
+##' seem more accurate than it really is.
+##'
+##' Statically significant entries suggest that the item pair has
+##' local dependence. Since log(.01)=-4.6, an absolute magitude of 5
+##' is a reasonable cut-off. Positive entries indicate that the two
+##' items are more correlated than expected. These items may share an
+##' unaccounted for latent dimension. Consider a redesign of the items
+##' or the use of testlets for scoring. Negative entries indicate that
+##' the two items are less correlated than expected.
+##'
+##' TODO: Optimize integration for the two-tier restriction.
+##'
+##' @param grp a list with the spec, param, mean, and cov describing the group
+##' @param data data
+##' @param inames a subset of items to examine
+##' @param qwidth quadrature width
+##' @param qpoints number of equally spaced quadrature points
+##' @param method method to use to calculate P values. The default
+##' ("rms") uses the root mean square statistic (see \code{\link{ptw2011.gof.test}}).
+##' To obtain the traditional Pearson X^2 statistic, use method="pearson".
+##' @return a lower triangular matrix of log P values with the sign
+##' determined by relative association between the observed and
+##' expected tables (see \code{\link{ordinal.gamma}})
+##' @references Chen, W.-H. & Thissen, D. (1997). Local dependence
+##' indexes for item pairs using Item Response Theory. \emph{Journal
+##' of Educational and Behavioral Statistics, 22}(3), 265-289.
+##'
+##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
+##' adaptive testing: A case for testlets.  \emph{Journal of
+##' Educational measurement, 24}(3), 185--201.
 chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, method="rms") {
   if (is.null(colnames(grp$param))) stop("Item parameter columns must be named")
 
@@ -435,7 +505,7 @@ chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, meth
           expected[o1,o2] <- N * sum(p1[o1,] * p2[o2,] * prior)
         }
       }
-      s <- gamma.cor(observed) - gamma.cor(expected)
+      s <- ordinal.gamma(observed) - ordinal.gamma(expected)
       if (!is.finite(s) || is.na(s) || s==0) s <- 1
       info <- list(observed=observed, expected=expected, sign=sign(s))
 

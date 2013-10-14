@@ -1,7 +1,7 @@
 ##' rpf - Response Probability Functions
 ##'
 ##' The purpose of this package is to factor out logic and math common
-##' to Item Response Theory fitting, diagnostics, and analysis.  It is
+##' to Item Factor Analysis fitting, diagnostics, and analysis.  It is
 ##' envisioned as core support code suitable for more specialized IRT
 ##' packages to build upon.
 ##'
@@ -29,9 +29,8 @@
 ##' All models are always in the logistic metric. To obtain normal
 ##' ogive discrimination parameters, divide slope parameters by
 ##' \code{\link{rpf.ogive}}. Item models are estimated in
-##' slope-intercept form unless the traditional parameterization is
-##' specifically requested. Input/output matrices arranged in the way
-##' most convenient for processing in C. Typically this means that
+##' slope-intercept form. Input/output matrices arranged in the way
+##' most convenient for low-level processing in C. Typically this means that
 ##' item data is in columns vectors.
 ##'
 ##' This package could also accrete functions to support plotting (but
@@ -134,13 +133,9 @@ setMethod("rpf.paramInfo", signature(m="rpf.base"),
 ##' @param where location in the latent space
 ##' @param weight per outcome weights (typically derived by observation)
 ##' @return first and second order partial derivatives of the log
-##' likelihood evaluated at \code{where} organized in the same manner
-##' as Bates and Watts. For p parameters, the first p values are the
-##' first derivative and the next p(p+1)/2 columns are the lower
-##' triangle of the second derivative.
-##' @references Bates, D. M. & Watts, D. (1980). Relative curvature
-##' measures of nonlinearity. \emph{Journal of the Royal Statistical
-##' Society. Series B (Methodological), 42}, 1-25.
+##' likelihood evaluated at \code{where}. For p parameters, the first
+##' p values are the first derivative and the next p(p+1)/2 columns
+##' are the lower triangle of the second derivative.
 ##' @seealso
 ##' The numDeriv package.
 ##' @aliases
@@ -218,8 +213,6 @@ setMethod("rpf.rescale", signature(m="rpf.base", param="numeric",
 ##' Map an item model, item parameters, and person trait score into a
 ##' probability vector
 ##'
-##' In some cases, this function is implemented in terms of \code{\link{rpf.logprob}}.
-##'
 ##' @param m an item model
 ##' @param param item parameters
 ##' @param theta the trait score(s)
@@ -254,6 +247,9 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' Map an item model, item parameters, and person trait score into a
 ##' probability vector
 ##'
+##' Note that in general, exp(rpf.logprob(..)) != rpf.prob(..) because
+##' the range of logits is much wider than the range of probabilities.
+##' 
 ##' @param m an item model
 ##' @param param item parameters
 ##' @param theta the trait score(s)
@@ -405,7 +401,10 @@ setGeneric("rpf.rparam", function(m) standardGeneric("rpf.rparam"))
 ##' transformation (Baker & Kim, 2004, pp. 14-18).
 ##' 
 ##' @export
-##' @references
+##' @references Camilli, G. (1994). Teacher's corner: Origin of the
+##' scaling constant d=1.7 in Item Response Theory. \emph{Journal of
+##' Educational and Behavioral Statistics, 19}(3), 293-295.
+##' 
 ##' Baker & Kim (2004). \emph{Item Response Theory: Parameter
 ##' Estimation Techniques.} Marcel Dekker, Inc.
 ##'
