@@ -23,8 +23,9 @@ probability vector}
   API consistency with polytomous item models.
 }
 \description{
-  Map an item model, item parameters, and person trait
-  score into a probability vector
+  Note that in general, exp(rpf.logprob(..)) !=
+  rpf.prob(..) because the range of logits is much wider
+  than the range of probabilities.
 }
 \examples{
 i1 <- rpf.drm()

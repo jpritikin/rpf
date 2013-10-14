@@ -32,6 +32,7 @@
 #endif
 
 static const double EXP_STABLE_DOMAIN = 35;
+static const double SMALLEST_PROB = 6.305116760146989222002e-16;  // exp(-35), need constexpr
 
 // This is far away from the item's difficulty so it is less
 // interesting for estimation and the gradient becomes numerically
@@ -436,7 +437,7 @@ static void _grm_fix_crazy_stuff(const double *spec, const int numOutcomes, doub
       return;
     }
     if (out[fx] < 1e-20) {
-      double small = exp(-EXP_STABLE_DOMAIN);
+      double small = SMALLEST_PROB;
       out[bigk] -= small;
       out[fx] += small;
     }
@@ -663,9 +664,9 @@ irt_rpf_nominal_paramInfo(const double *spec, const int param,
 }
 
 static void
-_nominal_rawprob(const double *spec,
+_nominal_rawprob1(const double *spec,
 		 const double *restrict param, const double *restrict th,
-		 double discr, double *ak, double *num)
+		 double discr, double *ak, double *num, double *maxout)
 {
   int numDims = spec[RPF_ISpecDims];
   int numOutcomes = spec[RPF_ISpecOutcomes];
@@ -674,6 +675,7 @@ _nominal_rawprob(const double *spec,
   const double *Ta = spec + RPF_ISpecCount;
   const double *Tc = spec + RPF_ISpecCount + (numOutcomes-1) * (numOutcomes-1);
 
+  double curmax = 1;
   for (int kx=0; kx < numOutcomes; kx++) {
     ak[kx] = 0;
     double ck = 0;
@@ -686,12 +688,49 @@ _nominal_rawprob(const double *spec,
     }
 
     double z = discr * ak[kx] + ck;
-    if (z < -EXP_STABLE_DOMAIN) z = -EXP_STABLE_DOMAIN;
-    else if (z > EXP_STABLE_DOMAIN) z = EXP_STABLE_DOMAIN;
     num[kx] = z;
+    if (curmax < z) curmax = z;
   }
+  *maxout = curmax;
 }
 
+static void
+_nominal_rawprob2(const double *spec,
+		  const double *restrict param, const double *restrict th,
+		  double discr, double *ak, double *num)
+{
+  int numOutcomes = spec[RPF_ISpecOutcomes];
+  double maxZ;
+  _nominal_rawprob1(spec, param, th, discr, ak, num, &maxZ);
+  
+  double recenter = 0;
+  if (maxZ > EXP_STABLE_DOMAIN) {
+    recenter = maxZ - EXP_STABLE_DOMAIN;
+  }
+
+  int Kadj = -1;
+  double adj = 0;
+  double den = 0;   // not exact because adj not taken into account
+  for (int kx=0; kx < numOutcomes; kx++) {
+    if (num[kx] == maxZ) Kadj = kx;
+    if (num[kx] - recenter < -EXP_STABLE_DOMAIN) {
+      num[kx] = 0;
+      adj += SMALLEST_PROB;
+      continue;
+    }
+    num[kx] = exp(num[kx] - recenter);
+    den += num[kx];
+  }
+  for (int kx=0; kx < numOutcomes; kx++) {
+    if (kx == Kadj) {
+      num[kx] = num[kx]/den - adj;
+    } else if (num[kx] == 0) {
+      num[kx] = SMALLEST_PROB;
+    } else {
+      num[kx] = num[kx]/den;
+    }
+  }
+}
 
 static void
 irt_rpf_nominal_prob(const double *spec,
@@ -700,19 +739,9 @@ irt_rpf_nominal_prob(const double *spec,
 {
   int numOutcomes = spec[RPF_ISpecOutcomes];
   int numDims = spec[RPF_ISpecDims];
-  double num[numOutcomes];
   double ak[numOutcomes];
   double discr = dotprod(param, th, numDims);
-  _nominal_rawprob(spec, param, th, discr, ak, num);
-  double den = 0;
-
-  for (int kx=0; kx < numOutcomes; kx++) {
-    num[kx] = exp(num[kx]);
-    den += num[kx];
-  }
-  for (int kx=0; kx < numOutcomes; kx++) {
-    out[kx] = num[kx]/den;
-  }
+  _nominal_rawprob2(spec, param, th, discr, ak, out);
 }
 
 static void
@@ -725,13 +754,19 @@ irt_rpf_nominal_logprob(const double *spec,
   double num[numOutcomes];
   double ak[numOutcomes];
   double discr = dotprod(param, th, numDims);
-  _nominal_rawprob(spec, param, th, discr, ak, num);
+  double maxZ;
+  _nominal_rawprob1(spec, param, th, discr, ak, num, &maxZ);
   double den = 0;
 
-  for (int kx=0; kx < numOutcomes; kx++) {
-    den += exp(num[kx]);
+  if (maxZ > EXP_STABLE_DOMAIN) {
+    den = maxZ;  // not best approx
+  } else {
+    for (int kx=0; kx < numOutcomes; kx++) {
+      if (num[kx] < -EXP_STABLE_DOMAIN) continue;
+      den += exp(num[kx]);
+    }
+    den = log(den);
   }
-  den = log(den);
 
   for (int kx=0; kx < numOutcomes; kx++) {
     out[kx] = num[kx] - den;
@@ -773,7 +808,7 @@ irt_rpf_nominal_deriv1(const double *spec,
 
   double num[ncat];
   double ak[ncat];
-  _nominal_rawprob(spec, param, where, aTheta, ak, num);
+  _nominal_rawprob2(spec, param, where, aTheta, ak, num);
 
   double P[ncat];
   double P2[ncat];
@@ -786,7 +821,6 @@ irt_rpf_nominal_deriv1(const double *spec,
   double numakDTheta_numsum[nfact];
 
   for (int kx=0; kx < ncat; kx++) {
-    num[kx] = exp(num[kx]);
     ak2[kx] = ak[kx] * ak[kx];
     dat_num[kx] = weight[kx]/num[kx];
     numsum += num[kx];
@@ -1046,11 +1080,10 @@ irt_rpf_mdim_nrm_dTheta(const double *spec, const double *param,
   double num[outcomes];
   double ak[outcomes];
   double discr = dotprod(param, where, numDims);
-  _nominal_rawprob(spec, param, where, discr, ak, num);
+  _nominal_rawprob2(spec, param, where, discr, ak, num);
 
   double den = 0;
   for (int kx=0; kx < outcomes; kx++) {
-    num[kx] = exp(num[kx]);
     den += num[kx];
   }
 

@@ -31,8 +31,8 @@ probability vector}
   API consistency with polytomous item models.
 }
 \description{
-  In some cases, this function is implemented in terms of
-  \code{\link{rpf.logprob}}.
+  Map an item model, item parameters, and person trait
+  score into a probability vector
 }
 \examples{
 i1 <- rpf.drm()

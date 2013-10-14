@@ -65,7 +65,9 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' Calculate item and person Rasch fit statistics
 ##'
 ##' Note: These statistics are only appropriate if all discrimination
-##' parameters are fixed equal and there is no missing data.
+##' parameters are fixed equal and items are conditionally independent
+##' (see \code{\link{chen.thissen.1997}}).  A best effort is made to
+##' cope with missing data.
 ##'
 ##' Exact distributional properties of these statistics are unknown
 ##' (Masters & Wright, 1997, p. 112).  For details on the calculation,
@@ -321,3 +323,207 @@ rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
   }
   got
 }
+
+thetaComb <- function(theta, nfact)  #copied from mirt
+{
+  if (nfact == 1L){
+    Theta <- matrix(theta)
+  } else {
+    thetalist <- vector('list', nfact)
+    for(i in 1L:nfact)
+      thetalist[[i]] <- theta
+    Theta <- as.matrix(expand.grid(thetalist))
+  }	
+  return(Theta)
+}
+
+##' Compute the ordinal gamma association statistic
+##'
+##' @param mat a cross tabulation matrix
+##' @references
+##' Agresti, A. (1990). Categorical data analysis. New York: Wiley.
+ordinal.gamma <- function(mat) .Call(ordinal_gamma_wrapper, mat)
+
+# root mean squared statistic (sqrt omitted)
+ms <- function(observed, expected, draws) {
+  draws * sum((observed - expected)^2)
+}
+
+P.cdf.fn <- function(x, g.var, t) {
+  sapply(t, function (t1) {
+    n <- length(g.var)
+    num <- exp(1-t1) * exp(1i * t1 * sqrt(n))
+    den <- pi * (t1 - 1/(1-1i*sqrt(n)))
+    pterm <- prod(sqrt(1 - 2*(t1-1)*g.var/x + 2i*t1*g.var*sqrt(n)/x))
+    Im(num / (den * pterm))
+  })
+}
+
+##' Compute the P value that the observed and expected tables come from the same distribution
+##'
+##' This method dramatically improves upon Pearson's X^2
+##' goodness-of-fit test.  In contrast to Pearson's X^2, no cell
+##' collapsing is needed to avoid an inflated false positive rate.
+##' The statistic rapidly converges to the Monte-Carlo estimate
+##' as the number of draws increases. In contrast to Pearson's
+##' X^2, the order of the matrices doesn't matter. This test is
+##' commutative with respect to its arguments.
+##' 
+##' @param observed observed matrix
+##' @param expected expected matrix
+##' @return The P value indicating whether the two tables come from
+##' the same distribution. For example, a significant result (P <
+##' alpha level) rejects the hypothesis that the two matrices are from
+##' the same distribution.
+##' @references Perkins, W., Tygert, M., & Ward, R. (2011). Computing
+##' the confidence levels for a root-mean-square test of
+##' goodness-of-fit. \emph{Applied Mathematics and Computations,
+##' 217}(22), 9072-9084.
+##' @examples
+##' draws <- 17
+##' observed <- matrix(c(.294, .176, .118, .411), nrow=2) * draws
+##' expected <- matrix(c(.235, .235, .176, .353), nrow=2) * draws
+##' ptw2011.gof.test(observed, expected)  # not signficiant
+
+ptw2011.gof.test <- function(observed, expected) {
+  orig.draws <- sum(observed)
+  observed <- observed / orig.draws
+  expected <- expected / orig.draws
+
+  X <- ms(observed, expected, orig.draws)
+  if (X == 0) return(1)
+
+  n <- prod(dim(observed))
+  D <- diag(1/c(expected))
+  P <- matrix(-1/n, n,n)
+  diag(P) <- 1 - 1/n
+  B <- P %*% D %*% P
+  g.var <- 1 / eigen(B, only.values=TRUE)$values[-n]
+  
+  # Eqn 8 needs n variances, but matrix B (Eqn 6) only has n-1 non-zero
+  # eigenvalues. Perhaps n-1 degrees of freedom?
+  
+#  plot(function(t) P.cdf.fn(X, g.var, t), 0, 40)
+  # 310 points should be good enough for 500 bins
+  # Perkins, Tygert, Ward (2011, p. 10)
+  got <- integrate(function(t) P.cdf.fn(X, g.var, t), 0, 40, subdivisions=310L)
+  p.value <- 1 - got$value
+  if (p.value < 0) p.value <- 0
+  p.value
+}
+
+##' Computes local dependence indices for all pairs of items
+##'
+##' Item Factor Analysis makes two assumptions: (1) that the latent
+##' distribution is reasonably approximated by the multivariate Normal
+##' and (2) that items are conditionally independent. This test
+##' examines the second assumption. The presence of locally dependent
+##' items can inflate the precision of estimates causing the test to
+##' seem more accurate than it really is.
+##'
+##' Statically significant entries suggest that the item pair has
+##' local dependence. Since log(.01)=-4.6, an absolute magitude of 5
+##' is a reasonable cut-off. Positive entries indicate that the two
+##' items are more correlated than expected. These items may share an
+##' unaccounted for latent dimension. Consider a redesign of the items
+##' or the use of testlets for scoring. Negative entries indicate that
+##' the two items are less correlated than expected.
+##'
+##' TODO: Optimize integration for the two-tier restriction.
+##'
+##' @param grp a list with the spec, param, mean, and cov describing the group
+##' @param data data
+##' @param inames a subset of items to examine
+##' @param qwidth quadrature width
+##' @param qpoints number of equally spaced quadrature points
+##' @param method method to use to calculate P values. The default
+##' ("rms") uses the root mean square statistic (see \code{\link{ptw2011.gof.test}}).
+##' To obtain the traditional Pearson X^2 statistic, use method="pearson".
+##' @return a lower triangular matrix of log P values with the sign
+##' determined by relative association between the observed and
+##' expected tables (see \code{\link{ordinal.gamma}})
+##' @references Chen, W.-H. & Thissen, D. (1997). Local dependence
+##' indexes for item pairs using Item Response Theory. \emph{Journal
+##' of Educational and Behavioral Statistics, 22}(3), 265-289.
+##'
+##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
+##' adaptive testing: A case for testlets.  \emph{Journal of
+##' Educational measurement, 24}(3), 185--201.
+chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, method="rms") {
+  if (is.null(colnames(grp$param))) stop("Item parameter columns must be named")
+
+  if (method != "rms" && method != "pearson") stop(paste("Unknown method", method))
+  if (missing(inames)) {
+    inames <- colnames(grp$param)
+  }
+  if (length(inames) < 2) stop("At least 2 items are required")
+
+  spec <- grp$spec
+  if (length(spec) < dim(grp$param)[2]) {
+      if (dim(grp$param)[2] %% length(spec) != 0) stop("Length of spec must match # of items")
+      rep <- dim(grp$param)[2] %/% length(spec)
+      while (rep > 1) {
+          spec <- c(spec, grp$spec)
+          rep <- rep - 1
+      }
+  }
+
+  if (!is.data.frame(data)) {
+      data <- as.data.frame(data)  #safe? TODO
+  }
+
+  theta <- thetaComb(seq(-qwidth,qwidth,length.out=qpoints), length(grp$mean))
+  prior <- mvtnorm::dmvnorm(theta, grp$mean, grp$cov)
+  prior <- prior/sum(prior) # two-tier optimization TODO
+  thetaT <- t(theta)
+
+  # assume param and data in the same order? TODO
+  items <- match(inames, colnames(grp$param))
+
+  result <- list()
+  raw <- matrix(NA, length(items), length(items))
+  dimnames(raw) <- list(inames, inames)
+  std <- matrix(NA, length(items), length(items))
+  dimnames(std) <- list(inames, inames)
+  pval <- matrix(NA, length(items), length(items))
+  dimnames(pval) <- list(inames, inames)
+
+  for (iter1 in 2:length(items)) {
+    for (iter2 in 1:(iter1-1)) {
+      i1 <- items[iter1]
+      i2 <- items[iter2]
+      observed <- table(data[,c(i1,i2)])
+      N <- sum(observed)
+      s1 <- spec[[i1]]
+      s2 <- spec[[i2]]
+      expected <- matrix(NA, s1@outcomes, s2@outcomes)
+      dimnames(expected) <- dimnames(observed)
+      p1 <- rpf.prob(s1, grp$param[,i1], thetaT)
+      p2 <- rpf.prob(s2, grp$param[,i2], thetaT)
+      for (o1 in 1:s1@outcomes) {
+        for (o2 in 1:s2@outcomes) {
+          expected[o1,o2] <- N * sum(p1[o1,] * p2[o2,] * prior)
+        }
+      }
+      s <- ordinal.gamma(observed) - ordinal.gamma(expected)
+      if (!is.finite(s) || is.na(s) || s==0) s <- 1
+      info <- list(observed=observed, expected=expected, sign=sign(s))
+
+      if (method == "rms") {
+          pval[iter1, iter2] <- sign(s) * -log(ptw2011.gof.test(observed, expected))
+      } else {
+          x2 <- sum((observed - expected)^2 / expected)
+          df <- (s1@outcomes-1) * (s2@outcomes-1)
+          info <- c(info, x2=x2, df=df)
+
+          raw[iter1, iter2] <- sign(s) * x2
+          std[iter1, iter2] <- sign(s) * abs((x2 - df)/sqrt(2*df))
+          pval[iter1, iter2] <- sign(s) * -pchisq(x2, df, lower.tail=FALSE, log.p=TRUE)
+      }
+
+      result[[paste(inames[iter1], inames[iter2], sep=":")]] <- info
+    }
+  }
+  list(pval=pval, std=std, raw=raw, detail=result)
+}
+

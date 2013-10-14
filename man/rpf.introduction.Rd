@@ -5,7 +5,7 @@
 \title{rpf - Response Probability Functions}
 \description{
   The purpose of this package is to factor out logic and
-  math common to Item Response Theory fitting, diagnostics,
+  math common to Item Factor Analysis fitting, diagnostics,
   and analysis.  It is envisioned as core support code
   suitable for more specialized IRT packages to build upon.
 }
@@ -36,9 +36,8 @@
   All models are always in the logistic metric. To obtain
   normal ogive discrimination parameters, divide slope
   parameters by \code{\link{rpf.ogive}}. Item models are
-  estimated in slope-intercept form unless the traditional
-  parameterization is specifically requested. Input/output
-  matrices arranged in the way most convenient for
+  estimated in slope-intercept form. Input/output matrices
+  arranged in the way most convenient for low-level
   processing in C. Typically this means that item data is
   in columns vectors.
 

@@ -16,6 +16,11 @@
   transformation (Baker & Kim, 2004, pp. 14-18).
 }
 \references{
+  Camilli, G. (1994). Teacher's corner: Origin of the
+  scaling constant d=1.7 in Item Response Theory.
+  \emph{Journal of Educational and Behavioral Statistics,
+  19}(3), 293-295.
+
   Baker & Kim (2004). \emph{Item Response Theory: Parameter
   Estimation Techniques.} Marcel Dekker, Inc.
 

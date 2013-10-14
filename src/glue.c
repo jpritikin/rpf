@@ -388,6 +388,7 @@ static R_CallMethodDef flist[] = {
   {"orlando_thissen_2000_wrapper", (DL_FUNC) orlando_thissen_2000, 5},
   {"kang_chen_2007_wrapper", (DL_FUNC) kang_chen_2007_wrapper, 2},
   {"sumscore_observed", (DL_FUNC) sumscore_observed, 4},
+  {"ordinal_gamma_wrapper", (DL_FUNC) gamma_cor, 1},
   {NULL, NULL, 0}
 };
 

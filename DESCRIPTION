@@ -1,8 +1,8 @@
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.15
-Date: 2013-08-22
+Version: 0.16
+Date: 2013-10-14
 Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     role=c('cre','aut')), person("Jonathan",family="Weeks",
     email="weeksjp@gmail.com", role=c('ctb')),
@@ -11,7 +11,7 @@ Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     "rphilip.chalmers@gmail.com", role = c("ctb")))
 Maintainer: Joshua Pritikin <jpritikin@pobox.com>
 Description: The purpose of this package is to factor out logic and math common
-    to Item Response Theory fitting, diagnostics, and analysis. It is
+    to Item Factor Analysis fitting, diagnostics, and analysis. It is
     envisioned as core support code suitable for more specialized IRT packages
     to build upon. Complete access to optimized C functions are made available
     with R_RegisterCCallable.
@@ -25,7 +25,7 @@ VignetteBuilder: knitr
 Collate: 'classes.R' 'drm.R' 'nrm.R' 'mcm.R' 'grm.R' 'sample.R'
         'diagnose.R' 'science.R' 'kct.R' 'flexmirt.R'
 URL: https://gitorious.org/rpf
-Packaged: 2013-08-22 13:07:03 UTC; joshua
+Packaged: 2013-10-14 18:47:20 UTC; joshua
 Author: Joshua Pritikin [cre, aut],
   Jonathan Weeks [ctb],
   Li Cai [ctb],
@@ -33,4 +33,4 @@ Author: Joshua Pritikin [cre, aut],
   Phil Chalmers [ctb]
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2013-08-23 19:39:41
+Date/Publication: 2013-10-15 00:26:17

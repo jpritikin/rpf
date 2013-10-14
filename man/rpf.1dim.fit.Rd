@@ -21,8 +21,10 @@
 }
 \description{
   Note: These statistics are only appropriate if all
-  discrimination parameters are fixed equal and there is no
-  missing data.
+  discrimination parameters are fixed equal and items are
+  conditionally independent (see
+  \code{\link{chen.thissen.1997}}).  A best effort is made
+  to cope with missing data.
 }
 \details{
   Exact distributional properties of these statistics are
