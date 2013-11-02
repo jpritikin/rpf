@@ -18,12 +18,12 @@
 \description{
   This method dramatically improves upon Pearson's X^2
   goodness-of-fit test.  In contrast to Pearson's X^2, no
-  cell collapsing is needed to avoid an inflated false
-  positive rate. The statistic rapidly converges to the
-  Monte-Carlo estimate as the number of draws increases. In
-  contrast to Pearson's X^2, the order of the matrices
-  doesn't matter. This test is commutative with respect to
-  its arguments.
+  ad hoc cell collapsing is needed to avoid an inflated
+  false positive rate. The statistic rapidly converges to
+  the Monte-Carlo estimate as the number of draws
+  increases. In contrast to Pearson's X^2, the order of the
+  matrices doesn't matter. This test is commutative with
+  respect to its arguments.
 }
 \examples{
 draws <- 17

@@ -523,31 +523,35 @@ irt_rpf_mdim_grm_deriv1(const double *spec,
     double Pk_1Pk = Pk_1 - Pk;
     if (Pk_1Pk < 1e-10) Pk_1Pk = 1e-10;
     double dif1 = weight[jx] / Pk_1Pk;
-    double dif1sq = weight[jx] / (Pk_1Pk * Pk_1Pk);
+    double dif1sq = dif1 / Pk_1Pk;
     if(jx < nzeta) {
       double Pk_p1 = P[jx + 2];
       double PQ_p1 = PQfull[jx + 2];
       double Pk_Pkp1 = Pk - Pk_p1;
       if(Pk_Pkp1 < 1e-10) Pk_Pkp1 = 1e-10;
       double dif2 = weight[jx+1] / Pk_Pkp1;
-      double dif2sq = weight[jx+1] / (Pk_Pkp1 * Pk_Pkp1);
-      out[nfact + jx] += PQ * (dif1 - dif2);
+      double dif2sq = dif2 / Pk_Pkp1;
+      out[nfact + jx] += PQ * (dif1 - dif2);  //gradient for intercepts
 
-      int d2base = (nfact + nzeta) + (nfact+jx) * (nfact+jx+1)/2;
-      out[d2base + nfact + jx] -= (-1 * PQ * PQ * (dif1sq + dif2sq) -
-					  (dif1 - dif2) * (Pk * (1.0 - Pk) * (1.0 - 2.0*Pk)));
-      if (jx < (nzeta - 1)) {
-	int d2base1 = (nfact + nzeta) + (nfact+jx+1) * (nfact+jx+2)/2;
-	out[d2base1 + nfact + jx] -= dif2sq * PQ_p1 * PQ;
-      }
-      double tmp1 = (-1.0) * dif2sq * PQ * (PQ - PQ_p1);
-      double tmp2 = dif1sq * PQ * (PQ_1 - PQ);
+      int d2base = hessianIndex(nfact + nzeta, nfact+jx, 0);
+      // hessian for intercept^2
       double tmp3 = (dif1 - dif2) * (Pk * (1.0 - Pk) * (1.0 - 2.0*Pk));
+      double piece1 = (PQ * PQ * (dif1sq + dif2sq) + tmp3);
+      out[d2base + nfact + jx] += piece1;
+      if (jx < (nzeta - 1)) {
+	      // hessian for adjacent intercepts
+	      int d2base1 = hessianIndex(nfact + nzeta, nfact+jx+1, nfact + jx);
+	      out[d2base1] -= dif2sq * PQ_p1 * PQ;
+      }
+      double tmp1 = -dif2sq * PQ * (PQ - PQ_p1);
+      double tmp2 = dif1sq * PQ * (PQ_1 - PQ);
       for(int kx = 0; kx < nfact; kx++){
+	// hessian for slope intercept
 	out[d2base + kx] -= (tmp1 + tmp2 - tmp3) * where[kx];
       }
     }
     for(int kx = 0; kx < nfact; kx++) {
+      // gradient for slope
       out[kx] -= dif1 * (PQ_1 - PQ) * where[kx];
     }
 
@@ -556,12 +560,13 @@ irt_rpf_mdim_grm_deriv1(const double *spec,
       temp[ix] = PQ_1 * where[ix] - PQ * where[ix];
 
     int d2x = nfact + nzeta;
+    double Pk_adj = (Pk_1 * (1.0 - Pk_1) * (1.0 - 2.0 * Pk_1) -
+		     Pk * (1.0 - Pk) * (1.0 - 2.0 * Pk));
     for(int i = 0; i < nfact; i++) {
       for(int j = 0; j <= i; j++) {
 	double outer = where[i]*where[j];
-	out[d2x++] -= (-1 * dif1sq * temp[i] * temp[j] +
-			      (dif1 * (Pk_1 * (1.0 - Pk_1) * (1.0 - 2.0 * Pk_1) * 
-				       outer - Pk * (1.0 - Pk) * (1.0 - 2.0 * Pk) * outer)));
+	// hessian for slope slope
+	out[d2x++] -= (- dif1sq * temp[i] * temp[j] + (dif1 * outer * Pk_adj));
       }
     }
   }
