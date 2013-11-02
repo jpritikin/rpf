@@ -12,6 +12,14 @@ set.seed(myseed)
 i.count <- 5
 spec <- list()
 
+# from mirt
+antilogit <- function(x){
+  ret <- 1 / (1 + exp(-x))
+  ret <- ifelse(x == -999, 0, ret)
+  ret <- ifelse(x == 999, 1, ret)
+  ret
+}
+
 test_that("3PL", {
   spec[1:i.count] <- rpf.drm()
   data <- rpf.sample(100, spec)
@@ -23,7 +31,7 @@ test_that("3PL", {
   for (ix in 1:i.count) {
     ii <- extract.item(fit, ix)
     expect_equal(c(t(probtrace(ii, c(-1,0,1)))),
-                 c(rpf.prob(spec[[1]], ii@par[1:4], c(-1,0,1))))
+                 c(rpf.prob(spec[[1]], c(ii@par[1:2], antilogit(ii@par[3:4])), c(-1,0,1))))
   }
 })
 

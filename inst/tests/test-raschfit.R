@@ -89,10 +89,10 @@ test_that("mirt", {
 
   spec <- list()
   spec[1:20] <- rpf.drm()
-  params <- t(simplify2array(coef(raschfit)[1:20]))[,1:4]
+  params <- simplify2array(coef(raschfit)[1:20])[1,,]
   scores <- scores.full[,'F1']
   data.f <- as.data.frame(lapply(as.data.frame(data), ordered))
-  fit <- rpf.1dim.fit(spec, t(params), data.f, scores, 2, wh.exact=TRUE)
+  fit <- rpf.1dim.fit(spec, params, data.f, scores, 2, wh.exact=TRUE)
 
   expect_equal(mirt.fit$infit, fit$infit, tolerance=10^-4)
   expect_equal(mirt.fit$z.infit, fit$infit.z, tolerance=10^-3)
