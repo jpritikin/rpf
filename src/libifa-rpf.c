@@ -34,12 +34,6 @@
 static const double EXP_STABLE_DOMAIN = 35;
 static const double SMALLEST_PROB = 6.305116760146989222002e-16;  // exp(-35), need constexpr
 
-// This is far away from the item's difficulty so it is less
-// interesting for estimation and the gradient becomes numerically
-// unstable as athb < -25. For symmetry, it is necessary to clamp at
-// 25 as well.
-static const double GRADIENT_STABLE_DOMAIN = 25;
-
 static void
 irt_rpf_logprob_adapter(const double *spec,
 			const double *restrict param, const double *restrict th,
