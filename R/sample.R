@@ -77,7 +77,9 @@ rpf.sample <- function(theta, items, params, design, prefix="i",
     if (theta <= 1) stop("Request at least 2 samples")
     numPeople <- theta
     if (missing(mean)) mean <- rep(0, maxAbilities)
+    if (length(mean) != maxAbilities) stop(paste("Mean vector must have length",maxAbilities))
     if (missing(cov)) cov <- diag(maxAbilities)
+    if (any(dim(cov) != maxAbilities)) stop(paste("Cov matrix must be square matrices of size",maxAbilities))
     theta <- array(t(rmvnorm(numPeople, mean=mean, sigma=cov)),
                    dim=c(maxAbilities, numPeople))
   } else if (maxDim == 1 && is.vector(theta)) {
