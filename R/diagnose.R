@@ -408,7 +408,8 @@ ptw2011.gof.test <- function(observed, expected) {
   # Perkins, Tygert, Ward (2011, p. 10)
   got <- integrate(function(t) P.cdf.fn(X, g.var, t), 0, 40, subdivisions=310L)
   p.value <- 1 - got$value
-  if (p.value < 0) p.value <- 0
+  smallest <- 6.3e-16  # approx exp(-35)
+  if (p.value < smallest) p.value <- smallest
   p.value
 }
 
