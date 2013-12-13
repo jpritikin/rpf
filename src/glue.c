@@ -107,6 +107,30 @@ rpf_paramInfo_wrapper(SEXP r_spec, SEXP r_paramNum)
   return ans;
 }
 
+int unpack_theta(int dims, double *param, int numAbilities, double *theta, double *out)
+{
+  if (numAbilities == dims) {
+    for (int dx=0; dx < dims; ++dx) {
+      double th = theta[dx];
+      if (!isfinite(th)) return 0;
+      out[dx] = th;
+    }
+  } else {
+    int ax = 0;
+    for (int dx=0; dx < dims; ++dx) {
+      if (param[dx] == 0) continue;
+      double th = theta[ax]; // could read uninitialized memory, but we detect below
+      if (!isfinite(th)) return 0;
+      out[dx] = th;
+      ++ax;
+    }
+    if (ax != numAbilities) {
+      error("Item has %d nonzero dims but given %d abilities", ax, numAbilities);
+    }
+  }
+  return 1;
+}
+
 static SEXP
 rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 {
@@ -136,29 +160,23 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     numPeople = length(r_theta);
   } else {
     getMatrixDims(r_theta, &numAbilities, &numPeople);
-    if (numAbilities != dims)
-      error("Item has %d dims but given %d abilities", dims, numAbilities);
   }
 
   SEXP outsxp;
   PROTECT(outsxp = allocMatrix(REALSXP, numOutcomes, numPeople));
   double *out = REAL(outsxp);
   double *theta = REAL(r_theta);
+  double *param = REAL(r_param);
     
   for (int px=0; px < numPeople; px++) {
-    int skip=0;
-    for (int dx=0; dx < dims; dx++) {
-      if (!isfinite((theta+px*numAbilities)[dx])) {
+    double thBuf[dims];
+    if (!unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf)) {
 	for (int ox=0; ox < numOutcomes; ox++) {
 	  out[px*numOutcomes + ox] = NA_REAL;
 	}
-	skip=1;
-	break;
-      }
+	continue;
     }
-    if (skip) continue;
-    (*librpf_model[id].prob)(spec, REAL(r_param), theta+px*numAbilities,
-				out+px*numOutcomes);
+    (*librpf_model[id].prob)(spec, param, thBuf, out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
       double prob = out[px*numOutcomes + ox];
       if (!isfinite(prob)) {
@@ -200,29 +218,23 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     numPeople = length(r_theta);
   } else {
     getMatrixDims(r_theta, &numAbilities, &numPeople);
-    if (numAbilities != dims)
-      error("Item has %d dims but given %d abilities", dims, numAbilities);
   }
 
   SEXP outsxp;
   PROTECT(outsxp = allocMatrix(REALSXP, numOutcomes, numPeople));
   double *out = REAL(outsxp);
   double *theta = REAL(r_theta);
+  double *param = REAL(r_param);
     
   for (int px=0; px < numPeople; px++) {
-    int skip=0;
-    for (int dx=0; dx < dims; dx++) {
-      if (!isfinite((theta+px*numAbilities)[dx])) {
+    double thBuf[dims];
+    if (!unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf)) {
 	for (int ox=0; ox < numOutcomes; ox++) {
 	  out[px*numOutcomes + ox] = NA_REAL;
 	}
-	skip=1;
-	break;
-      }
+	continue;
     }
-    if (skip) continue;
-    (*librpf_model[id].logprob)(spec, REAL(r_param), theta+px*numAbilities,
-				out+px*numOutcomes);
+    (*librpf_model[id].logprob)(spec, param, thBuf, out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
       double prob = out[px*numOutcomes + ox];
       if (!isfinite(prob)) {
