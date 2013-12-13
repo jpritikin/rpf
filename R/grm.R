@@ -42,16 +42,12 @@ rpf.grm <- function(outcomes=2, factors=1, multidimensional=TRUE) {
   m
 }
 
-### 1dim
-
-setMethod("rpf.rparam", signature(m="rpf.1dim.graded"),
-          function(m) {
-              a <- rlnorm(1, meanlog=0, sdlog=.5)
-              b <- sort(rnorm(m@outcomes-1))
-              c(a=a,b=b)
-          })
-
 ### mdim
+
+setMethod("rpf.modify", signature(m="rpf.mdim.graded", factors="numeric"),
+          function(m, factors) {
+              rpf.grm(m@outcomes, factors)
+          })
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.graded"),
           function(m) {

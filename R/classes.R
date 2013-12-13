@@ -102,6 +102,12 @@ setMethod("rpf.numParam", signature(m="rpf.base"),
             .Call(rpf_numParam_wrapper, m@spec)
           })
 
+##' Modify
+##' @aliases
+##' rpf.modify,rpf.mdim.drm,numeric-method
+##' rpf.modify,rpf.mdim.grm,numeric-method
+setGeneric("rpf.modify", function(m, factors) standardGeneric("rpf.modify"))
+
 ##' Retrieve a description of the given parameter
 ##' @return a list containing the type, upper bound, and lower bound
 ##' @aliases

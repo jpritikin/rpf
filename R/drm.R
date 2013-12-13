@@ -56,6 +56,11 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
 
 ### mdim
 
+setMethod("rpf.modify", signature(m="rpf.mdim.drm", factors="numeric"),
+          function(m, factors) {
+              rpf.drm(factors)
+          })
+
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
           function(m) {
             c(a=rlnorm(m@factors, meanlog=0, sdlog=.5),

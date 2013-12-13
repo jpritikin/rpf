@@ -107,3 +107,8 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
               alf=getT(m,2) %*% ak,
               gam=getT(m,3) %*% ck)
           })
+
+setMethod("rpf.modify", signature(m="rpf.mdim.nrm", factors="numeric"),
+          function(m, factors) {
+              rpf.nrm(m@outcomes, factors, T.a=getT(m,0), T.c=getT(m,1))
+          })
