@@ -42,6 +42,7 @@ rpf.1dim.residual <- function(spec, params, responses, scores) {
     } else if (is.factor(data)) {
       stop(paste("Column",ix,"is an unordered factor"))
     }
+    if (length(data) != length(Escore)) stop("Length mismatch")
     Zscore[,ix] <- data - Escore
   }
   Zscore
@@ -94,7 +95,14 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
 ##' Analysis.} Chicago: Mesa Press.
 ##' @export
-rpf.1dim.fit <- function(spec, params, responses, scores, margin, wh.exact=TRUE) {
+rpf.1dim.fit <- function(spec, params, responses, scores, margin, group=NULL, wh.exact=TRUE) {
+    if (!missing(group)) {
+        spec <- group$spec
+        params <- group$param
+        responses <- group$data
+        scores <- group$scores[,1]  # should not assume first score TODO
+    }
+
   if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")  # true? TODO
 
   if (dim(params)[2] < 25 && wh.exact) {
