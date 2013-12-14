@@ -419,7 +419,7 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' distribution is reasonably approximated by the multivariate Normal
 ##' and (2) that items are conditionally independent. This test
 ##' examines the second assumption. The presence of locally dependent
-##' items can inflate the precision of estimates causing the test to
+##' items can inflate the precision of estimates causing a test to
 ##' seem more accurate than it really is.
 ##'
 ##' Statically significant entries suggest that the item pair has
@@ -429,8 +429,6 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' unaccounted for latent dimension. Consider a redesign of the items
 ##' or the use of testlets for scoring. Negative entries indicate that
 ##' the two items are less correlated than expected.
-##'
-##' TODO: Optimize integration for the two-tier restriction.
 ##'
 ##' @param grp a list with the spec, param, mean, and cov describing the group
 ##' @param data data
@@ -450,9 +448,12 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 ##' adaptive testing: A case for testlets.  \emph{Journal of
 ##' Educational measurement, 24}(3), 185--201.
-chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, method="rms") {
+chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49, method="rms") {
   if (is.null(colnames(grp$param))) stop("Item parameter columns must be named")
 
+  if (missing(data)) {
+      data <- grp$data
+  }
   if (method != "rms" && method != "pearson") stop(paste("Unknown method", method))
   if (missing(inames)) {
     inames <- colnames(grp$param)
@@ -473,15 +474,12 @@ chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, meth
       data <- as.data.frame(data)  #safe? TODO
   }
 
-  theta <- thetaComb(seq(-qwidth,qwidth,length.out=qpoints), length(grp$mean))
-  prior <- mvtnorm::dmvnorm(theta, grp$mean, grp$cov)
-  prior <- prior/sum(prior) # two-tier optimization TODO
-  thetaT <- t(theta)
-
   # assume param and data in the same order? TODO
   items <- match(inames, colnames(grp$param))
 
   result <- list()
+  gamma <- matrix(NA, length(items), length(items))
+  dimnames(gamma) <- list(inames, inames)
   raw <- matrix(NA, length(items), length(items))
   dimnames(raw) <- list(inames, inames)
   std <- matrix(NA, length(items), length(items))
@@ -489,6 +487,7 @@ chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, meth
   pval <- matrix(NA, length(items), length(items))
   dimnames(pval) <- list(inames, inames)
 
+  # sort item pairs by fset TODO
   for (iter1 in 2:length(items)) {
     for (iter2 in 1:(iter1-1)) {
       i1 <- items[iter1]
@@ -499,8 +498,22 @@ chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, meth
       s2 <- spec[[i2]]
       expected <- matrix(NA, s1@outcomes, s2@outcomes)
       dimnames(expected) <- dimnames(observed)
-      p1 <- rpf.prob(s1, grp$param[,i1], thetaT)
-      p2 <- rpf.prob(s2, grp$param[,i2], thetaT)
+
+      # only integrate over relevant factors
+      f1 <- which(grp$param[1:s1@factors,i1] != 0)
+      f2 <- which(grp$param[1:s2@factors,i2] != 0)
+      fset <- union(f1, f2)
+      mean <- grp$mean[fset]
+      cov <- grp$cov[fset,fset, drop=FALSE]
+      theta <- thetaComb(seq(-qwidth,qwidth,length.out=qpoints), length(mean))
+      prior <- mvtnorm::dmvnorm(theta, mean, cov)
+      prior <- prior/sum(prior)
+      palette <- t(theta)
+      th1 <- palette[match(f1, fset),, drop=FALSE]
+      th2 <- palette[match(f2, fset),, drop=FALSE]
+
+      p1 <- rpf.prob(s1, grp$param[,i1], th1)
+      p2 <- rpf.prob(s2, grp$param[,i2], th2)
       for (o1 in 1:s1@outcomes) {
         for (o2 in 1:s2@outcomes) {
           expected[o1,o2] <- N * sum(p1[o1,] * p2[o2,] * prior)
@@ -508,9 +521,11 @@ chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, meth
       }
       s <- ordinal.gamma(observed) - ordinal.gamma(expected)
       if (!is.finite(s) || is.na(s) || s==0) s <- 1
-      info <- list(observed=observed, expected=expected, sign=sign(s))
+      info <- list(observed=observed, expected=expected, sign=sign(s), gamma=s)
+      gamma[iter1, iter2] <- s
 
       if (method == "rms") {
+          raw[iter1, iter2] <- ms(observed, expected, sum(observed))
           pval[iter1, iter2] <- sign(s) * -log(ptw2011.gof.test(observed, expected))
       } else {
           x2 <- sum((observed - expected)^2 / expected)
@@ -525,6 +540,6 @@ chen.thissen.1997 <- function(grp, data, inames=NULL, qwidth=6, qpoints=49, meth
       result[[paste(inames[iter1], inames[iter2], sep=":")]] <- info
     }
   }
-  list(pval=pval, std=std, raw=raw, detail=result)
+  list(pval=pval, std=std, raw=raw, gamma=gamma, detail=result)
 }
 
