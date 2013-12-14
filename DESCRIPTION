@@ -44,4 +44,5 @@ Collate:
     'science.R'
     'kct.R'
     'flexmirt.R'
+    'util.R'
 URL: https://gitorious.org/rpf

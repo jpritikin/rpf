@@ -4,4 +4,4 @@
 .*.tar.gz
 vignettes/auto
 src/Makevars$
-util
+util/
