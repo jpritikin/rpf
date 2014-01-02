@@ -51,10 +51,22 @@ build.T <- function(outcomes, got) {
 
 ##' Create a nominal response model
 ##'
-##' This function instantiates a nominal response model. The T matrix
-##' must be an invertible square matrix of dimension outcomes-1. As a
-##' shortcut, either T matrix can be specified as "trend" for a
-##' Fourier basis or as "id" for an identity basis.
+##' This function instantiates a nominal response model.
+##'
+##' The transformation matrices T.a and T.c are chosen by the analyst
+##' and not estimated.  The T matrices must be invertible square
+##' matrices of dimension outcomes-1. As a shortcut, either T matrix
+##' can be specified as "trend" for a Fourier basis or as "id" for an
+##' identity basis. The response probability function is
+##'
+##' \deqn{a_k = T_a \alpha_k}
+##' \deqn{c_k = T_c \gamma_k}
+##' \deqn{\mathrm P(\mathrm{pick}=k|a,a_k,c_k) = C\ \frac{1}{1+\exp(-(a \theta a_k + c_k))}}
+##'
+##' where \eqn{a_k} and \eqn{c_k} are the result of multiplying two vectors
+##' of free parameters \eqn{\alpha} and \eqn{\gamma} by fixed matrices \eqn{T_a} and \eqn{T_c}, respectively;
+##' \eqn{a_0} and \eqn{c_0} are fixed to 0 for identification;
+##' and \eqn{C} is a normalizing constant to ensure that \eqn{\sum_k \mathrm P(\mathrm{pick}=k) = 1}.
 ##' 
 ##' @param outcomes The number of choices available
 ##' @param factors the number of factors
@@ -94,4 +106,9 @@ setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
             c(a=a,
               alf=getT(m,2) %*% ak,
               gam=getT(m,3) %*% ck)
+          })
+
+setMethod("rpf.modify", signature(m="rpf.mdim.nrm", factors="numeric"),
+          function(m, factors) {
+              rpf.nrm(m@outcomes, factors, T.a=getT(m,0), T.c=getT(m,1))
           })

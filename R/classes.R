@@ -2,22 +2,20 @@
 ##'
 ##' The purpose of this package is to factor out logic and math common
 ##' to Item Factor Analysis fitting, diagnostics, and analysis.  It is
-##' envisioned as core support code suitable for more specialized IRT
+##' envisioned as core support code suitable for more specialized IFA
 ##' packages to build upon.
 ##'
 ##' This package provides optimized, low-level functions to map
 ##' parameters to response probabilities for dichotomous (1PL, 2PL and
 ##' 3PL) \code{\link{rpf.drm}} and polytomous (graded response
 ##' \code{\link{rpf.grm}}, partial credit/generalized partial credit
-##' (via the nominal model), and nominal \code{\link{rpf.nrm}} items. Both
-##' unidimensional and multidimensional versions of the models are
-##' available.
+##' (via the nominal model), and nominal \code{\link{rpf.nrm}} items.
 ##'
 ##' Item model parameters are passed around as a numeric vector. A 1D
 ##' matrix is also acceptable. Regardless of model, parameters are
 ##' always ordered as follows: discrimination/slope ("a"),
-##' difficulty/intercept ("b"), and guessing/lower-bound ("c"). If
-##' person ability ranges from low negative to high positive then
+##' difficulty/intercept ("b"), and pseudo guessing/upper-bound ("g"/"u"). If
+##' person ability ranges from negative to positive then
 ##' probabilities are output from incorrect to correct. That is, a low
 ##' ability person (e.g., ability = -2) will be more likely to get an
 ##' item incorrect than correct. For example, a dichotomous model that
@@ -30,8 +28,10 @@
 ##' ogive discrimination parameters, divide slope parameters by
 ##' \code{\link{rpf.ogive}}. Item models are estimated in
 ##' slope-intercept form. Input/output matrices arranged in the way
-##' most convenient for low-level processing in C. Typically this means that
-##' item data is in columns vectors.
+##' most convenient for low-level processing in C. The maximum
+##' absolute logit is 35 because f(x) := 1-exp(x) loses accuracy around f(-35)
+##' and equals 1 at f(-38) due to the limited accuracy of double
+##' precision floating point.
 ##'
 ##' This package could also accrete functions to support plotting (but
 ##' not the actual plot functions).
@@ -101,6 +101,19 @@ setMethod("rpf.numParam", signature(m="rpf.base"),
           function(m) {
             .Call(rpf_numParam_wrapper, m@spec)
           })
+
+##' Create a similar item specification with the given number of factors
+##'
+##' @aliases
+##' rpf.modify,rpf.mdim.drm,numeric-method
+##' rpf.modify,rpf.mdim.graded,numeric-method
+##' rpf.modify,rpf.mdim.nrm,numeric-method
+##' @examples
+##' s1 <- rpf.grm(factors=3)
+##' rpf.rparam(s1)
+##' s2 <- rpf.modify(s1, 1)
+##' rpf.rparam(s2)
+setGeneric("rpf.modify", function(m, factors) standardGeneric("rpf.modify"))
 
 ##' Retrieve a description of the given parameter
 ##' @return a list containing the type, upper bound, and lower bound

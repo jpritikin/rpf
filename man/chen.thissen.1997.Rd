@@ -2,8 +2,8 @@
 \alias{chen.thissen.1997}
 \title{Computes local dependence indices for all pairs of items}
 \usage{
-  chen.thissen.1997(grp, data, inames = NULL, qwidth = 6,
-    qpoints = 49, method = "rms")
+  chen.thissen.1997(grp, data = NULL, inames = NULL,
+    qwidth = 6, qpoints = 49, method = "rms")
 }
 \arguments{
   \item{grp}{a list with the spec, param, mean, and cov
@@ -34,7 +34,7 @@
   multivariate Normal and (2) that items are conditionally
   independent. This test examines the second assumption.
   The presence of locally dependent items can inflate the
-  precision of estimates causing the test to seem more
+  precision of estimates causing a test to seem more
   accurate than it really is.
 }
 \details{
@@ -46,8 +46,6 @@
   dimension. Consider a redesign of the items or the use of
   testlets for scoring. Negative entries indicate that the
   two items are less correlated than expected.
-
-  TODO: Optimize integration for the two-tier restriction.
 }
 \references{
   Chen, W.-H. & Thissen, D. (1997). Local dependence

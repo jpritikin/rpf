@@ -3,7 +3,7 @@
 \title{Calculate item and person Rasch fit statistics}
 \usage{
   rpf.1dim.fit(spec, params, responses, scores, margin,
-    wh.exact = TRUE)
+    group = NULL, wh.exact = TRUE)
 }
 \arguments{
   \item{spec}{list of item models}
@@ -18,6 +18,9 @@
 
   \item{wh.exact}{whether to use the exact Wilson-Hilferty
   transformation}
+
+  \item{group}{spec, params, data, and scores can be
+  provided in a list instead of as arguments}
 }
 \description{
   Note: These statistics are only appropriate if all

@@ -1,5 +1,13 @@
 ##' Create a dichotomous response model
 ##'
+##' For slope vector a, intercept c, pseudo-guessing parameter g,
+##' upper bound u, and latent ability vector theta, the response probability
+##' function is
+##' \deqn{\mathrm P(\mathrm{pick}=0|a,c,g,u,\theta) = 1- \mathrm P(\mathrm{pick}=1|a,c,g,u,\theta)
+##' }{P(pick=0|a,c,g,u,th) = 1-P(pick=1|a,c,g,u,th)}
+##' \deqn{\mathrm P(\mathrm{pick}=1|a,c,g,u,\theta) = g+(u-g)\frac{1}{1+\exp(-(a\theta + c))}
+##' }{P(pick=1|a,c,g,u,th) = g+(u-g)/(1+exp(-(a th + c)))}
+##' 
 ##' For discussion on the choice of priors see Cai, Yang, and
 ##' Hansen (2011, p. 246).
 ##'
@@ -47,6 +55,11 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
           })
 
 ### mdim
+
+setMethod("rpf.modify", signature(m="rpf.mdim.drm", factors="numeric"),
+          function(m, factors) {
+              rpf.drm(factors)
+          })
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
           function(m) {

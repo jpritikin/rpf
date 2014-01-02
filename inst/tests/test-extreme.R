@@ -4,20 +4,20 @@ library(testthat)
 context("extremes")
 
 test_that("param info", {
-  ans1 <- structure(list(0L, NA_real_, 1e-06, 0L, NA_real_, 1e-06, 1L,
-                         NA_real_, NA_real_, 2L, 0.999999, 1e-06, 2L, 0.999999, 1e-06),
+  ans1 <- structure(list(1L, NA_real_, 1e-06, 1L, NA_real_, 1e-06, 2L,
+                         NA_real_, NA_real_, 3L, 0.999999, 1e-06, 3L, 0.999999, 1e-06),
                     .Dim = c(3L,  5L), .Dimnames = list(c("type", "upper", "lower"), NULL))
   expect_identical(rpf.paramInfo(rpf.drm(factors=2)), ans1)
   
-  ans2 <- structure(list(0L, NA_real_, 1e-06, 0L, NA_real_, 1e-06, 1L,
-                         NA_real_, NA_real_, 1L, NA_real_, NA_real_),
+  ans2 <- structure(list(1L, NA_real_, 1e-06, 1L, NA_real_, 1e-06, 2L,
+                         NA_real_, NA_real_, 2L, NA_real_, NA_real_),
                     .Dim = 3:4, .Dimnames = list(     c("type", "upper", "lower"), NULL))
   expect_identical(rpf.paramInfo(rpf.grm(outcomes=3, factors=2)), ans2)
   
-  ans3 <- structure(list(0L, NA_real_, 1e-06, 0L, NA_real_, 1e-06, 0L,
-                         NA_real_, NA_real_, 0L, NA_real_, NA_real_, 0L, NA_real_,
-                         NA_real_, 1L, NA_real_, NA_real_, 1L, NA_real_, NA_real_,
-                         1L, NA_real_, NA_real_),
+  ans3 <- structure(list(1L, NA_real_, 1e-06, 1L, NA_real_, 1e-06, 1L,
+                         NA_real_, NA_real_, 1L, NA_real_, NA_real_, 1L, NA_real_,
+                         NA_real_, 2L, NA_real_, NA_real_, 2L, NA_real_, NA_real_,
+                         2L, NA_real_, NA_real_),
                     .Dim = c(3L, 8L), .Dimnames = list(     c("type", "upper", "lower"), NULL))
   expect_identical(rpf.paramInfo(rpf.nrm(outcomes=4, factors=2)), ans3)
 })

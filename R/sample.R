@@ -77,13 +77,19 @@ rpf.sample <- function(theta, items, params, design, prefix="i",
     if (theta <= 1) stop("Request at least 2 samples")
     numPeople <- theta
     if (missing(mean)) mean <- rep(0, maxAbilities)
+    if (length(mean) != maxAbilities) stop(paste("Mean vector must have length",maxAbilities))
     if (missing(cov)) cov <- diag(maxAbilities)
+    if (any(dim(cov) != maxAbilities)) stop(paste("Cov matrix must be square matrices of size",maxAbilities))
     theta <- array(t(rmvnorm(numPeople, mean=mean, sigma=cov)),
                    dim=c(maxAbilities, numPeople))
   } else if (maxDim == 1 && is.vector(theta)) {
     numPeople <- length(theta)
     theta <- array(theta, dim=c(maxAbilities, numPeople))
   } else {
+      if (dim(theta)[1] > maxAbilities) {
+          stop(paste("Only", maxAbilities, "abilities but theta provides", dim(theta)[1],
+                     "-- maybe transpose theta?"))
+      }
     numPeople <- dim(theta)[2]
   }
 
@@ -110,7 +116,7 @@ rpf.sample <- function(theta, items, params, design, prefix="i",
 
     cols <- design[,ix]
     cols <- cols[!is.na(cols)]
-    i.theta <- as.matrix(theta[cols,])
+    i.theta <- theta[cols,,drop=FALSE]
     P <- rpf.prob(i, param[1:rpf.numParam(i)], i.theta)
 #    if (any(is.na(P))) stop(paste("Item", i@spec, "with param", param," produced NAs"))
     ret1 <- apply(P, 2, sample, x=1:i@outcomes, size=1, replace=F)
