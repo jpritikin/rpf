@@ -102,10 +102,17 @@ setMethod("rpf.numParam", signature(m="rpf.base"),
             .Call(rpf_numParam_wrapper, m@spec)
           })
 
-##' Modify
+##' Create a similar item specification with the given number of factors
+##'
 ##' @aliases
 ##' rpf.modify,rpf.mdim.drm,numeric-method
-##' rpf.modify,rpf.mdim.grm,numeric-method
+##' rpf.modify,rpf.mdim.graded,numeric-method
+##' rpf.modify,rpf.mdim.nrm,numeric-method
+##' @examples
+##' s1 <- rpf.grm(factors=3)
+##' rpf.rparam(s1)
+##' s2 <- rpf.modify(s1, 1)
+##' rpf.rparam(s2)
 setGeneric("rpf.modify", function(m, factors) standardGeneric("rpf.modify"))
 
 ##' Retrieve a description of the given parameter

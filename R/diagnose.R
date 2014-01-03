@@ -83,6 +83,7 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' @param scores model derived person scores
 ##' @param margin for people 1, for items 2
 ##' @param wh.exact whether to use the exact Wilson-Hilferty transformation
+##' @param group spec, params, data, and scores can be provided in a list instead of as arguments
 ##' @references Masters, G. N. & Wright, B. D. (1997). The Partial
 ##' Credit Model. In W. van der Linden & R. K. Kambleton (Eds.),
 ##' \emph{Handbook of modern item response theory}
