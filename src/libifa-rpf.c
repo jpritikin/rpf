@@ -494,6 +494,7 @@ irt_rpf_mdim_grm_rawprob(const double *spec,
   out[numOutcomes] = 0;
 }
 
+// Compare with Cai (2010, p. 54) Appendix B
 static void
 irt_rpf_mdim_grm_deriv1(const double *spec,
 			const double *restrict param,
