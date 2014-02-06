@@ -10,10 +10,15 @@
   The ogive constant can be multiplied by the
   discrimination parameter to obtain a response curve very
   similar to the Normal cumulative distribution function
-  (Haley, 1952; Molenaar, 1974). In recent years, the
-  logistic has grown in favor, and therefore, this package
-  does not offer any special support for this
-  transformation (Baker & Kim, 2004, pp. 14-18).
+  (Haley, 1952; Molenaar, 1974). Recently, Savalei (2006)
+  proposed a new constant of 1.749 based on
+  Kullback-Leibler information.
+}
+\details{
+  In recent years, the logistic has grown in favor, and
+  therefore, this package does not offer any special
+  support for this transformation (Baker & Kim, 2004, pp.
+  14-18).
 }
 \references{
   Camilli, G. (1994). Teacher's corner: Origin of the
@@ -32,6 +37,9 @@
   Molenaar, W. (1974). De logistische en de normale kromme
   [The logistic and the normal curve]. \emph{Nederlands
   Tijdschrift voor de Psychologie} 29, 415-420.
+
+  Savalei, V. (2006). Logistic approximation to the normal:
+  The KL rationale. \emph{Psychometrika, 71}(4), 763--767.
 }
 \keyword{datasets}
 

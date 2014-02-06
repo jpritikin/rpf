@@ -1,5 +1,4 @@
 PDFS=flexmirt-plots.pdf
-R_HOME ?= /usr
 
 all: $(PDFS) 
 

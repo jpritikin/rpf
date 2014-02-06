@@ -1,6 +1,6 @@
-3d847d6c1bb8aa26b059e528d3a59b19 *DESCRIPTION
-8faf9c9050b692474abdcc32c623b0ed *NAMESPACE
-1a04846c90c98bf4ca803aa8d34133e3 *R/classes.R
+bde531cb159b6ee2e70f47dad09182b2 *DESCRIPTION
+cd2bf280710d5ca66fa81226af88c69b *NAMESPACE
+0fef32018ab2af01d65bff0b99eb10c1 *R/classes.R
 caa4c5512dae4cbeec5fe3b8987ba650 *R/diagnose.R
 a8b7e12d597bdd3e2a4753c33f36be2e *R/drm.R
 9f82d756846e477cfa553725d2dd283d *R/flexmirt.R
@@ -8,7 +8,7 @@ a8b7e12d597bdd3e2a4753c33f36be2e *R/drm.R
 5be4010d1865b048834ef76e7ae4c5c7 *R/kct.R
 cff19dae25db598487114c8a2a95e576 *R/mcm.R
 b920d952abe66823b77c324109ffe940 *R/nrm.R
-f8b5a0dbf0668bd01973deccbfeeb3ba *R/sample.R
+0e8687f053dd1821e4d62739b5859bef *R/sample.R
 22ba69c7fc1232c7b21257b8d2ef6da6 *R/science.R
 e521fde4bb2f82c5291078019bf3939c *R/util.R
 da8336d5e52a9d66b2faee3cecfe41e6 *README
@@ -19,7 +19,7 @@ cca030838d2d7b447832214e1bd2adb0 *configure
 8c7b78a124e936cf68ffd7ed4d524aa0 *data/science.rda
 da4fc8d799d80703f548e7e080e021fa *inst/doc/flexmirt-plots.R
 abd58a79080a597ff23c11a4191a7cbb *inst/doc/flexmirt-plots.Rnw
-2245fed57efeee387806d5573673fbad *inst/doc/flexmirt-plots.pdf
+1b963c14b2ee3ff2c7812c8b8b354e72 *inst/doc/flexmirt-plots.pdf
 175e48d16525ad36eefe7a1b3921e3a1 *inst/include/libifa-rpf.h
 c5640994aa299d8a897ec42ca63a01f0 *inst/tests/test-dTheta.R
 0fa5e1d4f38c887ce52c9b53f3fc3417 *inst/tests/test-extreme.R
@@ -27,7 +27,7 @@ c5640994aa299d8a897ec42ca63a01f0 *inst/tests/test-dTheta.R
 c17e0e2f159aff75f0aafbea16125c63 *inst/tests/test-gamma.R
 a87c438af511e578abdcde69bbe3cbb9 *inst/tests/test-ld.R
 072a2af663d0a51a72b708d606f17ee1 *inst/tests/test-mirt-icc.R
-1d52a082fcc9689de651d4833fa57566 *inst/tests/test-plink.R
+549ded069eeb9b1473de52496307831a *inst/tests/test-plink.R
 1f03724644906878a8a485db727c1212 *inst/tests/test-ptw2011.R
 67145181d1d3ff9564a90a7b360eb391 *inst/tests/test-raschfit.R
 dce103e15cc2a897fcb730a4d5ca2c0d *inst/tests/test-rescale.R
@@ -67,7 +67,7 @@ b4a59d11f1745357973784904fd0da1a *man/rpf.modify.Rd
 a74ce044d358d585f9eda18912ae276d *man/rpf.nrm.Rd
 344ea187b0b5de1d21ea26abadce4a06 *man/rpf.numParam.Rd
 52346bd1d29b1fbeeed342eb3ac3027c *man/rpf.numSpec.Rd
-748faacf75fdadc4dba68a50254e54db *man/rpf.ogive.Rd
+9c645f28110ed47b7d5f59a5574a88bf *man/rpf.ogive.Rd
 ca3d43a6d122b15114b0a4d3259fbd55 *man/rpf.ot2000.chisq.Rd
 4c3b52c44d2c52ef80c92d09dfd438e8 *man/rpf.ot2000.chisq1.Rd
 abf1c14f67a4bd1feef5503df0949e67 *man/rpf.paramInfo.Rd
@@ -82,9 +82,9 @@ bb3920e359a8eba6e23e5d6d0c15fbed *man/write.flexmirt.Rd
 4ac54128717318539ad930afa0db9d12 *src/Makevars.win
 6357e62a1d8db9e0a242f8c1f269d119 *src/diagnose.c
 a09cd39870c7ce032bd68ab5e41ef946 *src/glue.c
-229938375090d3fe7bec504883908a7e *src/libifa-rpf.c
+e39eefdfaa81dcd1dd40b0af8ad93973 *src/libifa-rpf.c
 637271ea90e1dd7378d78d2d8d738bb0 *src/rpf.h
 2238b1ee9a1c00b461393f9b28b09e08 *tests/dotest.R
-cdbdf77d5cab6ff82d3ecac2bc7214f8 *vignettes/Makefile
+156a0dcdc1a80ad10494618a7460330b *vignettes/Makefile
 abd58a79080a597ff23c11a4191a7cbb *vignettes/flexmirt-plots.Rnw
 a6de3301a981070589ffdc6b13bcecd3 *vignettes/jss.pdf
