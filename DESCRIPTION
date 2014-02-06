@@ -28,9 +28,10 @@ Suggests:
     numDeriv,
     knitr,
     mirt
-Depends:
+Imports:
     methods,
-    mvtnorm,
+    mvtnorm
+Depends:
     R (>= 2.14.0)
 VignetteBuilder: knitr
 Collate:
