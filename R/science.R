@@ -8,10 +8,7 @@
 ##' @docType data
 ##' @keywords datasets
 ##' @name science
-##' @aliases sfif
-##' @aliases sfpf
-##' @aliases sfsf
-##' @aliases sfxf
+##' @aliases sfif sfpf sfsf sfxf
 ##' @references Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
 ##' Analysis.} Chicago: Mesa Press.
 ##' @examples
