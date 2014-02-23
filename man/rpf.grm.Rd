@@ -2,8 +2,7 @@
 \alias{rpf.grm}
 \title{Create a graded response model}
 \usage{
-  rpf.grm(outcomes = 2, factors = 1,
-    multidimensional = TRUE)
+rpf.grm(outcomes = 2, factors = 1, multidimensional = TRUE)
 }
 \arguments{
   \item{outcomes}{The number of choices available}
@@ -14,31 +13,31 @@
   model. Defaults to \code{TRUE}.}
 }
 \value{
-  an item model
+an item model
 }
 \description{
-  For outcomes k in 0 to K, slope vector a, intercept
-  vector c, and latent ability vector theta, the response
-  probability function is \deqn{\mathrm
-  P(\mathrm{pick}=0|a,c,\theta) = 1- \mathrm
-  P(\mathrm{pick}=1|a,c_1,\theta) }{P(pick=0|a,c,th) =
-  1-P(pick=1|a,c_1,th)} \deqn{\mathrm
-  P(\mathrm{pick}=k|a,c,\theta) = \frac{1}{1+\exp(-(a\theta
-  + c_k))} - \frac{1}{1+\exp(-(a\theta + c_{k+1}))}
-  }{P(pick=k|a,c,th) = 1/(1+exp(-(a th + c_k))) -
-  1/(1+exp(-(a th + c_(k+1))))} \deqn{\mathrm
-  P(\mathrm{pick}=K|a,c,\theta) = \frac{1}{1+\exp(-(a\theta
-  + c_K))} }{P(pick=K|a,c,th) = 1/(1+exp(-(a th + c_K)))}
+For outcomes k in 0 to K, slope vector a, intercept vector
+c, and latent ability vector theta, the response
+probability function is \deqn{\mathrm
+P(\mathrm{pick}=0|a,c,\theta) = 1- \mathrm
+P(\mathrm{pick}=1|a,c_1,\theta) }{P(pick=0|a,c,th) =
+1-P(pick=1|a,c_1,th)} \deqn{\mathrm
+P(\mathrm{pick}=k|a,c,\theta) = \frac{1}{1+\exp(-(a\theta +
+c_k))} - \frac{1}{1+\exp(-(a\theta + c_{k+1}))}
+}{P(pick=k|a,c,th) = 1/(1+exp(-(a th + c_k))) -
+1/(1+exp(-(a th + c_(k+1))))} \deqn{\mathrm
+P(\mathrm{pick}=K|a,c,\theta) = \frac{1}{1+\exp(-(a\theta +
+c_K))} }{P(pick=K|a,c,th) = 1/(1+exp(-(a th + c_K)))}
 }
 \details{
-  The graded response model was designed for a item with a
-  series of dependent parts where a higher score implies
-  that easier parts of the item were surmounted. If there
-  is any chance your polytomous item has independent parts
-  then consider \code{\link{rpf.nrm}}. If your categories
-  cannot cross then the graded response model provides a
-  little more information than the nominal model. Stronger
-  a priori assumptions offer provide more power at the cost
-  of flexibility.
+The graded response model was designed for a item with a
+series of dependent parts where a higher score implies that
+easier parts of the item were surmounted. If there is any
+chance your polytomous item has independent parts then
+consider \code{\link{rpf.nrm}}. If your categories cannot
+cross then the graded response model provides a little more
+information than the nominal model. Stronger a priori
+assumptions offer provide more power at the cost of
+flexibility.
 }
 

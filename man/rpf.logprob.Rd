@@ -8,6 +8,9 @@
 \alias{rpf_logprob_wrapper}
 \title{Map an item model, item parameters, and person trait score into a
 probability vector}
+\usage{
+rpf.logprob(m, param, theta)
+}
 \arguments{
   \item{m}{an item model}
 
@@ -16,16 +19,16 @@ probability vector}
   \item{theta}{the trait score(s)}
 }
 \value{
-  a vector of probabilities. For dichotomous items,
-  probabilities are returned in the order incorrect,
-  correct. Although redundent, both incorrect and correct
-  probabilities are returned in the dichotomous case for
-  API consistency with polytomous item models.
+a vector of probabilities. For dichotomous items,
+probabilities are returned in the order incorrect, correct.
+Although redundent, both incorrect and correct
+probabilities are returned in the dichotomous case for API
+consistency with polytomous item models.
 }
 \description{
-  Note that in general, exp(rpf.logprob(..)) !=
-  rpf.prob(..) because the range of logits is much wider
-  than the range of probabilities.
+Note that in general, exp(rpf.logprob(..)) != rpf.prob(..)
+because the range of logits is much wider than the range of
+probabilities.
 }
 \examples{
 i1 <- rpf.drm()

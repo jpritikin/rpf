@@ -7,18 +7,18 @@
 \alias{sfxf}
 \title{Liking for Science dataset}
 \description{
-  These data are from Wright & Masters (1982, p. 18).
+These data are from Wright & Masters (1982, p. 18).
 }
 \details{
-  All items were fit to a 3 category Partial Credit Model
-  (PCM) using Ministep 3.75.0.
+All items were fit to a 3 category Partial Credit Model
+(PCM) using Ministep 3.75.0.
 }
 \examples{
 data(science)
 }
 \references{
-  Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
-  Analysis.} Chicago: Mesa Press.
+Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
+Analysis.} Chicago: Mesa Press.
 }
 \keyword{datasets}
 

@@ -4,9 +4,17 @@
 \alias{rpf.modify,rpf.mdim.graded,numeric-method}
 \alias{rpf.modify,rpf.mdim.nrm,numeric-method}
 \title{Create a similar item specification with the given number of factors}
+\usage{
+rpf.modify(m, factors)
+}
+\arguments{
+  \item{m}{item model}
+
+  \item{factors}{the number of factors/dimensions}
+}
 \description{
-  Create a similar item specification with the given number
-  of factors
+Create a similar item specification with the given number
+of factors
 }
 \examples{
 s1 <- rpf.grm(factors=3)

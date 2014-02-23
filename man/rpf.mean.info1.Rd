@@ -2,7 +2,7 @@
 \alias{rpf.mean.info1}
 \title{Find the point where an item provides mean maximum information}
 \usage{
-  rpf.mean.info1(spec, iparam, grain = 0.1)
+rpf.mean.info1(spec, iparam, grain = 0.1)
 }
 \arguments{
   \item{spec}{an item spec}
@@ -13,6 +13,6 @@
   (optional)}
 }
 \description{
-  WARNING: This function is experimental and may disappear.
+WARNING: This function is experimental and may disappear.
 }
 

@@ -2,7 +2,7 @@
 \alias{rpf.ot2000.chisq}
 \title{Compute S-Chi-squared fit statistic for a set of items}
 \usage{
-  rpf.ot2000.chisq(spec, param, free, data, quad = NULL)
+rpf.ot2000.chisq(spec, param, free, data, quad = NULL)
 }
 \arguments{
   \item{spec}{a list of item specifications}
@@ -19,14 +19,14 @@
   spaced intervals with 49 points)}
 }
 \value{
-  a list of output from \code{\link{rpf.ot2000.chisq1}}
+a list of output from \code{\link{rpf.ot2000.chisq1}}
 }
 \description{
-  Runs \code{\link{rpf.ot2000.chisq1}} for every item and
-  accumulates the results.
+Runs \code{\link{rpf.ot2000.chisq1}} for every item and
+accumulates the results.
 }
 \details{
-  TODO: Handle multiple factors with mean and covariance
-  parameters.
+TODO: Handle multiple factors with mean and covariance
+parameters.
 }
 

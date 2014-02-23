@@ -3,6 +3,9 @@
 \alias{rpf.rescale,rpf.base,numeric,numeric,matrix-method}
 \alias{rpf_rescale_wrapper}
 \title{Rescale item parameters}
+\usage{
+rpf.rescale(m, param, mean, cov)
+}
 \arguments{
   \item{m}{item model}
 
@@ -13,7 +16,7 @@
   \item{cov}{covariance matrix}
 }
 \description{
-  Adjust item parameters for changes in mean and covariance
-  of the latent distribution.
+Adjust item parameters for changes in mean and covariance
+of the latent distribution.
 }
 

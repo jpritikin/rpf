@@ -1,9 +1,10 @@
+\docType{class}
 \name{Class rpf.1dim}
 \alias{Class rpf.1dim}
 \alias{rpf.1dim-class}
 \title{The base class for 1 dimensional response probability functions.}
 \description{
-  The base class for 1 dimensional response probability
-  functions.
+The base class for 1 dimensional response probability
+functions.
 }
 

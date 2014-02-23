@@ -3,7 +3,7 @@
 \alias{rpf.1dim.residual}
 \title{Calculate residuals}
 \usage{
-  rpf.1dim.residual(spec, params, responses, scores)
+rpf.1dim.residual(spec, params, responses, scores)
 }
 \arguments{
   \item{spec}{list of item models}
@@ -15,9 +15,9 @@
   \item{scores}{model derived person scores}
 }
 \value{
-  residuals
+residuals
 }
 \description{
-  Calculate residuals
+Calculate residuals
 }
 

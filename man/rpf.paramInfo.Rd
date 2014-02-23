@@ -3,10 +3,18 @@
 \alias{rpf.paramInfo,rpf.base-method}
 \alias{rpf_paramInfo_wrapper}
 \title{Retrieve a description of the given parameter}
+\usage{
+rpf.paramInfo(m, num = NULL)
+}
+\arguments{
+  \item{m}{item model}
+
+  \item{num}{vector of parameters (defaults to all)}
+}
 \value{
-  a list containing the type, upper bound, and lower bound
+a list containing the type, upper bound, and lower bound
 }
 \description{
-  Retrieve a description of the given parameter
+Retrieve a description of the given parameter
 }
 

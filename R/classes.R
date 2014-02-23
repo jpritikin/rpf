@@ -77,6 +77,7 @@ setClass("rpf.mdim", contains='rpf.base',
          representation("VIRTUAL"))
 
 ##' Length of the item model vector
+##' @param m item model
 ##' @aliases
 ##' rpf.numSpec,rpf.base-method
 ##' rpf_numSpec_wrapper
@@ -92,6 +93,8 @@ setMethod("rpf.numSpec", signature(m="rpf.base"),
           })
 
 ##' Length of the item parameter vector
+##'
+##' @param m item model
 ##' @aliases
 ##' rpf.numParam,rpf.base-method
 ##' rpf_numParam_wrapper
@@ -104,6 +107,8 @@ setMethod("rpf.numParam", signature(m="rpf.base"),
 
 ##' Create a similar item specification with the given number of factors
 ##'
+##' @param m item model
+##' @param factors the number of factors/dimensions
 ##' @aliases
 ##' rpf.modify,rpf.mdim.drm,numeric-method
 ##' rpf.modify,rpf.mdim.graded,numeric-method
@@ -116,6 +121,8 @@ setMethod("rpf.numParam", signature(m="rpf.base"),
 setGeneric("rpf.modify", function(m, factors) standardGeneric("rpf.modify"))
 
 ##' Retrieve a description of the given parameter
+##' @param m item model
+##' @param num vector of parameters (defaults to all)
 ##' @return a list containing the type, upper bound, and lower bound
 ##' @aliases
 ##' rpf.paramInfo,rpf.base-method

@@ -1,11 +1,11 @@
+\docType{class}
 \name{Class rpf.mdim.graded}
 \alias{Class rpf.mdim.graded}
 \alias{rpf.mdim.graded-class}
 \title{The base class for multi-dimensional graded response probability
 functions.}
 \description{
-  This class contains methods common to both the
-  generalized partial credit model and the graded response
-  model.
+This class contains methods common to both the generalized
+partial credit model and the graded response model.
 }
 

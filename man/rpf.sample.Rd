@@ -2,8 +2,8 @@
 \alias{rpf.sample}
 \title{Randomly sample response patterns given a list of items}
 \usage{
-  rpf.sample(theta, items, params, design, prefix = "i",
-    mean = NULL, cov = NULL)
+rpf.sample(theta, items, params, design, prefix = "i", mean = NULL,
+  cov = NULL)
 }
 \arguments{
   \item{theta}{either a vector (for 1 dimension) or a
@@ -30,19 +30,19 @@
   (optional)}
 }
 \value{
-  Returns a data frame of response patterns
+Returns a data frame of response patterns
 }
 \description{
-  Returns a random sample of response patterns given a list
-  of item models and parameters.
+Returns a random sample of response patterns given a list
+of item models and parameters.
 }
 \details{
-  The design matrix can accomodate more person abilities
-  than item dimension. Refer to Cai (2010) for design
-  matrix examples.
+The design matrix can accomodate more person abilities than
+item dimension. Refer to Cai (2010) for design matrix
+examples.
 
-  TODO: Add restrictions to design matrix to match
-  restrictions imposed by Cai (2010).
+TODO: Add restrictions to design matrix to match
+restrictions imposed by Cai (2010).
 }
 \examples{
 # 1 dimensional items
@@ -72,11 +72,11 @@ design <- matrix(c(1, 1, 1, 1,
 rpf.sample(10, items, correct, design)
 }
 \references{
-  Cai, L. (2010). A two-tier full-information item factor
-  analysis model with applications. \emph{Psychometrika,
-  75}, 581-612.
+Cai, L. (2010). A two-tier full-information item factor
+analysis model with applications. \emph{Psychometrika, 75},
+581-612.
 }
 \seealso{
-  \code{\link{sample}}
+\code{\link{sample}}
 }
 

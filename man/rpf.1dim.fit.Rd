@@ -2,8 +2,8 @@
 \alias{rpf.1dim.fit}
 \title{Calculate item and person Rasch fit statistics}
 \usage{
-  rpf.1dim.fit(spec, params, responses, scores, margin,
-    group = NULL, wh.exact = TRUE)
+rpf.1dim.fit(spec, params, responses, scores, margin, group = NULL,
+  wh.exact = TRUE)
 }
 \arguments{
   \item{spec}{list of item models}
@@ -23,34 +23,31 @@
   provided in a list instead of as arguments}
 }
 \description{
-  Note: These statistics are only appropriate if all
-  discrimination parameters are fixed equal and items are
-  conditionally independent (see
-  \code{\link{chen.thissen.1997}}).  A best effort is made
-  to cope with missing data.
+Note: These statistics are only appropriate if all
+discrimination parameters are fixed equal and items are
+conditionally independent (see
+\code{\link{chen.thissen.1997}}).  A best effort is made to
+cope with missing data.
 }
 \details{
-  Exact distributional properties of these statistics are
-  unknown (Masters & Wright, 1997, p. 112).  For details on
-  the calculation, refer to Wright & Masters (1982, p.
-  100).
+Exact distributional properties of these statistics are
+unknown (Masters & Wright, 1997, p. 112).  For details on
+the calculation, refer to Wright & Masters (1982, p. 100).
 
-  The Wilson-Hilferty transformation is biased for less
-  than 25 items. Consider wh.exact=FALSE for less than 25
-  items.
+The Wilson-Hilferty transformation is biased for less than
+25 items. Consider wh.exact=FALSE for less than 25 items.
 }
 \references{
-  Masters, G. N. & Wright, B. D. (1997). The Partial Credit
-  Model. In W. van der Linden & R. K. Kambleton (Eds.),
-  \emph{Handbook of modern item response theory} (pp.
-  101-121). Springer.
+Masters, G. N. & Wright, B. D. (1997). The Partial Credit
+Model. In W. van der Linden & R. K. Kambleton (Eds.),
+\emph{Handbook of modern item response theory} (pp.
+101-121). Springer.
 
-  Wilson, E. B., & Hilferty, M. M. (1931). The distribution
-  of chi-square. \emph{Proceedings of the National Academy
-  of Sciences of the United States of America,} 17,
-  684-688.
+Wilson, E. B., & Hilferty, M. M. (1931). The distribution
+of chi-square. \emph{Proceedings of the National Academy of
+Sciences of the United States of America,} 17, 684-688.
 
-  Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
-  Analysis.} Chicago: Mesa Press.
+Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
+Analysis.} Chicago: Mesa Press.
 }
 

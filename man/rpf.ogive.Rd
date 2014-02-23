@@ -2,44 +2,42 @@
 \name{rpf.ogive}
 \alias{rpf.ogive}
 \title{The ogive constant}
-\format{num 1.7}
+\format{\preformatted{ num 1.7
+}}
 \usage{
-  rpf.ogive
+rpf.ogive
 }
 \description{
-  The ogive constant can be multiplied by the
-  discrimination parameter to obtain a response curve very
-  similar to the Normal cumulative distribution function
-  (Haley, 1952; Molenaar, 1974). Recently, Savalei (2006)
-  proposed a new constant of 1.749 based on
-  Kullback-Leibler information.
+The ogive constant can be multiplied by the discrimination
+parameter to obtain a response curve very similar to the
+Normal cumulative distribution function (Haley, 1952;
+Molenaar, 1974). Recently, Savalei (2006) proposed a new
+constant of 1.749 based on Kullback-Leibler information.
 }
 \details{
-  In recent years, the logistic has grown in favor, and
-  therefore, this package does not offer any special
-  support for this transformation (Baker & Kim, 2004, pp.
-  14-18).
+In recent years, the logistic has grown in favor, and
+therefore, this package does not offer any special support
+for this transformation (Baker & Kim, 2004, pp. 14-18).
 }
 \references{
-  Camilli, G. (1994). Teacher's corner: Origin of the
-  scaling constant d=1.7 in Item Response Theory.
-  \emph{Journal of Educational and Behavioral Statistics,
-  19}(3), 293-295.
+Camilli, G. (1994). Teacher's corner: Origin of the scaling
+constant d=1.7 in Item Response Theory. \emph{Journal of
+Educational and Behavioral Statistics, 19}(3), 293-295.
 
-  Baker & Kim (2004). \emph{Item Response Theory: Parameter
-  Estimation Techniques.} Marcel Dekker, Inc.
+Baker & Kim (2004). \emph{Item Response Theory: Parameter
+Estimation Techniques.} Marcel Dekker, Inc.
 
-  Haley, D. C. (1952). \emph{Estimation of the dosage
-  mortality relationship when the dose is subject to error}
-  (Technical Report No. 15). Stanford University Applied
-  Mathematics and Statistics Laboratory, Stanford, CA.
+Haley, D. C. (1952). \emph{Estimation of the dosage
+mortality relationship when the dose is subject to error}
+(Technical Report No. 15). Stanford University Applied
+Mathematics and Statistics Laboratory, Stanford, CA.
 
-  Molenaar, W. (1974). De logistische en de normale kromme
-  [The logistic and the normal curve]. \emph{Nederlands
-  Tijdschrift voor de Psychologie} 29, 415-420.
+Molenaar, W. (1974). De logistische en de normale kromme
+[The logistic and the normal curve]. \emph{Nederlands
+Tijdschrift voor de Psychologie} 29, 415-420.
 
-  Savalei, V. (2006). Logistic approximation to the normal:
-  The KL rationale. \emph{Psychometrika, 71}(4), 763--767.
+Savalei, V. (2006). Logistic approximation to the normal:
+The KL rationale. \emph{Psychometrika, 71}(4), 763--767.
 }
 \keyword{datasets}
 

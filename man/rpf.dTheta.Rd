@@ -4,6 +4,9 @@
 \alias{rpf.dTheta,rpf.base,numeric,numeric,numeric-method}
 \alias{rpf_dTheta_wrapper}
 \title{Item derivatives with respect to ability}
+\usage{
+rpf.dTheta(m, param, where, dir)
+}
 \arguments{
   \item{m}{item model}
 
@@ -14,7 +17,7 @@
   \item{dir}{if more than 1 factor, a basis vector]}
 }
 \description{
-  Evaluate the partial derivatives of the response
-  probability with respect to ability.
+Evaluate the partial derivatives of the response
+probability with respect to ability.
 }
 

@@ -3,7 +3,7 @@
 \alias{rpf.1dim.moment}
 \title{Calculate cell central moments}
 \usage{
-  rpf.1dim.moment(spec, params, scores, m)
+rpf.1dim.moment(spec, params, scores, m)
 }
 \arguments{
   \item{spec}{list of item models}
@@ -15,10 +15,10 @@
   \item{m}{which moment}
 }
 \value{
-  moment matrix
+moment matrix
 }
 \description{
-  Popular central moments include 2 (variance) and 4
-  (kurtosis).
+Popular central moments include 2 (variance) and 4
+(kurtosis).
 }
 

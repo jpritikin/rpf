@@ -2,8 +2,7 @@
 \alias{rpf.drm}
 \title{Create a dichotomous response model}
 \usage{
-  rpf.drm(factors = 1, multidimensional = TRUE,
-    poor = FALSE)
+rpf.drm(factors = 1, multidimensional = TRUE, poor = FALSE)
 }
 \arguments{
   \item{factors}{the number of factors}
@@ -16,26 +15,26 @@
   parameterization}
 }
 \value{
-  an item model
+an item model
 }
 \description{
-  For slope vector a, intercept c, pseudo-guessing
-  parameter g, upper bound u, and latent ability vector
-  theta, the response probability function is \deqn{\mathrm
-  P(\mathrm{pick}=0|a,c,g,u,\theta) = 1- \mathrm
-  P(\mathrm{pick}=1|a,c,g,u,\theta) }{P(pick=0|a,c,g,u,th)
-  = 1-P(pick=1|a,c,g,u,th)} \deqn{\mathrm
-  P(\mathrm{pick}=1|a,c,g,u,\theta) =
-  g+(u-g)\frac{1}{1+\exp(-(a\theta + c))}
-  }{P(pick=1|a,c,g,u,th) = g+(u-g)/(1+exp(-(a th + c)))}
+For slope vector a, intercept c, pseudo-guessing parameter
+g, upper bound u, and latent ability vector theta, the
+response probability function is \deqn{\mathrm
+P(\mathrm{pick}=0|a,c,g,u,\theta) = 1- \mathrm
+P(\mathrm{pick}=1|a,c,g,u,\theta) }{P(pick=0|a,c,g,u,th) =
+1-P(pick=1|a,c,g,u,th)} \deqn{\mathrm
+P(\mathrm{pick}=1|a,c,g,u,\theta) =
+g+(u-g)\frac{1}{1+\exp(-(a\theta + c))}
+}{P(pick=1|a,c,g,u,th) = g+(u-g)/(1+exp(-(a th + c)))}
 }
 \details{
-  For discussion on the choice of priors see Cai, Yang, and
-  Hansen (2011, p. 246).
+For discussion on the choice of priors see Cai, Yang, and
+Hansen (2011, p. 246).
 }
 \references{
-  Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
-  Full-Information Item Bifactor Analysis.
-  \emph{Psychological Methods, 16}(3), 221-248.
+Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
+Full-Information Item Bifactor Analysis.
+\emph{Psychological Methods, 16}(3), 221-248.
 }
 

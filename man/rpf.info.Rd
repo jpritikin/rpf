@@ -3,7 +3,7 @@
 \title{Map an item model, item parameters, and person trait score into a
 information vector}
 \usage{
-  rpf.info(ii, ii.p, where, basis = 1)
+rpf.info(ii, ii.p, where, basis = 1)
 }
 \arguments{
   \item{ii}{an item model}
@@ -16,11 +16,11 @@ information vector}
   vector}
 }
 \value{
-  Fisher information
+Fisher information
 }
 \description{
-  Map an item model, item parameters, and person trait
-  score into a information vector
+Map an item model, item parameters, and person trait score
+into a information vector
 }
 \examples{
 i1 <- rpf.drm()
@@ -29,8 +29,8 @@ theta <- seq(0,3,.05)
 plot(theta, rpf.info(i1, i1.p, t(theta)), type="l")
 }
 \references{
-  Dodd, B. G., De Ayala, R. J. & Koch, W. R. (1995).
-  Computerized adaptive testing with polytomous items.
-  \emph{Applied psychological measurement 19}(1), 5-22.
+Dodd, B. G., De Ayala, R. J. & Koch, W. R. (1995).
+Computerized adaptive testing with polytomous items.
+\emph{Applied psychological measurement 19}(1), 5-22.
 }
 

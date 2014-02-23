@@ -3,7 +3,7 @@
 \alias{rpf.1dim.stdresidual}
 \title{Calculate standardized residuals}
 \usage{
-  rpf.1dim.stdresidual(spec, params, responses, scores)
+rpf.1dim.stdresidual(spec, params, responses, scores)
 }
 \arguments{
   \item{spec}{list of item models}
@@ -15,9 +15,9 @@
   \item{scores}{model derived person scores}
 }
 \value{
-  standardized residuals
+standardized residuals
 }
 \description{
-  Calculate standardized residuals
+Calculate standardized residuals
 }
 

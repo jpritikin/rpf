@@ -72,18 +72,3 @@ test_that("nominal", {
                  c(rpf.logprob(spec[[1]], ii@par[c(1, 3:4, 6:7)], c(-1,0,1))))
   }
 })
-
-test_that("GPCM", {
-  spec[1:i.count] <- rpf.nrm(outcomes=3,
-                             T.a="trend",
-                             T.c=diag(2))
-
-  suppressWarnings(fit <- mirt(data, 1, rep('gpcm',i.count),
-                               verbose=FALSE, D=1, technical=list(NCYCLES=1)))
-  for (ix in 1:i.count) {
-    ii <- extract.item(fit, ix)
-    if (length(ii@par) < 4) next
-    expect_equal(c(t(probtrace(ii, c(-1,0,1)))),
-                 c(rpf.prob(spec[[1]], c(ii@par[1], 1,0, ii@par[3:4]), c(-1,0,1))))
-  }
-})

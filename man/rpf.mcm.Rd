@@ -2,7 +2,7 @@
 \alias{rpf.mcm}
 \title{Create a multiple-choice response model}
 \usage{
-  rpf.mcm(outcomes = 2, numChoices = 5, factors = 1)
+rpf.mcm(outcomes = 2, numChoices = 5, factors = 1)
 }
 \arguments{
   \item{outcomes}{the number of possible outcomes}
@@ -12,16 +12,16 @@
   \item{factors}{the number of factors}
 }
 \value{
-  an item model
+an item model
 }
 \description{
-  WARNING: This model is mostly not implemented.
+WARNING: This model is mostly not implemented.
 }
 \details{
-  This function instantiates a multiple-choice response
-  model.
+This function instantiates a multiple-choice response
+model.
 }
 \author{
-  Jonathan Weeks <weeksjp@gmail.com>
+Jonathan Weeks <weeksjp@gmail.com>
 }
 

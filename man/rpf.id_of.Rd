@@ -2,15 +2,15 @@
 \alias{rpf.id_of}
 \title{Convert an IRT item model name to an ID}
 \usage{
-  rpf.id_of(name)
+rpf.id_of(name)
 }
 \arguments{
   \item{name}{name of the item model (string)}
 }
 \value{
-  the integer ID assigned to the given model
+the integer ID assigned to the given model
 }
 \description{
-  This is an internal function and should not be used.
+This is an internal function and should not be used.
 }
 

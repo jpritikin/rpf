@@ -8,14 +8,17 @@
 \alias{rpf.rparam,rpf.mdim.mcm-method}
 \alias{rpf.rparam,rpf.mdim.nrm-method}
 \title{Generates item parameters}
+\usage{
+rpf.rparam(m)
+}
 \arguments{
   \item{m}{an item model}
 }
 \value{
-  item parameters
+item parameters
 }
 \description{
-  This function generates random item parameters.
+This function generates random item parameters.
 }
 \examples{
 i1 <- rpf.drm()

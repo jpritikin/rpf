@@ -1,21 +1,24 @@
 \docType{methods}
 \name{rpf.prob}
 \alias{rpf.prob}
-\alias{rpf.prob,rpf.1dim.grm,numeric,numeric-method}
 \alias{rpf.prob,rpf.1dim,numeric,matrix-method}
 \alias{rpf.prob,rpf.1dim,numeric,numeric-method}
+\alias{rpf.prob,rpf.1dim.grm,numeric,numeric-method}
 \alias{rpf.prob,rpf.base,data.frame,numeric-method}
 \alias{rpf.prob,rpf.base,matrix,matrix-method}
 \alias{rpf.prob,rpf.base,matrix,numeric-method}
+\alias{rpf.prob,rpf.mdim,numeric,matrix-method}
+\alias{rpf.prob,rpf.mdim,numeric,numeric-method}
 \alias{rpf.prob,rpf.mdim.grm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.grm,numeric,numeric-method}
 \alias{rpf.prob,rpf.mdim.mcm,numeric,matrix-method}
 \alias{rpf.prob,rpf.mdim.nrm,numeric,matrix-method}
-\alias{rpf.prob,rpf.mdim,numeric,matrix-method}
-\alias{rpf.prob,rpf.mdim,numeric,numeric-method}
 \alias{rpf_prob_wrapper}
 \title{Map an item model, item parameters, and person trait score into a
 probability vector}
+\usage{
+rpf.prob(m, param, theta)
+}
 \arguments{
   \item{m}{an item model}
 
@@ -24,15 +27,15 @@ probability vector}
   \item{theta}{the trait score(s)}
 }
 \value{
-  a vector of probabilities. For dichotomous items,
-  probabilities are returned in the order incorrect,
-  correct. Although redundent, both incorrect and correct
-  probabilities are returned in the dichotomous case for
-  API consistency with polytomous item models.
+a vector of probabilities. For dichotomous items,
+probabilities are returned in the order incorrect, correct.
+Although redundent, both incorrect and correct
+probabilities are returned in the dichotomous case for API
+consistency with polytomous item models.
 }
 \description{
-  Map an item model, item parameters, and person trait
-  score into a probability vector
+Map an item model, item parameters, and person trait score
+into a probability vector
 }
 \examples{
 i1 <- rpf.drm()

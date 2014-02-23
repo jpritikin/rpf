@@ -2,7 +2,7 @@
 \alias{rpf.mean.info}
 \title{Find the point where an item provides mean maximum information}
 \usage{
-  rpf.mean.info(spec, param, grain = 0.1)
+rpf.mean.info(spec, param, grain = 0.1)
 }
 \arguments{
   \item{spec}{list of item specs}
@@ -13,10 +13,9 @@
   (optional)}
 }
 \description{
-  This is a point estimate of the mean difficulty of items
-  that do not offer easily interpretable parameters such as
-  the Generalized PCM. Since the information curve may not
-  be unimodal, this function integrates across the latent
-  space.
+This is a point estimate of the mean difficulty of items
+that do not offer easily interpretable parameters such as
+the Generalized PCM. Since the information curve may not be
+unimodal, this function integrates across the latent space.
 }
 
