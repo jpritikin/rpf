@@ -50,7 +50,7 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.drm"),
             n <- 1
             c(a=rlnorm(n, meanlog=0, sdlog=.5),
               b=rnorm(n),
-              c=rbeta(1, 5,17),
+              g=rbeta(1, 5,17),
               u=rbeta(1, 17,5))
           })
 
@@ -61,12 +61,14 @@ setMethod("rpf.modify", signature(m="rpf.mdim.drm", factors="numeric"),
               rpf.drm(factors)
           })
 
+logit <- function(prob) log(prob/(1-prob))
+
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
           function(m) {
             c(a=rlnorm(m@factors, meanlog=0, sdlog=.5),
               b=rnorm(1),
-              c=rbeta(1, 5,17),
-              u=rbeta(1, 17,5))
+              g=logit(rbeta(1, 5,17)),
+              u=logit(rbeta(1, 17,5)))
           })
 
 # Not sure if this is correct because of rotation

@@ -5,7 +5,7 @@ context("extremes")
 
 test_that("param info", {
   ans1 <- structure(list(1L, NA_real_, 1e-06, 1L, NA_real_, 1e-06, 2L,
-                         NA_real_, NA_real_, 3L, 0.999999, 1e-06, 3L, 0.999999, 1e-06),
+                         NA_real_, NA_real_, 3L, NA_real_, NA_real_, 3L, NA_real_,      NA_real_),
                     .Dim = c(3L,  5L), .Dimnames = list(c("type", "upper", "lower"), NULL))
   expect_identical(rpf.paramInfo(rpf.drm(factors=2)), ans1)
   
@@ -27,10 +27,10 @@ param <- list()
 # repair the poor version of drm TODO
 #spec [[length(spec) +1]] <- rpf.drm(poor=TRUE)
 #param[[length(param)+1]] <- c(1, 0, 0)
-spec [[length(spec) +1]] <- rpf.drm(multidimensional=TRUE)
-param[[length(param)+1]] <- c(1, 0, .05, .95)
+spec [[length(spec) +1]] <- rpf.drm()
+param[[length(param)+1]] <- c(1, 0, logit(.05), logit(.95))
 
-spec [[length(spec) +1]] <- rpf.grm(3, multidimensional=TRUE)
+spec [[length(spec) +1]] <- rpf.grm(3)
 param[[length(param)+1]] <- c(1, 1, -1)
 
 spec [[length(spec) +1]] <- rpf.nrm(3)
