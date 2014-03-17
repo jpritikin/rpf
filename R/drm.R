@@ -7,6 +7,9 @@
 ##' }{P(pick=0|a,c,g,u,th) = 1-P(pick=1|a,c,g,u,th)}
 ##' \deqn{\mathrm P(\mathrm{pick}=1|a,c,g,u,\theta) = g+(u-g)\frac{1}{1+\exp(-(a\theta + c))}
 ##' }{P(pick=1|a,c,g,u,th) = g+(u-g)/(1+exp(-(a th + c)))}
+##'
+##' The pseudo-guessing and upper bound parameter are specified in
+##' logit units (see \code{\link{logit}}.
 ##' 
 ##' For discussion on the choice of priors see Cai, Yang, and
 ##' Hansen (2011, p. 246).
@@ -61,6 +64,16 @@ setMethod("rpf.modify", signature(m="rpf.mdim.drm", factors="numeric"),
               rpf.drm(factors)
           })
 
+##' Transform from [0,1] to the reals
+##'
+##' The logit function is a standard transformation from [0,1] (such
+##' as a probability) to the real number line.
+##'
+##' @param prob a number between 0 and 1
+##' @examples
+##' logit(.5)  # 0
+##' logit(.25) # -1.098
+##' logit(0)   # -Inf
 logit <- function(prob) log(prob/(1-prob))
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
