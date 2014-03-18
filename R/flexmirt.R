@@ -67,7 +67,7 @@ read.flexmirt <- function(fname) {
           a <- thisGroup[i,9]
 
           spec <- rpf.drm(multidimensional=TRUE)
-          param <- c(a, c, 1/(1+exp(-logitg)))
+          param <- c(a, c, logitg)
         }
         if (thisGroup[i,5] == 2) { # graded
           # grab item parameters
@@ -220,7 +220,7 @@ write.flexmirt <- function(groups, file=NULL, fileEncoding="") {
           cat(paste(1, name, gx, nfact, 2, 2, iparam[2], iparam[1], sep="\t"),
               file=file, fill=TRUE)
         } else {
-          logitg <- log(iparam[3]/(1-iparam[3]))
+          logitg <- iparam[3]
           cat(paste(1, name, gx, nfact, 1, 2, logitg, iparam[2], iparam[1], sep="\t"),
               file=file, fill=TRUE)
         }

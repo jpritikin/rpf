@@ -11,7 +11,7 @@ test_that("kct", {
   colnames(responses) <- kct.items$NAME
 
   scores <- kct.people$MEASURE
-  params <- cbind(1, kct.items$MEASURE, 0, 1)
+  params <- cbind(1, kct.items$MEASURE, logit(0), logit(1))
   rownames(params) <- kct.items$NAME
   items<-list()
   items[1:18] <- rpf.drm()
@@ -83,13 +83,14 @@ test_that("mirt", {
   data <- simdata(a,d, 1000, rep('dich', 20))
   data <- data[-c(446, 455, 538, 616, 630, 687, 882, 894, 923),]  # exclude min or max responses
   raschfit <- mirt(data, 1, itemtype='Rasch', D=1, verbose=FALSE)
-  coef(raschfit)  # item parameters
+  # coef(raschfit)  # item parameters
   mirt.fit <- itemfit(raschfit)
   scores.full <- fscores(raschfit, full.scores=TRUE)
 
   spec <- list()
   spec[1:20] <- rpf.drm()
   params <- simplify2array(coef(raschfit)[1:20])[1,,]
+  params[c('g', 'u'),] <- logit(params[c('g','u'),])
   scores <- scores.full[,'F1']
   data.f <- as.data.frame(lapply(as.data.frame(data), ordered))
   fit <- rpf.1dim.fit(spec, params, data.f, scores, 2, wh.exact=TRUE)

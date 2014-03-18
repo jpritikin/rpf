@@ -86,7 +86,7 @@ rpf_paramInfo_wrapper(SEXP r_spec, SEXP r_paramNum)
   int numParam = (*librpf_model[id].numParam)(spec);
   if (pnum < 0 || pnum >= numParam) error("Item model %d has %d parameters", id, numParam);
 
-  int type;
+  const char *type;
   double upper, lower;
   (*librpf_model[id].paramInfo)(spec, pnum, &type, &upper, &lower);
 
@@ -96,7 +96,7 @@ rpf_paramInfo_wrapper(SEXP r_spec, SEXP r_paramNum)
   PROTECT(ans = allocVector(VECSXP, len));
   int lx = 0;
   SET_STRING_ELT(names, lx, mkChar("type"));
-  SET_VECTOR_ELT(ans,   lx, ScalarInteger(type));
+  SET_VECTOR_ELT(ans,   lx, ScalarString(mkChar(type)));
   SET_STRING_ELT(names, ++lx, mkChar("upper"));
   SET_VECTOR_ELT(ans,   lx, ScalarReal(isfinite(upper)? upper : NA_REAL));
   SET_STRING_ELT(names, ++lx, mkChar("lower"));
@@ -407,7 +407,7 @@ static R_CallMethodDef flist[] = {
 static void
 get_librpf_models(int *version, int *numModels, const struct rpf **model)
 {
-  *version = 8;
+  *version = 10;
   *numModels = librpf_numModels;
   *model = librpf_model;
 }
