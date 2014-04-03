@@ -86,7 +86,7 @@ test_that("uneven 2d design", {
   }
 
   maxParam <- max(vapply(items, rpf.numParam, 0))
-  maxOutcomes <- max(vapply(items, function(i) i@outcomes, 0))
+  maxOutcomes <- max(vapply(items, function(i) i$outcomes, 0))
 
   design <- matrix(c(1, 1,1,1,2,
                      NA,2,2,2,1), byrow=TRUE, nrow=2)

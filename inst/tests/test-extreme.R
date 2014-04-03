@@ -60,7 +60,7 @@ for (ix in 1:length(spec)) {
         expect_equal(sum(exp(v)), 1)
       }
     }
-    w <- rchisq(ispec@outcomes, df=6)
+    w <- rchisq(ispec$outcomes, df=6)
     for (wh in where) rpf.dLL(ispec, iparam, wh, w)
   })
 }
