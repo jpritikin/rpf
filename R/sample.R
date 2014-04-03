@@ -124,7 +124,7 @@ rpf.sample <- function(theta, items, params, design, prefix="i",
     attr(ret1, 'mxFactor') <- TRUE  # for OpenMx
     ret[[ix]] <- ret1
   }
-  ret <- as.data.frame(ret)
+  ret <- as.data.frame(ret, optional=TRUE)
   name <- colnames(params)
   if (is.null(name)) name <- names(items)
   if (is.null(name)) name <- paste(prefix,1:numItems,sep="")

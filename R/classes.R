@@ -53,12 +53,28 @@ NULL
 ##' @name Class rpf.base
 ##' @rdname rpf.base-class
 ##' @aliases rpf.base-class
+##' $,rpf.base-method
+##' $<-,rpf.base-method
 ##' @export
 setClass("rpf.base",
          representation(spec="numeric",
                         outcomes="numeric",
                         factors="numeric",
                         "VIRTUAL"))
+
+imxExtractSlot <- function(x, name) {
+	if (!.hasSlot(x, name)) {
+		return(NULL)
+	} else {
+		return(slot(x, name))
+	}
+}
+
+setMethod("$", "rpf.base", imxExtractSlot)
+
+setReplaceMethod("$", "rpf.base", function(x, name, value) {
+    stop("Slots are read-only")
+})
 
 ##' The base class for 1 dimensional response probability functions.
 ##' @name Class rpf.1dim

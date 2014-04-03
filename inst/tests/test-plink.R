@@ -47,7 +47,7 @@ test_that("3PL ICC", {
 ##   i2 <- rpf.gpcm(outcomes=3)
 ##   i2.p <- rpf.rparam(i2)
 ##   checkDim(i2,i2.p)
-##   expect_equivalent(t(gpcm(t(i2.p), i2@outcomes, theta)@prob[,-1]),
+##   expect_equivalent(t(gpcm(t(i2.p), i2$outcomes, theta)@prob[,-1]),
 ##                     rpf.prob(i2, i2.p, theta),
 ##                     "GPCM")
 
