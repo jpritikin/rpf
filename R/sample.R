@@ -17,11 +17,13 @@
 ##' @param params a list or matrix of item parameters. If omitted, random item
 ##' parameters are generated for each item model.
 ##' @param design a matrix assigning person abilities to item factors
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param prefix Column names are taken from param or items.
 ##' If no column names are available, some will be generated using
 ##' the given prefix.
 ##' @param mean mean vector of latent distribution (optional)
 ##' @param cov covariance matrix of latent distribution (optional)
+##' @param mcar proportion of generated data to set to NA (missing completely at random)
 ##' @return Returns a data frame of response patterns
 ##' @export
 ##' @examples
@@ -54,8 +56,14 @@
 ##' @references
 ##' Cai, L. (2010). A two-tier full-information item factor analysis
 ##' model with applications. \emph{Psychometrika, 75}, 581-612.
-rpf.sample <- function(theta, items, params, design, prefix="i",
-                       mean=NULL, cov=NULL) {
+rpf.sample <- function(theta, items, params, design, ..., prefix="i",
+                       mean=NULL, cov=NULL, mcar=0.0)
+{
+    garbageArguments <- list(...)
+    if (length(garbageArguments) > 0) {
+        stop("rpf.sample does not accept values for the '...' argument")
+    }
+
   numItems <- length(items)
   maxDim <- max(vapply(items, function(i) i@factors, 0))
   if (missing(design)) {
@@ -129,5 +137,12 @@ rpf.sample <- function(theta, items, params, design, prefix="i",
   if (is.null(name)) name <- names(items)
   if (is.null(name)) name <- paste(prefix,1:numItems,sep="")
   colnames(ret) <- name
+  if (mcar > 0) {
+      size <- prod(dim(ret))
+      mask <- rep(FALSE, size)
+      mask[sample.int(size, size * mcar)] <- TRUE
+      shaped.mask <- array(mask, dim=dim(ret))
+      ret[shaped.mask] <- NA
+  }
   return(ret)
 }
