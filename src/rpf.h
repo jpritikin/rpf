@@ -1,3 +1,19 @@
+// All source files should include this single header file. The idea here
+// is to make it easy to switch to using precompiled headers. Currently,
+// the full compile is fast enough that I haven't bothered.
+
+#ifdef EIGEN_WORLD_VERSION
+#error "rpf.h must be included before Eigen"
+#endif
+
+#define EIGEN_NO_DEBUG 1
+#define EIGEN_DONT_PARALLELIZE
+
+#ifdef DEBUG
+#define EIGEN_INITIALIZE_MATRICES_BY_NAN
+#undef EIGEN_NO_DEBUG
+#endif
+
 #define R_NO_REMAP
 #include <R.h>
 #include <Rinternals.h>
@@ -5,9 +21,41 @@
 #include <R_ext/Rdynload.h>
 #include <R_ext/BLAS.h>
 #include <R_ext/Lapack.h>
+#include <vector>
+#include "Eigen/Core"
 #include "../inst/include/libifa-rpf.h"
 #include "dmvnorm.h"
 #include "ba81quad.h"
+
+class omxManageProtectInsanity {
+	PROTECT_INDEX initialpix;
+ public:
+	omxManageProtectInsanity() {
+		PROTECT_WITH_INDEX(R_NilValue, &initialpix);
+		UNPROTECT(1);
+	}
+	PROTECT_INDEX getDepth() {
+		PROTECT_INDEX pix;
+		PROTECT_WITH_INDEX(R_NilValue, &pix);
+		PROTECT_INDEX diff = pix - initialpix;
+		UNPROTECT(1);
+		return diff;
+	}
+	~omxManageProtectInsanity() {
+		UNPROTECT(getDepth());
+	}
+};
+
+typedef std::vector< std::pair<const char *, SEXP> > MxRListBase;
+class MxRList : private MxRListBase {
+ public:
+	size_t size() const { return MxRListBase::size(); }
+	SEXP asR();
+	void add(const char *key, SEXP val) {
+		Rf_protect(val);
+		push_back(std::make_pair(key, val));
+	};
+};
 
 void getMatrixDims(SEXP r_theta, int *rows, int *cols);
 SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observed, SEXP r_quad);

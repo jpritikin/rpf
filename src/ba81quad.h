@@ -18,9 +18,6 @@
 #ifndef _BA81QUAD_H_
 #define _BA81QUAD_H_
 
-#include <vector>
-#include "Eigen/Core"
-
 class ba81NormalQuad {
  private:
 	void pointToWhere(const int *quad, double *where, int upto);
