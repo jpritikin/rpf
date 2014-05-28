@@ -2,7 +2,7 @@
 
 static void
 decodeLocation(long qx, const int dims, const int gridsize,
-	       const double *restrict pts, double *restrict out)
+	       const double *pts, double *out)
 {
   for (int dx=0; dx < dims; dx++) {
     out[dx] = pts[qx % gridsize];
@@ -69,7 +69,7 @@ static int kang_chen_2007_collapse1(int rows, int cols, int *observed, double *e
 	  bigcol = smallcol+1;
 	}
       }
-      if (bigcol==-1) error("Confused");
+      if (bigcol==-1) Rf_error("Confused");
       //Rprintf("collapse col %d to %d on row %d\n", smallcol, bigcol, rx);
       expected[bigcol*rows + rx] += expected[smallcol*rows + rx];
       observed[bigcol*rows + rx] += observed[smallcol*rows + rx];
@@ -127,7 +127,7 @@ static int kang_chen_2007_collapse(int rows, int cols, int *observed, double *ex
       double cell = expected[cx * rows + rx];
       if (cell != 0 && cell <= KANG_CHEN_MIN_EXPECTED) {
 	pda(expected, rows, cols);
-	error("Failed to collapse cells");
+	Rf_error("Failed to collapse cells");
       }
     }
   }
@@ -143,12 +143,12 @@ SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
     int orows, ocols;
     getMatrixDims(r_observed_orig, &orows, &ocols);
     if (rows != orows || cols != ocols)
-      error("Observed and expected matrices must have same dimensions");
+      Rf_error("Observed and expected matrices must have same dimensions");
   }
 
   SEXP r_observed, r_expected;
-  PROTECT(r_observed = allocMatrix(INTSXP, rows, cols));
-  PROTECT(r_expected = allocMatrix(REALSXP, rows, cols));
+  Rf_protect(r_observed = Rf_allocMatrix(INTSXP, rows, cols));
+  Rf_protect(r_expected = Rf_allocMatrix(REALSXP, rows, cols));
 
   int *observed = INTEGER(r_observed);
   double *expected = REAL(r_expected);
@@ -159,19 +159,19 @@ SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
 
   const int returnCount = 3;
   SEXP names, ans;
-  PROTECT(names = allocVector(STRSXP, returnCount));
-  PROTECT(ans = allocVector(VECSXP, returnCount));
+  Rf_protect(names = Rf_allocVector(STRSXP, returnCount));
+  Rf_protect(ans = Rf_allocVector(VECSXP, returnCount));
 
   int ansC = -1;
-  SET_STRING_ELT(names, ++ansC, mkChar("observed"));
+  SET_STRING_ELT(names, ++ansC, Rf_mkChar("observed"));
   SET_VECTOR_ELT(ans,   ansC, r_observed);
-  SET_STRING_ELT(names, ++ansC, mkChar("expected"));
+  SET_STRING_ELT(names, ++ansC, Rf_mkChar("expected"));
   SET_VECTOR_ELT(ans,   ansC, r_expected);
-  SET_STRING_ELT(names, ++ansC, mkChar("collapsed"));
-  SET_VECTOR_ELT(ans,   ansC, ScalarInteger(collapsed));
-  if (ansC != returnCount-1) error("Memory corruption");
+  SET_STRING_ELT(names, ++ansC, Rf_mkChar("collapsed"));
+  SET_VECTOR_ELT(ans,   ansC, Rf_ScalarInteger(collapsed));
+  if (ansC != returnCount-1) Rf_error("Memory corruption");
 
-  namesgets(ans, names);
+  Rf_namesgets(ans, names);
   UNPROTECT(4);
 
   return ans;
@@ -181,13 +181,13 @@ static const int CRAZY_VERSION = 0;  // remove TODO
 
 SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observed_orig, SEXP r_quad)
 {
-  int numSpec = length(r_spec);
-  if (numSpec < 2) error("At least 2 items are needed");
+  int numSpec = Rf_length(r_spec);
+  if (numSpec < 2) Rf_error("At least 2 items are needed");
   int maxParam;
   int numItems;
   getMatrixDims(r_param, &maxParam, &numItems);
   if (numItems != numSpec) {
-    error("Number of items %d and item specifications %d need to match", numItems, numSpec);
+    Rf_error("Number of items %d and item specifications %d need to match", numItems, numSpec);
   }
 
   double *spec[numItems];
@@ -195,9 +195,9 @@ SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observe
   int maxDims = 1;
   int maxCorrect = 0;
   int nextContext = 0;
-  int interest = asInteger(r_item) - 1;
+  int interest = Rf_asInteger(r_item) - 1;
   if (interest < 0 || interest >= numSpec) {
-    error("Item of interest %d must be between 1 and %d", interest+1, numSpec);
+    Rf_error("Item of interest %d must be between 1 and %d", interest+1, numSpec);
   }
   for (int sx=0; sx < numSpec; sx++) {
     spec[sx] = REAL(VECTOR_ELT(r_spec, sx));
@@ -211,7 +211,7 @@ SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observe
   contextMap[nextContext] = interest; // remove TODO
 
   double *param = REAL(r_param);
-  int quad_size = length(VECTOR_ELT(r_quad, 0));
+  int quad_size = Rf_length(VECTOR_ELT(r_quad, 0));
   double *quad_pts = REAL(VECTOR_ELT(r_quad, 0));
   double *quad_area = REAL(VECTOR_ELT(r_quad, 1));
   int totalQuadOrdinate = 1;
@@ -290,7 +290,7 @@ SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observe
   }
 
   SEXP r_expected_orig;
-  PROTECT(r_expected_orig = allocMatrix(REALSXP, outRows, curOutcomes));
+  Rf_protect(r_expected_orig = Rf_allocMatrix(REALSXP, outRows, curOutcomes));
   double *expected_orig = REAL(r_expected_orig);
   memset(expected_orig, 0, sizeof(double) * outRows * curOutcomes);
 
@@ -326,11 +326,11 @@ SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observe
   int ob_cols;
   getMatrixDims(r_observed_orig, &ob_rows, &ob_cols);
   if (ob_rows != outRows) {
-    PrintValue(r_observed_orig);
+    Rf_PrintValue(r_observed_orig);
     pda(expected_orig, outRows, curOutcomes);
-    error("Mismatch between observed rows %d and expected rows %d", ob_rows, outRows);
+    Rf_error("Mismatch between observed rows %d and expected rows %d", ob_rows, outRows);
   }
-  if (ob_cols != curOutcomes) error("Mismatch between observed cols %d and expected cols %d", ob_cols, curOutcomes);
+  if (ob_cols != curOutcomes) Rf_error("Mismatch between observed cols %d and expected cols %d", ob_cols, curOutcomes);
   int *observed_orig = INTEGER(r_observed_orig);
 
   for (int rx=0; rx < outRows; rx++) {
@@ -350,19 +350,19 @@ SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observe
 
   const int returnCount = 3;
   SEXP names, ans;
-  PROTECT(names = allocVector(STRSXP, returnCount));
-  PROTECT(ans = allocVector(VECSXP, returnCount));
+  Rf_protect(names = Rf_allocVector(STRSXP, returnCount));
+  Rf_protect(ans = Rf_allocVector(VECSXP, returnCount));
 
   int ansC = -1;
-  SET_STRING_ELT(names, ++ansC, mkChar("observed"));
+  SET_STRING_ELT(names, ++ansC, Rf_mkChar("observed"));
   SET_VECTOR_ELT(ans,   ansC, r_observed_orig);
-  SET_STRING_ELT(names, ++ansC, mkChar("expected"));
+  SET_STRING_ELT(names, ++ansC, Rf_mkChar("expected"));
   SET_VECTOR_ELT(ans,   ansC, r_expected_orig);
-  SET_STRING_ELT(names, ++ansC, mkChar("df"));
-  SET_VECTOR_ELT(ans,   ansC, ScalarInteger(df));
-  if (ansC != returnCount-1) error("Memory corruption");
+  SET_STRING_ELT(names, ++ansC, Rf_mkChar("df"));
+  SET_VECTOR_ELT(ans,   ansC, Rf_ScalarInteger(df));
+  if (ansC != returnCount-1) Rf_error("Memory corruption");
 
-  namesgets(ans, names);
+  Rf_namesgets(ans, names);
   UNPROTECT(3);
 
   return ans;
@@ -370,37 +370,36 @@ SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observe
 
 SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes)
 {
-  if (!isInteger(r_data)) error("Data must be of integer type");
-
-  int data_rows;
-  int data_cols;
-  getMatrixDims(r_data, &data_rows, &data_cols);
+  int data_rows = Rf_length(VECTOR_ELT(r_data, 0));
+  int data_cols = Rf_length(r_data);
 
   int low = data_cols-1;
-  if (low < 1) error("At least 2 columns of data are required");
-  int interest = asInteger(r_interest);
-  int outcomes = asInteger(r_outcomes);
-  int high = asInteger(r_high) - outcomes;
+  if (low < 1) Rf_error("At least 2 columns of data are required");
+  int interest = Rf_asInteger(r_interest);
+  int outcomes = Rf_asInteger(r_outcomes);
+  int high = Rf_asInteger(r_high) - outcomes;
 
   if (interest < 1 || interest > data_cols)
-    error("Interest %d must be between 1 and %d", interest, data_cols);
+    Rf_error("Interest %d must be between 1 and %d", interest, data_cols);
 
   int rows = high-low+1;
   SEXP r_ans;
-  PROTECT(r_ans = allocMatrix(INTSXP, rows, outcomes));
+  Rf_protect(r_ans = Rf_allocMatrix(INTSXP, rows, outcomes));
   int *ans = INTEGER(r_ans);
   memset(ans, 0, sizeof(int) * rows * outcomes);
 
-  int *iresp = INTEGER(r_data) + (interest-1) * data_rows;
+  int *iresp = INTEGER(VECTOR_ELT(r_data, interest-1));
 
   for (int rx=0; rx < data_rows; rx++) {
     int sum=0;
     for (int cx=0; cx < data_cols; cx++) {
       if (cx+1 == interest) continue;
-      int *resp = INTEGER(r_data) + cx * data_rows;
+      int *resp = INTEGER(VECTOR_ELT(r_data, cx));
       sum += resp[rx];
     }
-    ans[(iresp[rx]-1) * rows + sum - low] += 1;
+    int pick = iresp[rx];
+    if (pick == NA_INTEGER) Rf_error("Cannot deal with missing data yet");
+    ans[(pick-1) * rows + sum - low] += 1;
   }
 
   UNPROTECT(1);
@@ -436,7 +435,7 @@ SEXP gamma_cor(SEXP r_mat)
   int cols;
   getMatrixDims(r_mat, &rows, &cols);
   SEXP realmat;
-  PROTECT(realmat = coerceVector(r_mat, REALSXP));
+  Rf_protect(realmat = Rf_coerceVector(r_mat, REALSXP));
   double *mat = REAL(realmat);
 
   double concord = 0;
@@ -456,5 +455,5 @@ SEXP gamma_cor(SEXP r_mat)
   UNPROTECT(1);
 
   double gamma = (concord - discord) / (concord + discord);
-  return ScalarReal(gamma);
+  return Rf_ScalarReal(gamma);
 }
