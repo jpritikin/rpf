@@ -36,8 +36,8 @@ static const double SMALLEST_PROB = 6.305116760146989222002e-16;  // exp(-35), n
 
 static void
 irt_rpf_logprob_adapter(const double *spec,
-			const double *restrict param, const double *restrict th,
-			double *restrict out)
+			const double *param, const double *th,
+			double *out)
 {
   (*librpf_model[(int) spec[RPF_ISpecID]].prob)(spec, param, th, out);
 
@@ -80,8 +80,8 @@ irt_rpf_1dim_drm_numParam(const double *spec)
 
 static void
 irt_rpf_1dim_drm_prob(const double *spec,
-		      const double *restrict param, const double *restrict th,
-		      double *restrict out)
+		      const double *param, const double *th,
+		      double *out)
 {
   double guessing = param[2];
   double upper = param[3];
@@ -104,8 +104,8 @@ set_deriv_nan(const double *spec, double *out)
 }
 
 static void
-irt_rpf_1dim_drm_rescale(const double *spec, double *restrict param, const int *paramMask,
-			 const double *restrict mean, const double *restrict cov)
+irt_rpf_1dim_drm_rescale(const double *spec, double *param, const int *paramMask,
+			 const double *mean, const double *cov)
 {
   double thresh = param[1] * -param[0];
   if (paramMask[0] >= 0) {
@@ -145,8 +145,8 @@ irt_rpf_mdim_drm_paramInfo(const double *spec, const int param,
 
 static void
 irt_rpf_mdim_drm_prob(const double *spec,
-		      const double *restrict param, const double *restrict th,
-		      double *restrict out)
+		      const double *param, const double *th,
+		      double *out)
 {
   int numDims = spec[RPF_ISpecDims];
   double dprod = dotprod(param, th, numDims);
@@ -163,8 +163,8 @@ irt_rpf_mdim_drm_prob(const double *spec,
 
 static void
 irt_rpf_mdim_drm_prob2(const double *spec,
-		       const double *restrict param, const double *restrict th,
-		       double *restrict out1, double *restrict out2)
+		       const double *param, const double *th,
+		       double *out1, double *out2)
 {
   int numDims = spec[RPF_ISpecDims];
   double dprod = dotprod(param, th, numDims);
@@ -184,7 +184,7 @@ irt_rpf_mdim_drm_prob2(const double *spec,
 
 static void
 irt_rpf_mdim_drm_deriv1(const double *spec,
-		       const double *restrict param,
+		       const double *param,
 		       const double *where,
 		       const double *weight, double *out)
 {
@@ -283,7 +283,7 @@ irt_rpf_mdim_drm_deriv1(const double *spec,
 
 static void
 irt_rpf_mdim_drm_deriv2(const double *spec,
-			const double *restrict param,
+			const double *param,
 			double *out)
 {
   int numDims = spec[RPF_ISpecDims];
@@ -306,8 +306,8 @@ irt_rpf_mdim_drm_deriv2(const double *spec,
 }
 
 static void
-irt_rpf_mdim_drm_rescale(const double *spec, double *restrict param, const int *paramMask,
-			 const double *restrict mean, const double *restrict cov)
+irt_rpf_mdim_drm_rescale(const double *spec, double *param, const int *paramMask,
+			 const double *mean, const double *cov)
 {
   int numDims = spec[RPF_ISpecDims];
 
@@ -322,7 +322,7 @@ irt_rpf_mdim_drm_rescale(const double *spec, double *restrict param, const int *
 }
 
 static void
-irt_rpf_mdim_drm_dTheta(const double *spec, const double *restrict param,
+irt_rpf_mdim_drm_dTheta(const double *spec, const double *param,
 			const double *where, const double *dir,
 			double *grad, double *hess)
 {
@@ -347,7 +347,7 @@ irt_rpf_mdim_drm_dTheta(const double *spec, const double *restrict param,
 }
 
 static void
-irt_rpf_1dim_drm_dTheta(const double *spec, const double *restrict param,
+irt_rpf_1dim_drm_dTheta(const double *spec, const double *param,
 			const double *where, const double *dir,
 			double *grad, double *hess)
 {
@@ -408,8 +408,8 @@ static void _grm_fix_crazy_stuff(const double *spec, const int numOutcomes, doub
 
 static void
 irt_rpf_mdim_grm_prob(const double *spec,
-		      const double *restrict param, const double *restrict th,
-		      double *restrict out)
+		      const double *param, const double *th,
+		      double *out)
 {
   const int numDims = spec[RPF_ISpecDims];
   const int numOutcomes = spec[RPF_ISpecOutcomes];
@@ -443,8 +443,8 @@ irt_rpf_mdim_grm_prob(const double *spec,
 
 static void
 irt_rpf_mdim_grm_rawprob(const double *spec,
-			 const double *restrict param, const double *restrict th,
-			 double *restrict out)
+			 const double *param, const double *th,
+			 double *out)
 {
   int numDims = spec[RPF_ISpecDims];
   const int numOutcomes = spec[RPF_ISpecOutcomes];
@@ -465,7 +465,7 @@ irt_rpf_mdim_grm_rawprob(const double *spec,
 // Compare with Cai (2010, p. 54) Appendix B
 static void
 irt_rpf_mdim_grm_deriv1(const double *spec,
-			const double *restrict param,
+			const double *param,
 			const double *where,
 			const double *weight, double *out)
 {
@@ -537,7 +537,7 @@ irt_rpf_mdim_grm_deriv1(const double *spec,
 
 static void
 irt_rpf_mdim_grm_deriv2(const double *spec,
-			const double *restrict param,
+			const double *param,
 			double *out)
 {
   int nfact = spec[RPF_ISpecDims];
@@ -558,7 +558,7 @@ irt_rpf_mdim_grm_deriv2(const double *spec,
 }
 
 static void
-irt_rpf_mdim_grm_dTheta(const double *spec, const double *restrict param,
+irt_rpf_mdim_grm_dTheta(const double *spec, const double *param,
 			const double *where, const double *dir,
 			double *grad, double *hess)
 {
@@ -581,8 +581,8 @@ irt_rpf_mdim_grm_dTheta(const double *spec, const double *restrict param,
 }
 
 static void
-irt_rpf_mdim_grm_rescale(const double *spec, double *restrict param, const int *paramMask,
-			 const double *restrict mean, const double *restrict cov)
+irt_rpf_mdim_grm_rescale(const double *spec, double *param, const int *paramMask,
+			 const double *mean, const double *cov)
 {
   int numDims = spec[RPF_ISpecDims];
   int nzeta = spec[RPF_ISpecOutcomes] - 1;
@@ -634,7 +634,7 @@ irt_rpf_nominal_paramInfo(const double *spec, const int param,
 
 static void
 _nominal_rawprob1(const double *spec,
-		 const double *restrict param, const double *restrict th,
+		 const double *param, const double *th,
 		 double discr, double *ak, double *num, double *maxout)
 {
   int numDims = spec[RPF_ISpecDims];
@@ -665,7 +665,7 @@ _nominal_rawprob1(const double *spec,
 
 static void
 _nominal_rawprob2(const double *spec,
-		  const double *restrict param, const double *restrict th,
+		  const double *param, const double *th,
 		  double discr, double *ak, double *num)
 {
   int numOutcomes = spec[RPF_ISpecOutcomes];
@@ -703,8 +703,8 @@ _nominal_rawprob2(const double *spec,
 
 static void
 irt_rpf_nominal_prob(const double *spec,
-		     const double *restrict param, const double *restrict th,
-		     double *restrict out)
+		     const double *param, const double *th,
+		     double *out)
 {
   int numOutcomes = spec[RPF_ISpecOutcomes];
   int numDims = spec[RPF_ISpecDims];
@@ -715,8 +715,8 @@ irt_rpf_nominal_prob(const double *spec,
 
 static void
 irt_rpf_nominal_logprob(const double *spec,
-			const double *restrict param, const double *restrict th,
-			double *restrict out)
+			const double *param, const double *th,
+			double *out)
 {
   int numOutcomes = spec[RPF_ISpecOutcomes];
   int numDims = spec[RPF_ISpecDims];
@@ -766,7 +766,7 @@ static double makeOffterm2(const double *dat, const double p1, const double p2,
 
 static void
 irt_rpf_nominal_deriv1(const double *spec,
-		       const double *restrict param,
+		       const double *param,
 		       const double *where,
 		       const double *weight, double *out)
 {
@@ -945,7 +945,7 @@ pda(const double *ar, int rows, int cols) {   // column major order
 
 static void
 irt_rpf_nominal_deriv2(const double *spec,
-		       const double *restrict param,
+		       const double *param,
 		       double *out)
 {
   int nfact = spec[RPF_ISpecDims];
@@ -1083,8 +1083,8 @@ irt_rpf_mdim_nrm_dTheta(const double *spec, const double *param,
 }
 
 static void
-irt_rpf_mdim_nrm_rescale(const double *spec, double *restrict param, const int *paramMask,
-			 const double *restrict mean, const double *restrict cov)
+irt_rpf_mdim_nrm_rescale(const double *spec, double *param, const int *paramMask,
+			 const double *mean, const double *cov)
 {
   int numDims = spec[RPF_ISpecDims];
   int nzeta = spec[RPF_ISpecOutcomes] - 1;
@@ -1132,7 +1132,16 @@ irt_rpf_mdim_nrm_rescale(const double *spec, double *restrict param, const int *
 }
 
 //static void noop() {}
-static void notimplemented() { error("Not implemented"); }
+static void notimplemented_deriv1(const double *spec,
+				  const double *param,
+				  const double *where,
+				  const double *weight, double *out)
+{ error("Not implemented"); }
+
+static void notimplemented_deriv2(const double *spec,
+				  const double *param,
+				  double *out)
+{ error("Not implemented"); }
 
 const struct rpf librpf_model[] = {
   { "drm1-",
@@ -1141,8 +1150,8 @@ const struct rpf librpf_model[] = {
     irt_rpf_mdim_drm_paramInfo,
     irt_rpf_1dim_drm_prob,
     irt_rpf_logprob_adapter,
-    notimplemented,
-    notimplemented,
+    notimplemented_deriv1,
+    notimplemented_deriv2,
     irt_rpf_1dim_drm_dTheta,
     irt_rpf_1dim_drm_rescale,
   },
