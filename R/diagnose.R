@@ -578,7 +578,7 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
   if (missing(data)) {
       data <- grp$data
   }
-  if (method != "rms" && method != "pearson") stop(paste("Unknown method", method))
+  if (method != "rms" && method != "pearson" && method != "lr") stop(paste("Unknown method", method))
   if (missing(inames)) {
     inames <- colnames(grp$param)
   }
@@ -651,7 +651,7 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
       if (method == "rms") {
           raw[iter1, iter2] <- ms(observed, expected, sum(observed))
           pval[iter1, iter2] <- sign(s) * -log(ptw2011.gof.test(observed, expected))
-      } else {
+      } else if (method == "pearson") {
           x2 <- sum((observed - expected)^2 / expected)
           df <- (s1@outcomes-1) * (s2@outcomes-1)
           info <- c(info, x2=x2, df=df)
@@ -659,6 +659,14 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
           raw[iter1, iter2] <- sign(s) * x2
           std[iter1, iter2] <- sign(s) * abs((x2 - df)/sqrt(2*df))
           pval[iter1, iter2] <- sign(s) * -pchisq(x2, df, lower.tail=FALSE, log.p=TRUE)
+      } else if (method == "lr") {
+          mask <- observed > 0
+          g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
+          df <- (s1@outcomes-1) * (s2@outcomes-1)
+          info <- c(info, g2=g2, df=df)
+
+          raw[iter1, iter2] <- sign(s) * g2
+          pval[iter1, iter2] <- sign(s) * -pchisq(g2, df, lower.tail=FALSE, log.p=TRUE)
       }
 
       result[[paste(inames[iter1], inames[iter2], sep=":")]] <- info
