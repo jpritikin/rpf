@@ -57,8 +57,22 @@ class MxRList : private MxRListBase {
 	};
 };
 
+static inline bool strEQ(const char *s1, const char *s2) { return strcmp(s1,s2)==0; }
+
 void getMatrixDims(SEXP r_theta, int *rows, int *cols);
 SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observed, SEXP r_quad);
-SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes);
+SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes, SEXP Ralter);
 SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig);
 SEXP gamma_cor(SEXP r_mat);
+SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts);
+SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter);
+
+static inline int triangleLoc1(int diag)
+{
+	return (diag) * (diag+1) / 2;   // 0 1 3 6 10 15 ..
+}
+
+static inline int triangleLoc0(int diag)
+{
+	return triangleLoc1(diag+1) - 1;  // 0 2 5 9 14 ..
+}

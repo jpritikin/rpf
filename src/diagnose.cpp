@@ -1,5 +1,357 @@
 #include "rpf.h"
 
+#include <iostream>
+
+struct ifaGroup {
+	std::vector<double*> spec;
+	int numItems;
+	int maxParam;
+	double *param;
+	int numSpecific;
+	int maxAbilities;
+	double *mean;
+	double *cov;
+
+	// TODO:
+	// scores
+	// data
+
+	void import(SEXP Rlist);
+	double *getItemParam(int ix) { return param + maxParam * ix; }
+};
+
+void ifaGroup::import(SEXP Rlist)
+{
+	SEXP argNames;
+	Rf_protect(argNames = Rf_getAttrib(Rlist, R_NamesSymbol));
+
+	int mlen = 0;
+	int nrow, ncol;
+	for (int ax=0; ax < Rf_length(Rlist); ++ax) {
+		const char *key = R_CHAR(STRING_ELT(argNames, ax));
+		SEXP slotValue = VECTOR_ELT(Rlist, ax);
+		if (strEQ(key, "spec")) {
+			for (int sx=0; sx < Rf_length(slotValue); ++sx) {
+				SEXP model = VECTOR_ELT(slotValue, sx);
+				if (!OBJECT(model)) {
+					Rf_error("Item models must inherit rpf.base");
+				}
+				SEXP Rspec;
+				Rf_protect(Rspec = R_do_slot(model, Rf_install("spec")));
+				spec.push_back(REAL(Rspec));
+			}
+		} else if (strEQ(key, "param")) {
+			param = REAL(slotValue);
+			getMatrixDims(slotValue, &maxParam, &numItems);
+		} else if (strEQ(key, "mean")) {
+			mlen = Rf_length(slotValue);
+			mean = REAL(slotValue);
+		} else if (strEQ(key, "cov")) {
+			getMatrixDims(slotValue, &nrow, &ncol);
+			if (nrow != ncol) Rf_error("cov must be a square matrix (not %dx%d)", nrow, ncol);
+			cov = REAL(slotValue);
+		} else {
+			// ignore
+		}
+	}
+	if (mlen != nrow) Rf_error("Mean length %d does not match cov size %d", mlen, nrow);
+	if (numItems != spec.size()) {
+		Rf_error("param implies %d items but spec is length %d",
+			 numItems, spec.size());
+	}
+
+	// detect two-tier covariance structure
+	std::vector<int> orthogonal;
+	if (mlen >= 3) {
+		Eigen::Map<Eigen::MatrixXd> Ecov(cov, mlen, mlen);
+		Eigen::Matrix<Eigen::DenseIndex, Eigen::Dynamic, 1> numCov((Ecov.array() != 0.0).matrix().colwise().count());
+		std::vector<int> candidate;
+		for (int fx=0; fx < numCov.rows(); ++fx) {
+			if (numCov(fx) == 1) candidate.push_back(fx);
+		}
+		if (candidate.size() > 1) {
+			std::vector<bool> mask(numItems);
+			for (int cx=candidate.size() - 1; cx >= 0; --cx) {
+				std::vector<bool> loading(numItems);
+				for (int ix=0; ix < numItems; ++ix) {
+					loading[ix] = param[ix * maxParam + candidate[cx]] != 0;
+				}
+				std::vector<bool> overlap(loading.size());
+				std::transform(loading.begin(), loading.end(),
+					       mask.begin(), overlap.begin(),
+					       std::logical_and<bool>());
+				if (std::find(overlap.begin(), overlap.end(), true) == overlap.end()) {
+					std::transform(loading.begin(), loading.end(),
+						       mask.begin(), mask.begin(),
+						       std::logical_or<bool>());
+					orthogonal.push_back(candidate[cx]);
+				}
+			}
+		}
+	}
+	std::reverse(orthogonal.begin(), orthogonal.end());
+	if (orthogonal.size() && orthogonal[0] != mlen - orthogonal.size()) {
+		Rf_error("Independent factors must be given after dense factors");
+	}
+
+	maxAbilities = mlen;
+	numSpecific = orthogonal.size();
+}
+
+class ssEAP {
+	int lastItem;
+public:
+	ifaGroup grp;
+	ba81NormalQuad quad;
+	int maxScore;
+	std::vector<int> items;
+	std::vector<int> itemOutcomes;
+	Eigen::MatrixXd slCur;
+	Eigen::MatrixXd slPrev;
+
+	void setup(SEXP grp, double qwidth, int qpts);
+	void setLastItem(int which);
+	void tpbw1995();
+};
+
+#include <iostream> //TODO remove
+
+void ssEAP::setup(SEXP robj, double qwidth, int qpts)
+{
+	lastItem = 0;
+
+	grp.import(robj);
+
+	Eigen::Map<Eigen::MatrixXd> fullCov(grp.cov, grp.maxAbilities, grp.maxAbilities);
+	int dense = grp.maxAbilities - grp.numSpecific;
+	Eigen::MatrixXd priCov = fullCov.block(0, 0, dense, dense);
+	Eigen::VectorXd sVar = fullCov.diagonal().tail(grp.numSpecific);
+	quad.setup(qwidth, qpts, grp.mean, priCov, sVar);
+
+	maxScore = 0;
+	itemOutcomes.reserve(grp.numItems);
+	for (int cx = 0; cx < grp.numItems; cx++) {
+		const double *spec = grp.spec[cx];
+		int no = spec[RPF_ISpecOutcomes];
+		itemOutcomes.push_back(no);
+		maxScore += no - 1;
+	}
+}
+
+void ssEAP::setLastItem(int which)
+{
+	lastItem = which;
+}
+
+void ssEAP::tpbw1995()
+{
+	items.reserve(grp.numItems);
+	for (int ix=0; ix < grp.numItems; ++ix) if (ix != lastItem) items.push_back(ix);
+	items.push_back(lastItem);
+
+	slCur.resize(quad.totalQuadPoints, 1+maxScore);
+	int curMax = 0;
+	int item0 = items[0];
+	{
+		const double *spec = grp.spec[item0];
+		int id = spec[RPF_ISpecID];
+		const int dims = spec[RPF_ISpecDims];
+		double *iparam = grp.getItemParam(item0);
+		int outcomes = itemOutcomes[item0];
+		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
+			double oprob[outcomes];
+			double *where = quad.wherePrep.data() + qx * quad.maxDims;
+			double ptheta[dims];
+			for (int dx=0; dx < dims; dx++) {
+				ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
+			}
+			librpf_model[id].prob(spec, iparam, ptheta, oprob);
+			for (int ox=0; ox < outcomes; ++ox) {
+				slCur(qx, ox) = oprob[ox];
+			}
+		}
+		curMax += outcomes - 1;
+	}
+
+	slPrev.resize(quad.totalQuadPoints, 1+maxScore);
+
+	for (int curItem=1; curItem < int(items.size()); ++curItem) {
+		int ix = items[curItem];
+		slCur.swap(slPrev);
+		const double *spec = grp.spec[ix];
+		int id = spec[RPF_ISpecID];
+		const int dims = spec[RPF_ISpecDims];
+		double *iparam = grp.getItemParam(ix);
+		int outcomes = itemOutcomes[ix];
+		slCur.topLeftCorner(slCur.rows(), curMax + outcomes).setZero();
+		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
+			double oprob[outcomes];
+			double *where = quad.wherePrep.data() + qx * quad.maxDims;
+			double ptheta[dims];
+			for (int dx=0; dx < dims; dx++) {
+				ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
+			}
+			librpf_model[id].prob(spec, iparam, ptheta, oprob);
+			for (int cx=0; cx <= curMax; cx++) {
+				for (int ox=0; ox < outcomes; ox++) {
+					slCur(qx, cx + ox) += slPrev(qx, cx) * oprob[ox];
+				}
+			}
+		}
+		curMax += outcomes - 1;
+	}
+}
+
+SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter)
+{
+	omxManageProtectInsanity mpi;
+
+	double qwidth = Rf_asReal(Rwidth);
+	int qpts = Rf_asInteger(Rpts);
+	int interest = Rf_asInteger(Ritem) - 1;
+
+	ssEAP myeap;
+	myeap.setup(robj, qwidth, qpts);
+	myeap.setLastItem(interest);
+	myeap.tpbw1995();
+
+	int outcomes = myeap.itemOutcomes[interest];
+
+	ifaGroup &grp = myeap.grp;
+	ba81NormalQuad &quad = myeap.quad;
+	Eigen::MatrixXd iProb(quad.totalQuadPoints, outcomes);
+
+	{
+		const double *spec = grp.spec[interest];
+		int id = spec[RPF_ISpecID];
+		const int dims = spec[RPF_ISpecDims];
+		double *iparam = grp.getItemParam(interest);
+		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
+			double oprob[outcomes];
+			double *where = quad.wherePrep.data() + qx * quad.maxDims;
+			double ptheta[dims];
+			for (int dx=0; dx < dims; dx++) {
+				ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
+			}
+			librpf_model[id].prob(spec, iparam, ptheta, oprob);
+			for (int ox=0; ox < outcomes; ox++) {
+				iProb(qx, ox) = oprob[ox];
+			}
+		}
+	}
+
+	if (Rf_asLogical(Ralter)) {
+		Eigen::MatrixXd &slCur = myeap.slCur;
+		Eigen::MatrixXd &slPrev = myeap.slPrev;
+
+		Eigen::Map<Eigen::VectorXd> areaCol(quad.priQarea.data(), quad.priQarea.size());
+		slCur.array().colwise() *= areaCol.array();
+		slPrev.array().colwise() *= areaCol.array();
+
+		Eigen::VectorXd ssProb(1+myeap.maxScore);
+		ssProb = slCur.array().colwise().sum();
+
+		int prevMaxScore = myeap.maxScore - (outcomes-1);
+		SEXP Rexpected;
+		Rf_protect(Rexpected = Rf_allocMatrix(REALSXP, 1+myeap.maxScore, outcomes));
+		double *out = REAL(Rexpected);
+		memset(out, 0, sizeof(double) * (1+myeap.maxScore) * outcomes);
+
+		for (int startScore=0; startScore+outcomes <= 1+myeap.maxScore; ++startScore) {
+			Eigen::MatrixXd numerDen(quad.totalQuadPoints, outcomes);
+			numerDen = iProb.array().colwise() * slPrev.col(startScore).array();
+			Eigen::VectorXd numer(outcomes);
+			numer = numerDen.colwise().sum();
+			for (int ox=0; ox < outcomes; ++ox) {
+				out[ox * (1+myeap.maxScore) + (startScore+ox)] = numer(ox) / ssProb(startScore + ox);
+			}
+		}
+
+		return Rexpected;
+	} else {
+		Eigen::MatrixXd &slPrev = myeap.slPrev;
+	
+		Eigen::Map<Eigen::VectorXd> areaCol(quad.priQarea.data(), quad.priQarea.size());
+		slPrev.array().colwise() *= areaCol.array();
+
+		Eigen::VectorXd ssProb(1+myeap.maxScore);
+		ssProb = slPrev.array().colwise().sum();
+
+		int prevMaxScore = myeap.maxScore - (outcomes-1);
+		SEXP Rexpected;
+		Rf_protect(Rexpected = Rf_allocMatrix(REALSXP, prevMaxScore + 1, outcomes));
+		double *out = REAL(Rexpected);
+
+		for (int startScore=0; startScore <= prevMaxScore; ++startScore) {
+			Eigen::MatrixXd numerDen(quad.totalQuadPoints, outcomes);
+			numerDen = iProb.array().colwise() * slPrev.col(startScore).array();
+			Eigen::VectorXd numer(outcomes);
+			numer = numerDen.colwise().sum();
+			for (int ox=0; ox < outcomes; ++ox) {
+				out[ox * (prevMaxScore+1) + startScore] = numer(ox) / ssProb(startScore);
+			}
+		}
+
+		return Rexpected;
+	}
+}
+
+SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts)
+{
+	omxManageProtectInsanity mpi;
+
+	double qwidth = Rf_asReal(Rwidth);
+	int qpts = Rf_asInteger(Rpts);
+
+	ssEAP myeap;
+	myeap.setup(robj, qwidth, qpts);
+	myeap.tpbw1995();
+
+	ba81NormalQuad &quad = myeap.quad;
+	Eigen::MatrixXd &slCur = myeap.slCur;
+
+	if (quad.numSpecific == 0) {
+		Eigen::Map<Eigen::VectorXd> areaCol(quad.priQarea.data(), quad.priQarea.size());
+		slCur.array().colwise() *= areaCol.array();
+	} else {
+		Eigen::VectorXd den(quad.totalQuadPoints);
+		for (int qloc=0, qx=0; qx < quad.totalPrimaryPoints; ++qx) {
+			for (int sx=0; sx < quad.quadGridSize; ++sx) {
+				den(qloc) = quad.priQarea[qx] * quad.speQarea[sx * quad.numSpecific];
+				++qloc;
+			}
+		}
+		slCur.array().colwise() *= den.array();
+	}
+
+	int curMax = myeap.maxScore;
+
+	Eigen::VectorXd ssProb(1+curMax);
+	ssProb = slCur.array().colwise().sum();
+
+	int perScore = quad.maxAbilities + triangleLoc1(quad.maxAbilities);
+	SEXP Rout;
+	Rf_protect(Rout = Rf_allocMatrix(REALSXP, 1+curMax, 1+perScore));
+	double *out = REAL(Rout);
+	memcpy(out, ssProb.data(), sizeof(double) * (1+curMax));
+	for (int cx=0; cx <= curMax; cx++) {
+		std::vector<double> pad(perScore);
+		if (quad.numSpecific == 0) {
+			quad.EAP(&slCur.coeffRef(0, cx), 1/ssProb[cx], pad.data());
+		} else {
+			Eigen::MatrixXd weight(quad.numSpecific, quad.totalQuadPoints);
+			weight.array().rowwise() = slCur.array().col(cx).transpose();
+			quad.EAP(weight.data(), 1/ssProb[cx], pad.data());
+		}
+		for (int sx=0; sx < perScore; ++sx) {
+			out[(1+sx) * (curMax+1) + cx] = pad[sx];
+		}
+	}
+
+	// add dimnames TODO
+	return Rout;
+}
+
 static void
 decodeLocation(long qx, const int dims, const int gridsize,
 	       const double *pts, double *out)
@@ -73,8 +425,8 @@ static int kang_chen_2007_collapse1(int rows, int cols, int *observed, double *e
       //Rprintf("collapse col %d to %d on row %d\n", smallcol, bigcol, rx);
       expected[bigcol*rows + rx] += expected[smallcol*rows + rx];
       observed[bigcol*rows + rx] += observed[smallcol*rows + rx];
-      expected[smallcol*rows + rx] = 0;
-      observed[smallcol*rows + rx] = 0;
+      expected[smallcol*rows + rx] = NA_REAL;
+      observed[smallcol*rows + rx] = NA_REAL;
       ++collapsed;
 
       find_smallcol(rows, cols, expected, rx, &goodcol, &smallcol);
@@ -95,8 +447,8 @@ static int kang_chen_2007_collapse1(int rows, int cols, int *observed, double *e
       //Rprintf("collapse row %d to %d at col %d\n", rx, bigrow, cx);
       expected[cx*rows + bigrow] += expected[cx*rows + rx];
       observed[cx*rows + bigrow] += observed[cx*rows + rx];
-      expected[cx*rows + rx] = 0;
-      observed[cx*rows + rx] = 0;
+      expected[cx*rows + rx] = NA_REAL;
+      observed[cx*rows + rx] = NA_REAL;
       ++collapsed;
     }
   }
@@ -143,7 +495,8 @@ SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
     int orows, ocols;
     getMatrixDims(r_observed_orig, &orows, &ocols);
     if (rows != orows || cols != ocols)
-      Rf_error("Observed and expected matrices must have same dimensions");
+	    Rf_error("Observed %dx%d and expected %dx%d matrices must have same dimensions",
+		     orows, ocols, rows, cols);
   }
 
   SEXP r_observed, r_expected;
@@ -163,9 +516,9 @@ SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
   Rf_protect(ans = Rf_allocVector(VECSXP, returnCount));
 
   int ansC = -1;
-  SET_STRING_ELT(names, ++ansC, Rf_mkChar("observed"));
+  SET_STRING_ELT(names, ++ansC, Rf_mkChar("O"));
   SET_VECTOR_ELT(ans,   ansC, r_observed);
-  SET_STRING_ELT(names, ++ansC, Rf_mkChar("expected"));
+  SET_STRING_ELT(names, ++ansC, Rf_mkChar("E"));
   SET_VECTOR_ELT(ans,   ansC, r_expected);
   SET_STRING_ELT(names, ++ansC, Rf_mkChar("collapsed"));
   SET_VECTOR_ELT(ans,   ansC, Rf_ScalarInteger(collapsed));
@@ -177,229 +530,47 @@ SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
   return ans;
 }
 
-static const int CRAZY_VERSION = 0;  // remove TODO
-
-SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observed_orig, SEXP r_quad)
+SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes, SEXP Ralter)
 {
-  int numSpec = Rf_length(r_spec);
-  if (numSpec < 2) Rf_error("At least 2 items are needed");
-  int maxParam;
-  int numItems;
-  getMatrixDims(r_param, &maxParam, &numItems);
-  if (numItems != numSpec) {
-    Rf_error("Number of items %d and item specifications %d need to match", numItems, numSpec);
-  }
-
-  double *spec[numItems];
-  int contextMap[numItems];
-  int maxDims = 1;
-  int maxCorrect = 0;
-  int nextContext = 0;
-  int interest = Rf_asInteger(r_item) - 1;
-  if (interest < 0 || interest >= numSpec) {
-    Rf_error("Item of interest %d must be between 1 and %d", interest+1, numSpec);
-  }
-  for (int sx=0; sx < numSpec; sx++) {
-    spec[sx] = REAL(VECTOR_ELT(r_spec, sx));
-    int dims = spec[sx][RPF_ISpecDims];
-    if (maxDims < dims)
-      maxDims = dims;
-    maxCorrect += spec[sx][RPF_ISpecOutcomes] - 1;
-
-    if (sx != interest) contextMap[nextContext++] = sx;
-  }
-  contextMap[nextContext] = interest; // remove TODO
-
-  double *param = REAL(r_param);
-  int quad_size = Rf_length(VECTOR_ELT(r_quad, 0));
-  double *quad_pts = REAL(VECTOR_ELT(r_quad, 0));
-  double *quad_area = REAL(VECTOR_ELT(r_quad, 1));
-  int totalQuadOrdinate = 1;
-  for (int dx=0; dx < maxDims; dx++) { totalQuadOrdinate *= quad_size; }
-  double *lk1 = Realloc(NULL, (1+maxCorrect) * totalQuadOrdinate, double);
-  memset(lk1, 0, sizeof(double) * (1+maxCorrect) * totalQuadOrdinate); // TODO remove
-  double *lk2 = Realloc(NULL, (1+maxCorrect) * totalQuadOrdinate, double);
-
-  double *curSpec = spec[contextMap[0]];
-  int curOutcomes = curSpec[RPF_ISpecOutcomes];
-  int curMaxCorrect = curOutcomes - 1;
-  int id = curSpec[RPF_ISpecID];
-  for (int qx=0; qx < totalQuadOrdinate; qx++) {
-    double where[maxDims];
-    decodeLocation(qx, maxDims, quad_size, quad_pts, where);
-    double oprob[curOutcomes];
-    librpf_model[id].prob(curSpec, param + maxParam * contextMap[0], where, oprob);
-    for (int ox=0; ox < curOutcomes; ox++) {
-      double *lk = lk1 + ox * totalQuadOrdinate;
-      lk[qx] = oprob[ox];
-    }
-  }
-  //pda(lk1, totalQuadOrdinate, 1+maxCorrect);
-
-  for (int ix=1; ix < numItems; ix++) {  // TODO don't need last layer
-    memset(lk2, 0, sizeof(double) * (1+maxCorrect) * totalQuadOrdinate);
-    curSpec = spec[contextMap[ix]];
-    curOutcomes = curSpec[RPF_ISpecOutcomes];
-    id = curSpec[RPF_ISpecID];
-    for (int qx=0; qx < totalQuadOrdinate; qx++) {
-      double where[maxDims];
-      decodeLocation(qx, maxDims, quad_size, quad_pts, where);
-      double oprob[curOutcomes];
-      librpf_model[id].prob(curSpec, param + maxParam * contextMap[ix], where, oprob);
-      for (int cx=0; cx <= curMaxCorrect; cx++) {
-	double *oldlk = lk1 + cx * totalQuadOrdinate;
-	for (int ox=0; ox < curOutcomes; ox++) {
-	  double *lk = lk2 + (cx + ox) * totalQuadOrdinate;
-	  lk[qx] += oldlk[qx] * oprob[ox];
-	}
-      }
-    }
-    { double *tmp = lk1; lk1 = lk2; lk2 = tmp; }
-    curMaxCorrect += curOutcomes - 1;
-    //pda(lk1, totalQuadOrdinate, 1+maxCorrect);
-  }
-  curMaxCorrect -= curOutcomes - 1;
-
-  // lk1 = with item of interest
-  // lk2 = without item of interest
-
-  double denom[maxCorrect+1];
-  memset(denom, 0, sizeof(*denom) * (maxCorrect+1));
-  for (int cx=0; cx <= maxCorrect; cx++) {
-    double *lk;
-    if (CRAZY_VERSION) {
-      lk = lk1 + cx * totalQuadOrdinate;
-    } else {
-      lk = lk2 + cx * totalQuadOrdinate;
-    }
-    for (int qx=0; qx < totalQuadOrdinate; qx++) {
-      double area[maxDims];
-      decodeLocation(qx, maxDims, quad_size, quad_area, area);
-      double piece = lk[qx];
-      for (int dx=0; dx < maxDims; dx++) piece *= area[dx];
-      denom[cx] += piece;
-    }
-  }
-  //pda(denom, curMaxCorrect+1, 1);
-
-  int outRows;
-  if (CRAZY_VERSION) {
-    outRows = maxCorrect+1;
-  } else {
-    outRows = curMaxCorrect+1;
-  }
-
-  SEXP r_expected_orig;
-  Rf_protect(r_expected_orig = Rf_allocMatrix(REALSXP, outRows, curOutcomes));
-  double *expected_orig = REAL(r_expected_orig);
-  memset(expected_orig, 0, sizeof(double) * outRows * curOutcomes);
-
-  curSpec = spec[interest];
-  curOutcomes = curSpec[RPF_ISpecOutcomes];
-  id = curSpec[RPF_ISpecID];
-
-  for (int qx=0; qx < totalQuadOrdinate; qx++) {
-    double where[maxDims];
-    decodeLocation(qx, maxDims, quad_size, quad_pts, where);
-    double area[maxDims];
-    decodeLocation(qx, maxDims, quad_size, quad_area, area);
-
-    for (int cx=0; cx < outRows; cx++) {
-      double oprob[curOutcomes];
-      librpf_model[id].prob(curSpec, param + maxParam * interest, where, oprob);
-
-      for (int ox=0; ox < curOutcomes; ox++) {
-	double *lk;
-	if (CRAZY_VERSION) {
-	  lk = lk2 + (cx-ox) * totalQuadOrdinate;
-	} else {
-	  lk = lk2 + cx * totalQuadOrdinate;
-	}
-	double piece = lk[qx] * oprob[ox];
-	for (int dx=0; dx < maxDims; dx++) piece *= area[dx];
-	expected_orig[ox * outRows + cx] += piece;
-      }
-    }
-  }
-
-  int ob_rows;
-  int ob_cols;
-  getMatrixDims(r_observed_orig, &ob_rows, &ob_cols);
-  if (ob_rows != outRows) {
-    Rf_PrintValue(r_observed_orig);
-    pda(expected_orig, outRows, curOutcomes);
-    Rf_error("Mismatch between observed rows %d and expected rows %d", ob_rows, outRows);
-  }
-  if (ob_cols != curOutcomes) Rf_error("Mismatch between observed cols %d and expected cols %d", ob_cols, curOutcomes);
-  int *observed_orig = INTEGER(r_observed_orig);
-
-  for (int rx=0; rx < outRows; rx++) {
-    int nk = 0;
-    for (int ox=0; ox < curOutcomes; ox++) {
-      nk += observed_orig[ox * outRows + rx];
-    }
-    for (int ox=0; ox < curOutcomes; ox++) {
-      expected_orig[ox * outRows + rx] *= nk/denom[rx];
-    }
-  }
-
-  Free(lk1);
-  Free(lk2);
-
-  int df = outRows * (curOutcomes-1);
-
-  const int returnCount = 3;
-  SEXP names, ans;
-  Rf_protect(names = Rf_allocVector(STRSXP, returnCount));
-  Rf_protect(ans = Rf_allocVector(VECSXP, returnCount));
-
-  int ansC = -1;
-  SET_STRING_ELT(names, ++ansC, Rf_mkChar("observed"));
-  SET_VECTOR_ELT(ans,   ansC, r_observed_orig);
-  SET_STRING_ELT(names, ++ansC, Rf_mkChar("expected"));
-  SET_VECTOR_ELT(ans,   ansC, r_expected_orig);
-  SET_STRING_ELT(names, ++ansC, Rf_mkChar("df"));
-  SET_VECTOR_ELT(ans,   ansC, Rf_ScalarInteger(df));
-  if (ansC != returnCount-1) Rf_error("Memory corruption");
-
-  Rf_namesgets(ans, names);
-  UNPROTECT(3);
-
-  return ans;
-}
-
-SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes)
-{
+	bool alter = Rf_asLogical(Ralter);
   int data_rows = Rf_length(VECTOR_ELT(r_data, 0));
   int data_cols = Rf_length(r_data);
 
-  int low = data_cols-1;
-  if (low < 1) Rf_error("At least 2 columns of data are required");
   int interest = Rf_asInteger(r_interest);
   int outcomes = Rf_asInteger(r_outcomes);
-  int high = Rf_asInteger(r_high) - outcomes;
+  int high;
+  if (!alter) {
+	  high = Rf_asInteger(r_high) - (outcomes - 1);
+  } else {
+	  high = Rf_asInteger(r_high);
+  }
 
   if (interest < 1 || interest > data_cols)
     Rf_error("Interest %d must be between 1 and %d", interest, data_cols);
 
-  int rows = high-low+1;
   SEXP r_ans;
-  Rf_protect(r_ans = Rf_allocMatrix(INTSXP, rows, outcomes));
+  Rf_protect(r_ans = Rf_allocMatrix(INTSXP, high, outcomes));
   int *ans = INTEGER(r_ans);
-  memset(ans, 0, sizeof(int) * rows * outcomes);
+  memset(ans, 0, sizeof(int) * high * outcomes);
 
   int *iresp = INTEGER(VECTOR_ELT(r_data, interest-1));
 
   for (int rx=0; rx < data_rows; rx++) {
+	  bool missing = false;
     int sum=0;
     for (int cx=0; cx < data_cols; cx++) {
-      if (cx+1 == interest) continue;
+      if (!alter && cx+1 == interest) continue;
       int *resp = INTEGER(VECTOR_ELT(r_data, cx));
-      sum += resp[rx];
+      if (resp[rx] == NA_INTEGER) {
+	      missing = true;
+	      break;
+      }
+      sum += resp[rx] - 1;
     }
+    if (missing) continue;
     int pick = iresp[rx];
-    if (pick == NA_INTEGER) Rf_error("Cannot deal with missing data yet");
-    ans[(pick-1) * rows + sum - low] += 1;
+    if (pick == NA_INTEGER) continue;
+    ans[(pick-1) * high + sum] += 1;
   }
 
   UNPROTECT(1);

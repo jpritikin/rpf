@@ -232,13 +232,87 @@ rpf.mean.info <- function(spec, param, grain=.1) {
   ret
 }
 
+# copied from mirt
+collapseCells <- function(On, En, mincell = 1){
+		drop <- which(rowSums(is.na(En)) > 0)
+		En[is.na(En)] <- 0
+					#collapse known upper and lower sparce cells
+		if(length(drop) > 0L){
+			up <- drop[1L]:drop[length(drop)/2]
+			low <- drop[length(drop)/2 + 1L]:drop[length(drop)]
+			En[max(up)+1, ] <- colSums(En[c(up, max(up)+1), , drop = FALSE])
+			On[max(up)+1, ] <- colSums(On[c(up, max(up)+1), , drop = FALSE])
+			En[min(low)-1, ] <- colSums(En[c(low, min(low)-1), , drop = FALSE])
+			On[min(low)-1, ] <- colSums(On[c(low, min(low)-1), , drop = FALSE])
+			En[c(up, low), ] <- On[c(up, low), ] <- NA
+			En <- na.omit(En)
+			On <- na.omit(On)
+		}
+					#collapse accross
+		if(ncol(En) > 2L){
+			for(j in 1L:(ncol(On)-1L)){
+				L <- En < mincell
+				sel <- L[,j]
+				if(!any(sel)) next
+				On[sel, j+1L]  <- On[sel, j] + On[sel, j+1L]
+				En[sel, j+1L]  <- En[sel, j] + En[sel, j+1L]
+				On[sel, j] <- En[sel, j] <- NA
+			}
+			sel <- L[,j+1L]
+			sel[rowSums(is.na(En[, 1L:j])) == (ncol(En)-1L)] <- FALSE
+			put <- apply(En[sel, 1L:j, drop=FALSE], 1, function(x) max(which(!is.na(x))))
+			put2 <- which(sel)
+			for(k in 1L:length(put)){
+				En[put2[k], put[k]] <- En[put2[k], put[k]] + En[put2[k], j+1L]
+				En[put2[k], j+1L] <- On[put2[k], j+1L] <- NA
+			}
+		}
+		L <- En < mincell
+		L[is.na(L)] <- FALSE
+		while(any(L)){
+			drop <- c()
+			for(j in 1L:(nrow(On)-1L)){
+				if(any(L[j,])) {
+					On[j+1L, L[j,]] <- On[j+1L, L[j,]] + On[j, L[j,]]
+					En[j+1L, L[j,]] <- En[j+1L, L[j,]] + En[j, L[j,]]
+					drop <- c(drop, j)
+					break
+				}
+			}
+			for(j in nrow(On):2L){
+				if(any(L[j,])) {
+					On[j-1L, L[j,]] <- On[j-1L, L[j,]] + On[j, L[j,]]
+					En[j-1L, L[j,]] <- En[j-1L, L[j,]] + En[j, L[j,]]
+					drop <- c(drop, j)
+					break
+				}
+			}
+			if(nrow(On) > 4L){
+				for(j in 2L:(nrow(On)-1L)){
+					if(any(L[j,])){
+						On[j+1L, L[j,]] <- On[j+1L, L[j,]] + On[j, L[j,]]
+						En[j+1L, L[j,]] <- En[j+1L, L[j,]] + En[j, L[j,]]
+						drop <- c(drop, j)
+						break
+					}
+				}
+			}
+					#drop
+			if(!is.null(drop)){
+				En <- En[-drop, ]
+				On <- On[-drop, ]
+			}
+			L <- En < mincell
+			L[is.na(L)] <- FALSE
+		}
+        return(list(O=On, E=En))
+}
+
 ##' Compute S-Chi-squared fit statistic for 1 item
 ##'
 ##' Implements the Kang & Chen (2007) polytomous extension to
-##' S-Chi-squared statistic of Orlando & Thissen (2000). Fails in the
-##' presence of missing data.
-##'
-##' NOTE: IRTPRO 2.1 uses an equal interval quadrature rule by default.
+##' S-Chi-squared statistic of Orlando & Thissen (2000). Rows with
+##' missing data are ignored.
 ##'
 ##' WARNING: The algorithm for collapsing low-count cells has not been
 ##' tested thoroughly.
@@ -257,33 +331,78 @@ rpf.mean.info <- function(spec, param, grain=.1) {
 ##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
-rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
-  if (missing(quad)) {
-    n <- 49
-    width <- 6
-    x <- seq(-width, width, length.out=n)
-    quad <- list(x=x, w=dnorm(x)/sum(dnorm(x)))
-  }
+rpf.SitemFit1 <- function(grp, item, free=0, method="pearson", log=FALSE, qwidth=6, qpts=49L, alt=FALSE) {
+    spec <- grp$spec
   c.spec <- lapply(spec, function(m) {
-    if (length(m@spec)==0) { stop("Item model",m,"is not fully implemented") }
+    if (length(m@spec)==0) { stop("Item model",m,"is not implemented") }
     else { m@spec }
   })
 
+    param <- grp$param
+    itemIndex <- which(item == colnames(param))
+    obs <- grp$data
+
+    numScores <- 1 + sum(sapply(spec, function(m) slot(m,'outcomes') - 1))
+    if (!alt) {
+	    tblrows <- numScores - (spec[[itemIndex]]$outcomes - 1)
+    } else {
+	    tblrows <- numScores
+    }
+
+    observed <- .Call(sumscore_observed, numScores,
+                      obs, itemIndex, spec[[itemIndex]]$outcomes, alt)
+    if (nrow(observed) != tblrows) {
+	    print(observed)
+	    stop(paste("Expecting", tblrows, "rows in observed matrix"))
+    }
+
   max.param <- max(vapply(spec, rpf.numParam, 0))
-  if (dim(param)[1] < max.param) {
+  if (nrow(param) < max.param) {
     stop(paste("param matrix must have", max.param ,"rows"))
   }
-  out <- .Call(orlando_thissen_2000_wrapper, c.spec, param, item, observed, quad)
-  out$orig.observed <- out$observed
-  out$orig.expected <- out$expected
-  kc <- .Call(kang_chen_2007_wrapper, out$orig.observed, out$orig.expected)
-  out$observed <- observed <- kc$observed
-  out$expected <- expected <- kc$expected
-  mask <- expected!=0
-  out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-  out$df <- out$df - free - kc$collapsed;
-  out$p.value <- dchisq(out$statistic, out$df)
+
+    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpts, alt)
+    if (nrow(Eproportion) != tblrows) {
+	    print(Eproportion)
+	    stop(paste("Expecting", tblrows, "rows in expected matrix"))
+    }
+    Escale <- matrix(apply(observed, 1, sum), nrow=nrow(Eproportion), ncol=ncol(Eproportion))
+    out <- list(observed=observed, expected = Eproportion * Escale)
+
+    if (method == "pearson") {
+        out$orig.observed <- out$observed
+        out$orig.expected <- out$expected
+	if (alt) {
+		kc <- collapseCells(out$observed, out$expected)
+	} else {
+		kc <- .Call(kang_chen_2007_wrapper, out$orig.observed, out$orig.expected)
+	}
+        out$observed <- observed <- kc$O
+        out$expected <- expected <- kc$E
+        mask <- !is.na(expected) & expected!=0
+        out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+	    out$df <- nrow(observed) * (ncol(observed) - 1)
+        out$df <- out$df - free - sum(is.na(expected));
+        out$pval <- pchisq(out$statistic, out$df, lower.tail=FALSE, log.p=log)
+    } else if (method == "rms") {
+        mask <- !is.na(out$expected) & out$expected!=0
+        out$statistic <- ms(out$observed[mask], out$expected[mask], sum(out$observed))
+        pval <- ptw2011.gof.test(out$observed[mask], out$expected[mask])
+        if (log) {
+            out$pval <- log(pval)
+        } else {
+            out$pval <- pval
+        }
+    } else {
+        stop(paste("Method", method, "not recognized"))
+    }
   out
+}
+
+ot2000md <- function(grp, item, width, pts, alt=FALSE) {
+	if (missing(width)) width <- 6
+	if (missing(pts)) pts <- 49L
+	.Call(ot2000_wrapper, grp, item, width, pts, alt)
 }
 
 ##' Compute S-Chi-squared fit statistic for a set of items
@@ -291,44 +410,28 @@ rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
 ##' Runs \code{\link{rpf.ot2000.chisq1}} for every item and accumulates
 ##' the results.
 ##'
-##' TODO: Handle multiple factors with mean and covariance parameters.
+##' TODO: Handle two-tier covariance structure
 ##'
 ##' @param spec a list of item specifications
 ##' @param param item paramters in columns
 ##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
 ##' @param data a data frame or matrix of response patterns, 1 per row
-##' @param quad the quadrature rule (default is equally spaced intervals with 49 points)
 ##' @return
 ##' a list of output from \code{\link{rpf.ot2000.chisq1}}
-rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
-  if (missing(quad)) {
-    n <- 49
-    width <- 6
-    x <- seq(-width, width, length.out=n)
-    quad <- list(x=x, w=dnorm(x)/sum(dnorm(x)))
-  }
-  if (is.data.frame(data)) {
-    data <- sapply(data, unclass)
-  }
-  if (dim(data)[2] != length(spec)) stop("Dim mismatch between data and spec")
-  if (dim(param)[2] != length(spec)) stop("Dim mismatch between param and spec")
-  context <- 1:length(spec)
-  got = list()
+rpf.SitemFit <- function(grp, method="pearson", log=FALSE, qwidth=6, qpts=49L, alt=FALSE) {
+    spec <- grp$spec
+    if (ncol(grp$data) != length(spec)) stop("Dim mismatch between data and spec")
+    param <- grp$param
+    if (ncol(param) != length(spec)) stop("Dim mismatch between param and spec")
+    if (is.null(colnames(param))) stop("grp$param must have column names")
+
+    got = list()
   for (interest in 1:length(spec)) {
-    if (0) {
-      # hard to persuade R to do this correctly
-      ob.table <- table(apply(data[,context[context != interest]], 1, sum), data[,interest])
-      sumscores <- (length(spec)-1):(sum(sapply(spec, function(m) slot(m,'outcomes'))) - spec[[interest]]@outcomes)
-      observed <- array(0, dim=c(length(sumscores), spec[[interest]]@outcomes))
-      rowmap <- match(sumscores, rownames(ob.table))
-      rowmap <- rowmap[!is.na(rowmap)]
-      observed[rowmap,] <- ob.table
-    } else {
-      observed <- .Call(sumscore_observed, sum(sapply(spec, function(m) slot(m,'outcomes'))),
-                        data, interest, spec[[interest]]@outcomes)
-    }
-    ot.out <- rpf.ot2000.chisq1(spec, param, sum(free[,interest]), interest, observed, quad)
-    got[[interest]] <- ot.out
+      free <- 0
+      if (!is.null(grp$free)) free <- sum(grp$free[,interest])
+      itemname <- colnames(param)[interest]
+      ot.out <- rpf.SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpts=qpts, alt=alt)
+      got[[itemname]] <- ot.out
   }
   got
 }
@@ -359,20 +462,23 @@ ms <- function(observed, expected, draws) {
 }
 
 P.cdf.fn <- function(x, g.var, t) {
-  sapply(t, function (t1) {
+  got <- sapply(t, function (t1) {
     n <- length(g.var)
     num <- exp(1-t1) * exp(1i * t1 * sqrt(n))
     den <- pi * (t1 - 1/(1-1i*sqrt(n)))
     pterm <- prod(sqrt(1 - 2*(t1-1)*g.var/x + 2i*t1*g.var*sqrt(n)/x))
     Im(num / (den * pterm))
   })
+#  print(cbind(t,got))
+  got
 }
 
 ##' Compute the P value that the observed and expected tables come from the same distribution
 ##'
 ##' This method dramatically improves upon Pearson's X^2
 ##' goodness-of-fit test.  In contrast to Pearson's X^2, no ad hoc cell
-##' collapsing is needed to avoid an inflated false positive rate.
+##' collapsing is needed to avoid an inflated false positive rate
+##' in situations of sparse cell frequences.
 ##' The statistic rapidly converges to the Monte-Carlo estimate
 ##' as the number of draws increases. In contrast to Pearson's
 ##' X^2, the order of the matrices doesn't matter. This test is
@@ -396,13 +502,16 @@ P.cdf.fn <- function(x, g.var, t) {
 
 ptw2011.gof.test <- function(observed, expected) {
   orig.draws <- sum(observed)
+  if (abs(sum(expected) - orig.draws) > 1e-6) {
+	  stop(paste("Total observed - total expected", abs(sum(expected) - orig.draws)))
+  }
   observed <- observed / orig.draws
   expected <- expected / orig.draws
 
   X <- ms(observed, expected, orig.draws)
   if (X == 0) return(1)
 
-  n <- prod(dim(observed))
+  n <- length(c(observed))
   D <- diag(1/c(expected))
   P <- matrix(-1/n, n,n)
   diag(P) <- 1 - 1/n
@@ -412,10 +521,16 @@ ptw2011.gof.test <- function(observed, expected) {
   # Eqn 8 needs n variances, but matrix B (Eqn 6) only has n-1 non-zero
   # eigenvalues. Perhaps n-1 degrees of freedom?
   
+# debugging:
 #  plot(function(t) P.cdf.fn(X, g.var, t), 0, 40)
+
   # 310 points should be good enough for 500 bins
   # Perkins, Tygert, Ward (2011, p. 10)
-  got <- integrate(function(t) P.cdf.fn(X, g.var, t), 0, 40, subdivisions=310L)
+
+# If integration tolerance is too large, non-convergence can result,
+# http://r.789695.n4.nabble.com/Need-help-to-understand-integrate-function-td2322093.html
+  got <- try(integrate(function(t) P.cdf.fn(X, g.var, t), 0, 40, subdivisions=310L, rel.tol=1e-10), silent=TRUE)
+  if (inherits(got, "try-error")) return(NA)
   p.value <- 1 - got$value
   smallest <- 6.3e-16  # approx exp(-35)
   if (p.value < smallest) p.value <- smallest
