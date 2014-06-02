@@ -3,12 +3,6 @@
 ##' Returns a random sample of response patterns given a list of item
 ##' models and parameters.
 ##'
-##' The design matrix can accomodate more person abilities than item
-##' dimension. Refer to Cai (2010) for design matrix examples.
-##'
-##' TODO: Add restrictions to design matrix to match restrictions
-##' imposed by Cai (2010).
-##'
 ##' @name rpf.sample
 ##' @param theta either a vector (for 1 dimension) or a matrix (for >1
 ##' dimension) of person abilities or the number of response patterns
@@ -16,7 +10,6 @@
 ##' @param items a list of item models
 ##' @param params a list or matrix of item parameters. If omitted, random item
 ##' parameters are generated for each item model.
-##' @param design a matrix assigning person abilities to item factors
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param prefix Column names are taken from param or items.
 ##' If no column names are available, some will be generated using
@@ -48,37 +41,33 @@
 ##' }
 ##' items[[4]] <- i2
 ##' correct[[4]] <- rpf.rparam(i2)
-##' 
-##' design <- matrix(c(1, 1, 1, 1,
-##'                    2, 2, 3, NA), nrow=2, byrow=TRUE)
-##' rpf.sample(10, items, correct, design)
 ##' @seealso \code{\link{sample}}
-##' @references
-##' Cai, L. (2010). A two-tier full-information item factor analysis
-##' model with applications. \emph{Psychometrika, 75}, 581-612.
-rpf.sample <- function(theta, items, params, design, ..., prefix="i",
-                       mean=NULL, cov=NULL, mcar=0.0)
+rpf.sample <- function(theta, items, params, ..., prefix="i",
+                       mean=NULL, cov=NULL, mcar=0.0, grp=NULL)
 {
     garbageArguments <- list(...)
     if (length(garbageArguments) > 0) {
         stop("rpf.sample does not accept values for the '...' argument")
     }
 
+    if (!missing(grp)) {
+	    if (missing(items)) items <- grp$spec
+	    if (missing(params)) params <- grp$param
+	    if (missing(mean)) mean <- grp$mean
+	    if (missing(cov)) cov <- grp$cov
+    }
+
   numItems <- length(items)
   maxDim <- max(vapply(items, function(i) i@factors, 0))
-  if (missing(design)) {
-    if (maxDim > 1) {
-      design <- matrix(rep(1:maxDim, numItems), nrow=maxDim)
-      design[sapply(items, function(i) 1:maxDim > i@factors)] <- NA
-    } else {
-      design <- matrix(rep(1, numItems), nrow=1)
-    }
-  }
-  maxAbilities <- max(design, na.rm=TRUE)
 
-  if (maxDim > 1 && any(dim(design) != c(maxDim,numItems))) {
-    stop(paste("The design matrix must have", maxDim, "rows and ",numItems,"columns"))
-  }
+    if (maxDim > 1) {
+	    design <- matrix(rep(1:maxDim, numItems), nrow=maxDim)
+	    design[sapply(items, function(i) 1:maxDim > i@factors)] <- NA
+    } else {
+	    design <- matrix(rep(1, numItems), nrow=1)
+    }
+
+  maxAbilities <- max(design, na.rm=TRUE)
 
   numPeople <- NA
   if (is.numeric(theta) && length(theta) == 1) {
