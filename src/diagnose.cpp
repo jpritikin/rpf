@@ -1,6 +1,6 @@
 #include "rpf.h"
 
-#include <iostream>
+#include <stdlib.h>
 
 struct ifaGroup {
 	std::vector<double*> spec;
@@ -627,4 +627,94 @@ SEXP gamma_cor(SEXP r_mat)
 
   double gamma = (concord - discord) / (concord + discord);
   return Rf_ScalarReal(gamma);
+}
+
+template <typename T1, typename T2, typename T3>
+static inline double crosstabMS(Eigen::ArrayBase<T1> &observed,
+				Eigen::ArrayBase<T2> &expected,
+				Eigen::ArrayBase<T3> &rowSum)
+{
+	Eigen::ArrayXXd diff(observed.rows(), observed.cols());
+	observed.colwise() /= rowSum;
+	diff = observed - expected;
+	if (observed.rows() == 1) {
+		return ((diff * diff).rowwise().sum() * rowSum).sum();
+	} else {
+		// not sure if this is correct TODO
+		diff.colwise() *= rowSum;
+		return (diff * diff).sum();
+	}
+}
+
+SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials)
+{
+	int rows, cols;
+	getMatrixDims(Robserved, &rows, &cols);
+	{
+		int erows, ecols;
+		getMatrixDims(Rexpected, &erows, &ecols);
+		if (rows != erows || cols != ecols) {
+			Rf_error("observed and expected matrices must be the same dimension");
+		}
+	}
+
+	Eigen::ArrayXXd observed(rows, cols);
+	if (Rf_isInteger(Robserved)) {
+		Eigen::Map<Eigen::ArrayXXi > tmp(INTEGER(Robserved), rows, cols);
+		observed = tmp.cast<double>();
+	} else if (Rf_isReal(Robserved)) {
+		memcpy(observed.data(), REAL(Robserved), sizeof(double) * rows * cols);
+	} else {
+		Rf_error("observed is an unknown type");
+	}
+
+	Eigen::ArrayXXd expected(rows, cols);
+	memcpy(expected.data(), REAL(Rexpected), sizeof(double) * rows * cols);
+
+	Eigen::ArrayXd rowSum(rows);
+	rowSum = observed.rowwise().sum();
+	if (((expected.rowwise().sum() - rowSum).abs() > 1e-6).any()) {
+		Rf_error("observed and expected row sums must match");
+	}
+
+	expected.colwise() /= rowSum;
+
+	Eigen::VectorXi simSize(rows);
+	simSize = rowSum.cast<int>();
+
+	if (rows == 1) {
+		// Perkins, Tygert, Ward (2011, p. 12)
+		for (int sx=0; sx < rows; ++sx) simSize(sx) = std::min(simSize(sx), 185);
+	}
+	Eigen::ArrayXd simSizeD(rows);
+	simSizeD = simSize.cast<double>();
+
+	double refMS = crosstabMS(observed, expected, rowSum);
+
+	Eigen::ArrayXXi Eprob(rows, cols);
+	Eprob = (expected * RAND_MAX).cast<int>();
+
+	int trials = Rf_asInteger(Rtrials); // SE = 1/(.05 * .95 * sqrt(trials))
+	Eigen::ArrayXd mcMS(trials);
+	for (int tx=0; tx < trials; ++tx) {
+		Eigen::ArrayXXd draw(rows, cols);
+		draw.setZero();
+		for (int rx=0; rx < rows; ++rx) {
+			for (int sx=0; sx < simSize(rx); ++sx) {
+				int r1 = rand();
+				for (int cx=0; cx < cols; ++cx) {
+					int threshold = Eprob(rx, cx);
+					if (r1 <= threshold) {
+						draw(rx, cx) += 1;
+						break;
+					} else {
+						r1 -= threshold;
+					}
+				}
+			}
+		}
+		mcMS(tx) = crosstabMS(draw, expected, simSizeD);
+	}
+	Eigen::DenseIndex cnt = (mcMS >= refMS).count();
+	return Rf_ScalarReal(double(cnt) / trials);
 }

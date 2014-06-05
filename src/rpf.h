@@ -66,6 +66,7 @@ SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig);
 SEXP gamma_cor(SEXP r_mat);
 SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts);
 SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter);
+SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials);
 
 static inline int triangleLoc1(int diag)
 {

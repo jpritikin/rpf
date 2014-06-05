@@ -367,15 +367,19 @@ rpf.SitemFit1 <- function(grp, item, free=0, method="pearson", log=FALSE, qwidth
 	    stop(paste("Expecting", tblrows, "rows in expected matrix"))
     }
     Escale <- matrix(apply(observed, 1, sum), nrow=nrow(Eproportion), ncol=ncol(Eproportion))
-    out <- list(observed=observed, expected = Eproportion * Escale)
+    expected <- Eproportion * Escale
+    out <- list(orig.observed=observed, orig.expected = expected)
+
+    mask <- apply(observed, 1, sum) != 0
+    observed = observed[mask,,drop=FALSE]
+    expected = expected[mask,,drop=FALSE]
+    if (!length(observed)) stop(paste("No data for item", item))
 
     if (method == "pearson") {
-        out$orig.observed <- out$observed
-        out$orig.expected <- out$expected
 	if (alt) {
-		kc <- collapseCells(out$observed, out$expected)
+		kc <- collapseCells(observed, expected)
 	} else {
-		kc <- .Call(kang_chen_2007_wrapper, out$orig.observed, out$orig.expected)
+		kc <- .Call(kang_chen_2007_wrapper, observed, expected)
 	}
         out$observed <- observed <- kc$O
         out$expected <- expected <- kc$E
@@ -385,9 +389,9 @@ rpf.SitemFit1 <- function(grp, item, free=0, method="pearson", log=FALSE, qwidth
         out$df <- out$df - free - sum(is.na(expected));
         out$pval <- pchisq(out$statistic, out$df, lower.tail=FALSE, log.p=log)
     } else if (method == "rms") {
-        mask <- !is.na(out$expected) & out$expected!=0
-        out$statistic <- ms(out$observed[mask], out$expected[mask], sum(out$observed))
-        pval <- ptw2011.gof.test(out$observed[mask], out$expected[mask])
+      pval <- crosstabTest(observed, expected)
+        out$observed <- observed
+        out$expected <- expected
         if (log) {
             out$pval <- log(pval)
         } else {
@@ -675,3 +679,7 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
   list(pval=pval, std=std, raw=raw, gamma=gamma, detail=result)
 }
 
+crosstabTest <- function(ob, ex, trials) {
+	if (missing(trials)) trials <- 10000
+	.Call(crosstabTest_wrapper, ob, ex, trials)
+}

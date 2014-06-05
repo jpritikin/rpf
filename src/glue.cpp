@@ -420,6 +420,7 @@ static R_CallMethodDef flist[] = {
   {"ordinal_gamma_wrapper", (DL_FUNC) gamma_cor, 1},
   {"ssEAP_wrapper", (DL_FUNC) sumscoreEAP, 3},
   {"ot2000_wrapper", (DL_FUNC) ot2000_wrapper, 5},
+  {"crosstabTest_wrapper", (DL_FUNC) crosstabTest, 3},
   {NULL, NULL, 0}
 };
 
