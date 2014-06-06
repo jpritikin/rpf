@@ -62,7 +62,7 @@ void ifaGroup::import(SEXP Rlist)
 
 	// detect two-tier covariance structure
 	std::vector<int> orthogonal;
-	if (mlen >= 3) {
+	if (0 && mlen >= 3) {
 		Eigen::Map<Eigen::MatrixXd> Ecov(cov, mlen, mlen);
 		Eigen::Matrix<Eigen::DenseIndex, Eigen::Dynamic, 1> numCov((Ecov.array() != 0.0).matrix().colwise().count());
 		std::vector<int> candidate;
