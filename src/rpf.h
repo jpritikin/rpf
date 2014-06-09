@@ -67,6 +67,10 @@ SEXP gamma_cor(SEXP r_mat);
 SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts);
 SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter);
 SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials);
+SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems);
+SEXP drawPairwiseSample(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rresponses);
+SEXP pairwiseItemTest(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Robserved, SEXP Rtrials);
+SEXP pairwiseItemDistribution(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtrials);
 
 static inline int triangleLoc1(int diag)
 {

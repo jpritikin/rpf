@@ -4,9 +4,11 @@ library(rpf)
 context("goodness of fit")
 
 # traditional Pearson X^2 goodness of fit test
-pearson.gof <- function(observed, expected) {
+pearson.gof <- function(observed, expected, df) {
   x2 <- sum((observed - expected)^2/expected)
-  df <- (dim(observed)[1]-1) * (dim(observed)[2]-1)
+  if (missing(df)) {
+    df <- (dim(observed)[1]-1) * (dim(observed)[2]-1)
+  }
   pchisq(x2, df, lower.tail=FALSE)
 }
 
@@ -22,6 +24,7 @@ geolen <- function(v) sqrt(sum(v * v))
 angle <- function(v1, v2) acos(sum(v1 * v2) / (geolen(v1) * geolen(v2)))
 
 test_that("mc", {
+  set.seed(1)
   bins <- 8L
   v1 <- matrix(runif(bins), nrow=2)
   v2 <- matrix(runif(bins), nrow=2)
@@ -38,11 +41,12 @@ test_that("mc", {
     expected <- v3 * draws
     got$mc[xx] <- mc.gof.test(observed, expected)
     got$ptw[xx] <- ptw2011.gof.test(observed, expected)
-    got$x2[xx] <- pearson.gof(observed, expected)
+    got$x2[xx] <- pearson.gof(observed, expected, bins-1)
   }
 
   expect_equal(got$mc, got$ptw, .01)
-  expect_true(max(abs(got$x2 - got$mc)) > .25)   # not fair, but illustrative
+#  print(max(abs(got$x2 - got$mc)))
+  expect_true(max(abs(got$x2 - got$mc)) > .15)
 })
 
 test_that("crazy1", {
@@ -59,25 +63,6 @@ drawRandomProportion <- function(expected) {
   rowSim <- sample.int(length(expected), size=total, prob=prob, replace=TRUE)
   sim <- tabulate(rowSim, length(expected))
   sim
-}
-
-if (0) {
-  E <- round(runif(4, .5, 400))
-  trials <- 100
-  got <- rep(NA, trials)
-#  err <- 0
-  for (rep in 1:trials) {
-    O <- drawRandomProportion(E)
-    got[rep] <- ptw2011.gof.test(O, E)
-#    mc <- crosstabTest(t(O), t(E), 100000)
-#    err <- err + abs(got[rep] - mc)
-  }
-#  print(err)
-
-  require(ggplot2)
-  got <- 1 / (1+exp(-(logit(got) - .5)))
-  qplot(c(0, 1), stat = "function", fun = Vectorize(function(x) sum(got < x)/length(got)), geom = "line") +
-    geom_abline(slope=1, color="red")
 }
 
 drawRandomCrosstab <- function(expected) {
@@ -101,5 +86,5 @@ if (0) {
   
   require(ggplot2)
   qplot(c(0, 1), stat = "function", fun = Vectorize(function(x) sum(got < x)/length(got)), geom = "line") +
-    geom_abline(slope=1, color="red")
+    geom_abline(slope=1, color="red")+ coord_fixed()
 }

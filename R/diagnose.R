@@ -624,37 +624,21 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
       N <- sum(observed)
       s1 <- spec[[i1]]
       s2 <- spec[[i2]]
-      expected <- matrix(NA, s1@outcomes, s2@outcomes)
+
+      expected <- N * pairwiseExpected(grp, c(iter1, iter2), qwidth, qpoints)
       dimnames(expected) <- dimnames(observed)
 
-      # only integrate over relevant factors
-      f1 <- which(grp$param[1:s1@factors,i1] != 0)
-      f2 <- which(grp$param[1:s2@factors,i2] != 0)
-      fset <- union(f1, f2)
-      mean <- grp$mean[fset]
-      cov <- grp$cov[fset,fset, drop=FALSE]
-      theta <- thetaComb(seq(-qwidth,qwidth,length.out=qpoints), length(mean))
-      prior <- mvtnorm::dmvnorm(theta, mean, cov)
-      prior <- prior/sum(prior)
-      palette <- t(theta)
-      th1 <- palette[match(f1, fset),, drop=FALSE]
-      th2 <- palette[match(f2, fset),, drop=FALSE]
-
-      p1 <- rpf.prob(s1, grp$param[,i1], th1)
-      p2 <- rpf.prob(s2, grp$param[,i2], th2)
-      for (o1 in 1:s1@outcomes) {
-        for (o2 in 1:s2@outcomes) {
-          expected[o1,o2] <- N * sum(p1[o1,] * p2[o2,] * prior)
-        }
-      }
       s <- ordinal.gamma(observed) - ordinal.gamma(expected)
       if (!is.finite(s) || is.na(s) || s==0) s <- 1
       info <- list(observed=observed, expected=expected, sign=sign(s), gamma=s)
       gamma[iter1, iter2] <- s
 
       if (method == "rms") {
-          raw[iter1, iter2] <- ms(observed, expected, sum(observed))
-          pval[iter1, iter2] <- sign(s) * -log(ptw2011.gof.test(observed, expected))
+	      size <- sum(observed)
+	      raw[iter1, iter2] <- ms(observed/size, expected/size, 1)
+	      tmp <- ptw2011.gof.test(observed, expected)
+	      tmp <- 1 / (1+exp(-(logit(tmp) - 2.8)))  # not sure about this! TODO
+	      pval[iter1, iter2] <- sign(s) * -log(tmp)
       } else if (method == "pearson") {
           x2 <- sum((observed - expected)^2 / expected)
           df <- (s1@outcomes-1) * (s2@outcomes-1)
@@ -682,4 +666,20 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
 crosstabTest <- function(ob, ex, trials) {
 	if (missing(trials)) trials <- 10000
 	.Call(crosstabTest_wrapper, ob, ex, trials)
+}
+
+pairwiseExpected <- function(grp, items, qwidth=6, qpts=49L) {
+	.Call(pairwiseExpected_wrapper, grp, qwidth, qpts, items - 1L)
+}
+
+drawPairwiseSample <- function(grp, items, responses, qwidth=6, qpts=49L) {
+	.Call(drawPairwiseSample_wrapper, grp, qwidth, qpts, items - 1L, responses)
+}
+
+pairwiseItemTest <- function(grp, items, observed, qwidth=6, qpts=49L, trials=10000) {
+	.Call(pairwiseItemTest_wrapper, grp, qwidth, qpts, items - 1L, observed, trials)
+}
+
+pairwiseItemDistribution <- function(grp, items, qwidth=6, qpts=49L, trials=10000) {
+	.Call(pairwiseItemDistribution_wrapper, grp, qwidth, qpts, items - 1L, trials)
 }

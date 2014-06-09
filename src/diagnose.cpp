@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 struct ifaGroup {
+	bool twotier;
 	std::vector<double*> spec;
 	int numItems;
 	int maxParam;
@@ -16,6 +17,7 @@ struct ifaGroup {
 	// scores
 	// data
 
+	ifaGroup(bool _twotier) : twotier(_twotier) {}
 	void import(SEXP Rlist);
 	double *getItemParam(int ix) { return param + maxParam * ix; }
 };
@@ -62,7 +64,7 @@ void ifaGroup::import(SEXP Rlist)
 
 	// detect two-tier covariance structure
 	std::vector<int> orthogonal;
-	if (0 && mlen >= 3) {
+	if (twotier && mlen >= 3) {
 		Eigen::Map<Eigen::MatrixXd> Ecov(cov, mlen, mlen);
 		Eigen::Matrix<Eigen::DenseIndex, Eigen::Dynamic, 1> numCov((Ecov.array() != 0.0).matrix().colwise().count());
 		std::vector<int> candidate;
@@ -108,7 +110,8 @@ public:
 	std::vector<int> itemOutcomes;
 	Eigen::MatrixXd slCur;
 	Eigen::MatrixXd slPrev;
-
+	
+	ssEAP() : grp(false) {}
 	void setup(SEXP grp, double qwidth, int qpts);
 	void setLastItem(int which);
 	void tpbw1995();
@@ -352,14 +355,278 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts)
 	return Rout;
 }
 
-static void
-decodeLocation(long qx, const int dims, const int gridsize,
-	       const double *pts, double *out)
+struct ct1997 {
+	ifaGroup grp;
+	ba81NormalQuad quad;
+	Eigen::MatrixXd pDensity;
+	int specific;
+	int outcomes1;
+	int outcomes2;
+
+	Eigen::MatrixXi pThresh;
+	bool haveThresholds;
+
+	ct1997() : grp(true) {}
+	void setup(SEXP robj, double qwidth, int qpts, int i1, int i2);
+	void computeExpected(double *outMem);
+	void draw(int responses, double *outMem);
+};
+
+void ct1997::setup(SEXP robj, double qwidth, int qpts, int i1, int i2)
 {
-  for (int dx=0; dx < dims; dx++) {
-    out[dx] = pts[qx % gridsize];
-    qx = qx / gridsize;
-  }
+	grp.import(robj);
+	
+	// factor out? TODO
+	Eigen::Map<Eigen::MatrixXd> fullCov(grp.cov, grp.maxAbilities, grp.maxAbilities);
+	int dense = grp.maxAbilities - grp.numSpecific;
+	Eigen::MatrixXd priCov = fullCov.block(0, 0, dense, dense);
+	Eigen::VectorXd sVar = fullCov.diagonal().tail(grp.numSpecific);
+	quad.setup(qwidth, qpts, grp.mean, priCov, sVar);
+
+	if (i1 < 0 || i1 >= grp.spec.size()) Rf_error("Item %d out of range", i1);
+	if (i2 < 0 || i2 >= grp.spec.size()) Rf_error("Item %d out of range", i2);
+	if (i1 == i2) Rf_warning("Request to create bivariate distribution of %d with itself", i1);
+
+	double *spec1 = grp.spec[i1];
+	int id1 = spec1[RPF_ISpecID];
+	outcomes1 = spec1[RPF_ISpecOutcomes];
+	double *i1par = &grp.param[i1 * grp.maxParam];
+
+	double *spec2 = grp.spec[i2];
+	int id2 = spec1[RPF_ISpecID];
+	outcomes2 = spec2[RPF_ISpecOutcomes];
+	double *i2par = &grp.param[i2 * grp.maxParam];
+
+	specific = -1;
+	if (grp.numSpecific) {
+		for (int ax=quad.maxDims; ax < quad.maxAbilities; ax++) {
+			if (i1par[ax] != 0 && i2par[ax] != 0) {
+				specific = ax - quad.maxDims;
+				break;
+			}
+		}
+	}
+
+	pDensity.resize(outcomes1 * outcomes2, quad.totalQuadPoints);
+
+	Eigen::VectorXd o1(outcomes1);
+	Eigen::VectorXd o2(outcomes2);
+
+	for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
+		double *where = quad.wherePrep.data() + qx * quad.maxDims;
+		double ptheta[quad.maxAbilities];
+		for (int dx=0; dx < quad.maxAbilities; dx++) {
+			ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
+		}
+		(*librpf_model[id1].prob)(spec1, i1par, where, o1.data());
+		(*librpf_model[id2].prob)(spec2, i2par, where, o2.data());
+		Eigen::Map<Eigen::MatrixXd> out(&pDensity.coeffRef(0, qx), outcomes1, outcomes2);
+		out = o1 * o2.transpose();
+		//std::cout << ptheta[0] << " item1 " << o1 << " item2 " << o2 << " prod " << out << "\n";
+	}
+
+	haveThresholds = false;
+}
+
+template <typename T1, typename T2>
+void sampleWithWeights(int howMany, Eigen::MatrixBase<T1> &weight, Eigen::MatrixBase<T2> &out)
+{
+	out.setZero();
+	int cells = weight.rows(); // assume a column vector
+	for (int sx=0; sx < howMany; ++sx) {
+		int r1 = rand();
+		for (int cx=0; cx < cells; ++cx) {
+			int threshold = weight(cx);
+			if (r1 <= threshold) {
+				out(cx) += 1;
+				break;
+			} else {
+				r1 -= threshold;
+			}
+		}
+	}
+}
+
+void ct1997::draw(int responses, double *outMem)
+{
+	if (!haveThresholds) {
+		pThresh.resize(pDensity.rows(), pDensity.cols());
+		pThresh = (pDensity * RAND_MAX).cast<int>();
+		haveThresholds = true;
+	}
+
+	int cells = outcomes1 * outcomes2;
+	Eigen::Map<Eigen::VectorXd> out(outMem, cells);
+	out.setZero();
+	
+	Eigen::VectorXi pick(cells);
+
+	if (specific == -1) {
+		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
+			Eigen::Map<Eigen::VectorXi> prob(&pThresh.coeffRef(0, qx), cells);
+			sampleWithWeights(responses, prob, pick);
+			out += pick.cast<double>() * quad.priQarea[qx];
+		}
+	} else {
+		for (int qloc=0, qx=0; qx < quad.totalPrimaryPoints; ++qx) {
+			for (int sx=0; sx < quad.quadGridSize; ++sx) {
+				Eigen::Map<Eigen::VectorXi> prob(&pThresh.coeffRef(0, qx), cells);
+				sampleWithWeights(responses, prob, pick);
+				double area = quad.priQarea[qx] * quad.speQarea[sx * quad.numSpecific + specific];
+				out += pick.cast<double>() * area;
+			}
+		}
+	}
+}
+
+// Can do this faster without caching the outcome product for the whole quadrature TODO
+void ct1997::computeExpected(double *outMem)
+{
+	Eigen::Map<Eigen::MatrixXd> out(outMem, outcomes1, outcomes2);
+	out.setZero();
+
+	if (specific == -1) {
+		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
+			Eigen::Map<Eigen::MatrixXd> slice(&pDensity.coeffRef(0, qx), outcomes1, outcomes2);
+			out += slice * quad.priQarea[qx];
+		}
+	} else {
+		for (int qloc=0, qx=0; qx < quad.totalPrimaryPoints; ++qx) {
+			for (int sx=0; sx < quad.quadGridSize; ++sx) {
+				Eigen::Map<Eigen::MatrixXd> slice(&pDensity.coeffRef(0, qx), outcomes1, outcomes2);
+				out += slice * (quad.priQarea[qx] * quad.speQarea[sx * quad.numSpecific + specific]);
+			}
+		}
+	}
+}
+
+SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
+{
+	omxManageProtectInsanity mpi;
+
+	double qwidth = Rf_asReal(Rwidth);
+	int qpts = Rf_asInteger(Rpts);
+	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
+
+	ct1997 myct;
+	myct.setup(robj, qwidth, qpts, INTEGER(Ritems)[0], INTEGER(Ritems)[1]);
+
+	SEXP Rexpected;
+	Rf_protect(Rexpected = Rf_allocMatrix(REALSXP, myct.outcomes1, myct.outcomes2));
+	double *outMem = REAL(Rexpected);
+
+	myct.computeExpected(outMem);
+
+	return Rexpected;
+}
+
+SEXP drawPairwiseSample(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rresponses)
+{
+	omxManageProtectInsanity mpi;
+
+	double qwidth = Rf_asReal(Rwidth);
+	int qpts = Rf_asInteger(Rpts);
+	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
+
+	ct1997 myct;
+	myct.setup(robj, qwidth, qpts, INTEGER(Ritems)[0], INTEGER(Ritems)[1]);
+
+	SEXP Rdraw;
+	Rf_protect(Rdraw = Rf_allocMatrix(REALSXP, myct.outcomes1, myct.outcomes2));
+	double *outMem = REAL(Rdraw);
+
+	myct.draw(Rf_asInteger(Rresponses), outMem);
+
+	return Rdraw;
+}
+
+template <typename T1>
+static inline double simpleMS(Eigen::ArrayBase<T1> &observed,
+			      Eigen::ArrayBase<T1> &expected)
+{
+	return (observed - expected).square().sum();
+}
+
+SEXP pairwiseItemTest(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Robserved, SEXP Rtrials)
+{
+	omxManageProtectInsanity mpi;
+
+	double qwidth = Rf_asReal(Rwidth);
+	int qpts = Rf_asInteger(Rpts);
+	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
+
+	ct1997 myct;
+	myct.setup(robj, qwidth, qpts, INTEGER(Ritems)[0], INTEGER(Ritems)[1]);
+
+	int rows, cols;
+	getMatrixDims(Robserved, &rows, &cols);
+	if (rows != myct.outcomes1 || cols != myct.outcomes2) {
+		Rf_error("Observed matrix must be %dx%d", myct.outcomes1, myct.outcomes2);
+	}
+
+	Eigen::ArrayXXd observed(myct.outcomes1, myct.outcomes2);
+	if (Rf_isInteger(Robserved)) {
+		Eigen::Map<Eigen::ArrayXXi > tmp(INTEGER(Robserved), rows, cols);
+		observed = tmp.cast<double>();
+	} else if (Rf_isReal(Robserved)) {
+		memcpy(observed.data(), REAL(Robserved), sizeof(double) * rows * cols);
+	} else {
+		Rf_error("observed is an unknown type");
+	}
+
+	int originalTotal = int(observed.sum());
+	int simSize = std::min(originalTotal, 185);
+	observed *= double(simSize) / double(originalTotal);
+
+	Eigen::ArrayXXd expected(rows, cols);
+	myct.computeExpected(expected.data());
+	expected *= simSize;
+	double refMS = simpleMS(observed, expected);
+
+	int trials = Rf_asInteger(Rtrials); // SE = 1/(.05 * .95 * sqrt(trials))
+	Eigen::ArrayXd mcMS(trials);
+
+	for (int tx=0; tx < trials; ++tx) {
+		Eigen::ArrayXXd draw(rows, cols);
+		myct.draw(simSize, draw.data());
+		mcMS(tx) = simpleMS(draw, expected);
+	}
+
+	return Rf_ScalarReal(double((mcMS >= refMS).count()) / trials);
+}
+
+SEXP pairwiseItemDistribution(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtrials)
+{
+	omxManageProtectInsanity mpi;
+
+	double qwidth = Rf_asReal(Rwidth);
+	int qpts = Rf_asInteger(Rpts);
+	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
+
+	ct1997 myct;
+	myct.setup(robj, qwidth, qpts, INTEGER(Ritems)[0], INTEGER(Ritems)[1]);
+
+	int rows = myct.outcomes1;
+	int cols = myct.outcomes2;
+
+	int simSize = 185;
+
+	Eigen::ArrayXXd expected(rows, cols);
+	myct.computeExpected(expected.data());
+	expected *= simSize;
+
+	int trials = Rf_asInteger(Rtrials); // SE = 1/(.05 * .95 * sqrt(trials))
+	SEXP Rdist;
+	Rf_protect(Rdist = Rf_allocVector(REALSXP, trials));
+	double *mcMS = REAL(Rdist);
+
+	for (int tx=0; tx < trials; ++tx) {
+		Eigen::ArrayXXd draw(rows, cols);
+		myct.draw(simSize, draw.data());
+		mcMS[tx] = simpleMS(draw, expected);
+	}
+
+	return Rdist;
 }
 
 static void
