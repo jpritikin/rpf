@@ -369,7 +369,6 @@ struct ct1997 {
 	ct1997() : grp(true) {}
 	void setup(SEXP robj, double qwidth, int qpts, int i1, int i2);
 	void computeExpected(double *outMem);
-	void draw(int responses, double *outMem);
 };
 
 void ct1997::setup(SEXP robj, double qwidth, int qpts, int i1, int i2)
@@ -428,57 +427,6 @@ void ct1997::setup(SEXP robj, double qwidth, int qpts, int i1, int i2)
 	haveThresholds = false;
 }
 
-template <typename T1, typename T2>
-void sampleWithWeights(int howMany, Eigen::MatrixBase<T1> &weight, Eigen::MatrixBase<T2> &out)
-{
-	out.setZero();
-	int cells = weight.rows(); // assume a column vector
-	for (int sx=0; sx < howMany; ++sx) {
-		int r1 = rand();
-		for (int cx=0; cx < cells; ++cx) {
-			int threshold = weight(cx);
-			if (r1 <= threshold) {
-				out(cx) += 1;
-				break;
-			} else {
-				r1 -= threshold;
-			}
-		}
-	}
-}
-
-void ct1997::draw(int responses, double *outMem)
-{
-	if (!haveThresholds) {
-		pThresh.resize(pDensity.rows(), pDensity.cols());
-		pThresh = (pDensity * RAND_MAX).cast<int>();
-		haveThresholds = true;
-	}
-
-	int cells = outcomes1 * outcomes2;
-	Eigen::Map<Eigen::VectorXd> out(outMem, cells);
-	out.setZero();
-	
-	Eigen::VectorXi pick(cells);
-
-	if (specific == -1) {
-		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
-			Eigen::Map<Eigen::VectorXi> prob(&pThresh.coeffRef(0, qx), cells);
-			sampleWithWeights(responses, prob, pick);
-			out += pick.cast<double>() * quad.priQarea[qx];
-		}
-	} else {
-		for (int qloc=0, qx=0; qx < quad.totalPrimaryPoints; ++qx) {
-			for (int sx=0; sx < quad.quadGridSize; ++sx) {
-				Eigen::Map<Eigen::VectorXi> prob(&pThresh.coeffRef(0, qx), cells);
-				sampleWithWeights(responses, prob, pick);
-				double area = quad.priQarea[qx] * quad.speQarea[sx * quad.numSpecific + specific];
-				out += pick.cast<double>() * area;
-			}
-		}
-	}
-}
-
 // Can do this faster without caching the outcome product for the whole quadrature TODO
 void ct1997::computeExpected(double *outMem)
 {
@@ -518,115 +466,6 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 	myct.computeExpected(outMem);
 
 	return Rexpected;
-}
-
-SEXP drawPairwiseSample(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rresponses)
-{
-	omxManageProtectInsanity mpi;
-
-	double qwidth = Rf_asReal(Rwidth);
-	int qpts = Rf_asInteger(Rpts);
-	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
-
-	ct1997 myct;
-	myct.setup(robj, qwidth, qpts, INTEGER(Ritems)[0], INTEGER(Ritems)[1]);
-
-	SEXP Rdraw;
-	Rf_protect(Rdraw = Rf_allocMatrix(REALSXP, myct.outcomes1, myct.outcomes2));
-	double *outMem = REAL(Rdraw);
-
-	myct.draw(Rf_asInteger(Rresponses), outMem);
-
-	return Rdraw;
-}
-
-template <typename T1>
-static inline double simpleMS(Eigen::ArrayBase<T1> &observed,
-			      Eigen::ArrayBase<T1> &expected)
-{
-	return (observed - expected).square().sum();
-}
-
-SEXP pairwiseItemTest(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Robserved, SEXP Rtrials)
-{
-	omxManageProtectInsanity mpi;
-
-	double qwidth = Rf_asReal(Rwidth);
-	int qpts = Rf_asInteger(Rpts);
-	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
-
-	ct1997 myct;
-	myct.setup(robj, qwidth, qpts, INTEGER(Ritems)[0], INTEGER(Ritems)[1]);
-
-	int rows, cols;
-	getMatrixDims(Robserved, &rows, &cols);
-	if (rows != myct.outcomes1 || cols != myct.outcomes2) {
-		Rf_error("Observed matrix must be %dx%d", myct.outcomes1, myct.outcomes2);
-	}
-
-	Eigen::ArrayXXd observed(myct.outcomes1, myct.outcomes2);
-	if (Rf_isInteger(Robserved)) {
-		Eigen::Map<Eigen::ArrayXXi > tmp(INTEGER(Robserved), rows, cols);
-		observed = tmp.cast<double>();
-	} else if (Rf_isReal(Robserved)) {
-		memcpy(observed.data(), REAL(Robserved), sizeof(double) * rows * cols);
-	} else {
-		Rf_error("observed is an unknown type");
-	}
-
-	int originalTotal = int(observed.sum());
-	int simSize = std::min(originalTotal, 185);
-	observed *= double(simSize) / double(originalTotal);
-
-	Eigen::ArrayXXd expected(rows, cols);
-	myct.computeExpected(expected.data());
-	expected *= simSize;
-	double refMS = simpleMS(observed, expected);
-
-	int trials = Rf_asInteger(Rtrials); // SE = 1/(.05 * .95 * sqrt(trials))
-	Eigen::ArrayXd mcMS(trials);
-
-	for (int tx=0; tx < trials; ++tx) {
-		Eigen::ArrayXXd draw(rows, cols);
-		myct.draw(simSize, draw.data());
-		mcMS(tx) = simpleMS(draw, expected);
-	}
-
-	return Rf_ScalarReal(double((mcMS >= refMS).count()) / trials);
-}
-
-SEXP pairwiseItemDistribution(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtrials)
-{
-	omxManageProtectInsanity mpi;
-
-	double qwidth = Rf_asReal(Rwidth);
-	int qpts = Rf_asInteger(Rpts);
-	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
-
-	ct1997 myct;
-	myct.setup(robj, qwidth, qpts, INTEGER(Ritems)[0], INTEGER(Ritems)[1]);
-
-	int rows = myct.outcomes1;
-	int cols = myct.outcomes2;
-
-	int simSize = 185;
-
-	Eigen::ArrayXXd expected(rows, cols);
-	myct.computeExpected(expected.data());
-	expected *= simSize;
-
-	int trials = Rf_asInteger(Rtrials); // SE = 1/(.05 * .95 * sqrt(trials))
-	SEXP Rdist;
-	Rf_protect(Rdist = Rf_allocVector(REALSXP, trials));
-	double *mcMS = REAL(Rdist);
-
-	for (int tx=0; tx < trials; ++tx) {
-		Eigen::ArrayXXd draw(rows, cols);
-		myct.draw(simSize, draw.data());
-		mcMS[tx] = simpleMS(draw, expected);
-	}
-
-	return Rdist;
 }
 
 static void

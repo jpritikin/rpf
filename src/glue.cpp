@@ -422,9 +422,6 @@ static R_CallMethodDef flist[] = {
   {"ot2000_wrapper", (DL_FUNC) ot2000_wrapper, 5},
   {"crosstabTest_wrapper", (DL_FUNC) crosstabTest, 3},
   {"pairwiseExpected_wrapper", (DL_FUNC) pairwiseExpected, 4},
-  {"drawPairwiseSample_wrapper", (DL_FUNC) drawPairwiseSample, 5},
-  {"pairwiseItemTest_wrapper", (DL_FUNC) pairwiseItemTest, 6},
-  {"pairwiseItemDistribution_wrapper", (DL_FUNC) pairwiseItemDistribution, 5},
   {NULL, NULL, 0}
 };
 

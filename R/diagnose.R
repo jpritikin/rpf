@@ -671,15 +671,3 @@ crosstabTest <- function(ob, ex, trials) {
 pairwiseExpected <- function(grp, items, qwidth=6, qpts=49L) {
 	.Call(pairwiseExpected_wrapper, grp, qwidth, qpts, items - 1L)
 }
-
-drawPairwiseSample <- function(grp, items, responses, qwidth=6, qpts=49L) {
-	.Call(drawPairwiseSample_wrapper, grp, qwidth, qpts, items - 1L, responses)
-}
-
-pairwiseItemTest <- function(grp, items, observed, qwidth=6, qpts=49L, trials=10000) {
-	.Call(pairwiseItemTest_wrapper, grp, qwidth, qpts, items - 1L, observed, trials)
-}
-
-pairwiseItemDistribution <- function(grp, items, qwidth=6, qpts=49L, trials=10000) {
-	.Call(pairwiseItemDistribution_wrapper, grp, qwidth, qpts, items - 1L, trials)
-}
