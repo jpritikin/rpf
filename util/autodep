@@ -8,4 +8,4 @@ if [ ! -e ./util/autodep ]; then
   exit
 fi
 
-cd src && gcc -MM *.cpp | perl -pe 's,\bEigen[^\s]+, ,g' | perl -pe 's,^\s*\\\n,,' | perl -pe 's,:,: Makevars.in,' > autodep
+cd src && gcc -MM *.cpp | perl -pe 's,\bEigen[^\s]+, ,g' | perl -pe 's,^\s*\\\n,,' | perl -pe 's,:,: Makevars,' > autodep

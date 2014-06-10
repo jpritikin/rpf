@@ -2,8 +2,11 @@
 .Rhistory
 .gdbinit
 .*.tar.gz
-vignettes/auto
-^src/Makevars$
+^vignettes/auto
+^vignettes/*.html
+^vignettes/*.md
+^vignettes/figure
+^src/autodep$
 ^util/
 ^build
 .dir-locals.el

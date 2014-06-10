@@ -1,6 +1,6 @@
 #DEBUG_CXXFLAGS=-DDEBUG -D_GLIBCXX_DEBUG -g3 -fno-inline -O0
 #OPT_CXXFLAGS=-O2
-#GCC_CXXFLAGS=-Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter
+#GCC_CXXFLAGS=-Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wvla
 
 PKG_CXXFLAGS=$(DEBUG_CXXFLAGS) $(GCC_CXXFLAGS) $(OPT_CXXFLAGS)
 
