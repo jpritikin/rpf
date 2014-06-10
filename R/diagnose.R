@@ -142,7 +142,7 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, group=NULL, wh
     if (any(is.na(r1))) next
     if (all(r1 == 1) || all(r1 == outcomes)) {
       exclude.row <- c(exclude.row, ix)
-      warning(paste("Excluding response", rownames(responses)[ix], "because minimum or maximum"))
+      warning(paste("Excluding response", rownames(responses)[ix], "because it is a minimum or maximum"))
     }
   }
 
@@ -232,24 +232,115 @@ rpf.mean.info <- function(spec, param, grain=.1) {
   ret
 }
 
-##' Compute S-Chi-squared fit statistic for 1 item
+# copied from mirt
+collapseCells <- function(On, En, mincell = 1){
+		drop <- which(rowSums(is.na(En)) > 0)
+		En[is.na(En)] <- 0
+					#collapse known upper and lower sparce cells
+		if(length(drop) > 0L){
+			up <- drop[1L]:drop[length(drop)/2]
+			low <- drop[length(drop)/2 + 1L]:drop[length(drop)]
+			En[max(up)+1, ] <- colSums(En[c(up, max(up)+1), , drop = FALSE])
+			On[max(up)+1, ] <- colSums(On[c(up, max(up)+1), , drop = FALSE])
+			En[min(low)-1, ] <- colSums(En[c(low, min(low)-1), , drop = FALSE])
+			On[min(low)-1, ] <- colSums(On[c(low, min(low)-1), , drop = FALSE])
+			En[c(up, low), ] <- On[c(up, low), ] <- NA
+			En <- na.omit(En)
+			On <- na.omit(On)
+		}
+					#collapse accross
+		if(ncol(En) > 2L){
+			for(j in 1L:(ncol(On)-1L)){
+				L <- En < mincell
+				sel <- L[,j]
+				if(!any(sel)) next
+				On[sel, j+1L]  <- On[sel, j] + On[sel, j+1L]
+				En[sel, j+1L]  <- En[sel, j] + En[sel, j+1L]
+				On[sel, j] <- En[sel, j] <- NA
+			}
+			sel <- L[,j+1L]
+			sel[rowSums(is.na(En[, 1L:j])) == (ncol(En)-1L)] <- FALSE
+			put <- apply(En[sel, 1L:j, drop=FALSE], 1, function(x) max(which(!is.na(x))))
+			put2 <- which(sel)
+			for(k in 1L:length(put)){
+				En[put2[k], put[k]] <- En[put2[k], put[k]] + En[put2[k], j+1L]
+				En[put2[k], j+1L] <- On[put2[k], j+1L] <- NA
+			}
+		}
+		L <- En < mincell
+		L[is.na(L)] <- FALSE
+		while(any(L)){
+			drop <- c()
+			for(j in 1L:(nrow(On)-1L)){
+				if(any(L[j,])) {
+					On[j+1L, L[j,]] <- On[j+1L, L[j,]] + On[j, L[j,]]
+					En[j+1L, L[j,]] <- En[j+1L, L[j,]] + En[j, L[j,]]
+					drop <- c(drop, j)
+					break
+				}
+			}
+			for(j in nrow(On):2L){
+				if(any(L[j,])) {
+					On[j-1L, L[j,]] <- On[j-1L, L[j,]] + On[j, L[j,]]
+					En[j-1L, L[j,]] <- En[j-1L, L[j,]] + En[j, L[j,]]
+					drop <- c(drop, j)
+					break
+				}
+			}
+			if(nrow(On) > 4L){
+				for(j in 2L:(nrow(On)-1L)){
+					if(any(L[j,])){
+						On[j+1L, L[j,]] <- On[j+1L, L[j,]] + On[j, L[j,]]
+						En[j+1L, L[j,]] <- En[j+1L, L[j,]] + En[j, L[j,]]
+						drop <- c(drop, j)
+						break
+					}
+				}
+			}
+					#drop
+			if(!is.null(drop)){
+				En <- En[-drop, ]
+				On <- On[-drop, ]
+			}
+			L <- En < mincell
+			L[is.na(L)] <- FALSE
+		}
+        return(list(O=On, E=En))
+}
+
+##' Compute the S fit statistic for 1 item
 ##'
 ##' Implements the Kang & Chen (2007) polytomous extension to
-##' S-Chi-squared statistic of Orlando & Thissen (2000). Fails in the
-##' presence of missing data.
+##' S statistic of Orlando & Thissen (2000). Rows with
+##' missing data are ignored.
 ##'
-##' NOTE: IRTPRO 2.1 uses an equal interval quadrature rule by default.
+##' This statistic is good at finding a small number of misfitting
+##' items among a large number of well fitting items. However, be
+##' aware that misfitting items can cause other items to misfit.
 ##'
-##' WARNING: The algorithm for collapsing low-count cells has not been
-##' tested thoroughly.
+##' Observed tables cannot be computed when data is
+##' missing. Therefore, you can optionally omit items with the
+##' greatest number of responses missing relative to the item of
+##' interest.
+##' 
+##' Pearson is slightly more powerful than RMS is most cases I
+##' examined.
 ##'
-##' @param spec a list of item specifications
-##' @param param item paramters
-##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
+##' Setting \code{alt} to \code{TRUE} causes the tables to
+##' match published articles. However, the default setting of
+##' \code{FALSE} probably provides slightly more powerful for less
+##' than 10 items.
+##'
+##' @param grp a list with spec, param, mean, cov, and data
 ##' @param item the item of interest
-##' @param observed a matrix of observed raw scores by the outcome of the item of interest
-##' @param quad the quadrature rule (default is equally spaced intervals with 49 points)
-##'
+##' @param free the number of free parameters involved in estimating the item (to adjust the df)
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @param method whether to use a pearson or rms test
+##' @param log whether to return pvalues in log units
+##' @param qwidth the positive width of the quadrature in Z units
+##' @param qpoints the number of quadrature points
+##' @param alt whether to include the item of interest in the denominator
+##' @param omit number of items to omit
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
 ##' polytomous IRT models. ACT Research Report Series.
@@ -257,93 +348,167 @@ rpf.mean.info <- function(spec, param, grain=.1) {
 ##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
-rpf.ot2000.chisq1 <- function(spec, param, free, item, observed, quad=NULL) {
-  if (missing(quad)) {
-    n <- 49
-    width <- 6
-    x <- seq(-width, width, length.out=n)
-    quad <- list(x=x, w=dnorm(x)/sum(dnorm(x)))
-  }
+SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L, alt=FALSE, omit=0L) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+
+    spec <- grp$spec
   c.spec <- lapply(spec, function(m) {
-    if (length(m@spec)==0) { stop("Item model",m,"is not fully implemented") }
+    if (length(m@spec)==0) { stop("Item model",m,"is not implemented") }
     else { m@spec }
   })
 
+    param <- grp$param
+    itemIndex <- which(item == colnames(param))
+
+	mask <- rep(TRUE, ncol(param))
+	if (!alt) mask[itemIndex] <- FALSE
+	if (omit > 0L) {
+		omask <- rep(TRUE, ncol(param))
+		omask[itemIndex] <- FALSE
+		if (omit >= sum(omask)) stop("Cannot omit all the items")
+		rowMask <- !is.na(grp$data[,colnames(param)[itemIndex]])
+		nacount <- sort(-sapply(grp$data[rowMask, omask], function(x) sum(is.na(x))))
+		omit <- min(sum(nacount != 0), omit)
+		toOmit <- names(nacount)[1:omit]
+		#print(c(colnames(param)[itemIndex], toOmit))
+		mask[match(toOmit, colnames(grp$param))] <- FALSE
+	}
+	iobss <- itemOutcomeBySumScore(grp, mask, itemIndex)
+	observed <-iobss$table
+
   max.param <- max(vapply(spec, rpf.numParam, 0))
-  if (dim(param)[1] < max.param) {
+  if (nrow(param) < max.param) {
     stop(paste("param matrix must have", max.param ,"rows"))
   }
-  out <- .Call(orlando_thissen_2000_wrapper, c.spec, param, item, observed, quad)
-  out$orig.observed <- out$observed
-  out$orig.expected <- out$expected
-  kc <- .Call(kang_chen_2007_wrapper, out$orig.observed, out$orig.expected)
-  out$observed <- observed <- kc$observed
-  out$expected <- expected <- kc$expected
-  mask <- expected!=0
-  out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-  out$df <- out$df - free - kc$collapsed;
-  out$p.value <- dchisq(out$statistic, out$df)
-  out
+
+    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpoints, alt, mask)
+    if (nrow(Eproportion) != nrow(observed)) {
+	    print(Eproportion)
+	    stop(paste("Expecting", nrow(observed), "rows in expected matrix"))
+    }
+    Escale <- matrix(apply(observed, 1, sum), nrow=nrow(Eproportion), ncol=ncol(Eproportion))
+    expected <- Eproportion * Escale
+    out <- list(orig.observed=observed, orig.expected = expected)
+
+    mask <- apply(observed, 1, sum) != 0
+    observed = observed[mask,,drop=FALSE]
+    expected = expected[mask,,drop=FALSE]
+    if (!length(observed)) stop(paste("No data for item", item))
+
+    if (method == "pearson") {
+	if (alt) {
+		kc <- collapseCells(observed, expected)
+	} else {
+		kc <- .Call(collapse_wrapper, observed, expected)
+	}
+        out$observed <- observed <- kc$O
+        out$expected <- expected <- kc$E
+        mask <- !is.na(expected) & expected!=0
+        out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+	    out$df <- nrow(observed) * (ncol(observed) - 1)
+        out$df <- out$df - free - sum(is.na(expected));
+        out$pval <- pchisq(out$statistic, out$df, lower.tail=FALSE, log.p=log)
+    } else if (method == "rms") {
+      pval <- crosstabTest(observed, expected)
+        out$observed <- observed
+        out$expected <- expected
+        if (log) {
+            out$pval <- log(pval)
+        } else {
+            out$pval <- pval
+        }
+    } else {
+        stop(paste("Method", method, "not recognized"))
+    }
+    out$log <- log
+    out$method <- method
+	out$n <- iobss$n
+	out
 }
 
-##' Compute S-Chi-squared fit statistic for a set of items
+ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
+	if (missing(width)) width <- 6
+	if (missing(pts)) pts <- 49L
+	.Call(ot2000_wrapper, grp, item, width, pts, alt, mask)
+}
+
+##' Compute the S fit statistic for a set of items
 ##'
-##' Runs \code{\link{rpf.ot2000.chisq1}} for every item and accumulates
+##' Runs \code{\link{SitemFit1}} for every item and accumulates
 ##' the results.
 ##'
-##' TODO: Handle multiple factors with mean and covariance parameters.
+##' TODO: Optimize for two-tier covariance structure
+##' TODO: Option to omit some column to improve missing data performance
 ##'
-##' @param spec a list of item specifications
-##' @param param item paramters in columns
-##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
-##' @param data a data frame or matrix of response patterns, 1 per row
-##' @param quad the quadrature rule (default is equally spaced intervals with 49 points)
+##' @param grp a list with spec, param, mean, cov, data, and the free variable pattern
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @param method whether to use a pearson or rms test
+##' @param log whether to return pvalues in log units
+##' @param qwidth the positive width of the quadrature in Z units
+##' @param qpoints the number of quadrature points
+##' @param alt whether to include the item of interest in the denominator
+##' @param omit number of items to omit
 ##' @return
-##' a list of output from \code{\link{rpf.ot2000.chisq1}}
-rpf.ot2000.chisq <- function(spec, param, free, data, quad=NULL) {
-  if (missing(quad)) {
-    n <- 49
-    width <- 6
-    x <- seq(-width, width, length.out=n)
-    quad <- list(x=x, w=dnorm(x)/sum(dnorm(x)))
-  }
-  if (is.data.frame(data)) {
-    data <- sapply(data, unclass)
-  }
-  if (dim(data)[2] != length(spec)) stop("Dim mismatch between data and spec")
-  if (dim(param)[2] != length(spec)) stop("Dim mismatch between param and spec")
-  context <- 1:length(spec)
-  got = list()
+##' a list of output from \code{\link{SitemFit1}}
+##' @examples
+##' grp <- list(spec=list())
+##' grp$spec[1:20] <- rpf.grm()
+##' grp$param <- sapply(grp$spec, rpf.rparam)
+##' colnames(grp$param) <- paste("i", 1:20, sep="")
+##' grp$mean <- 0
+##' grp$cov <- diag(1)
+##' grp$free <- grp$param != 0
+##' grp$data <- rpf.sample(500, grp=grp)
+##' SitemFit(grp)
+SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L, alt=FALSE, omit=0L) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+
+    spec <- grp$spec
+    if (ncol(grp$data) != length(spec)) stop("Dim mismatch between data and spec")
+    param <- grp$param
+    if (ncol(param) != length(spec)) stop("Dim mismatch between param and spec")
+    if (is.null(colnames(param))) stop("grp$param must have column names")
+
+    got = list()
   for (interest in 1:length(spec)) {
-    if (0) {
-      # hard to persuade R to do this correctly
-      ob.table <- table(apply(data[,context[context != interest]], 1, sum), data[,interest])
-      sumscores <- (length(spec)-1):(sum(sapply(spec, function(m) slot(m,'outcomes'))) - spec[[interest]]@outcomes)
-      observed <- array(0, dim=c(length(sumscores), spec[[interest]]@outcomes))
-      rowmap <- match(sumscores, rownames(ob.table))
-      rowmap <- rowmap[!is.na(rowmap)]
-      observed[rowmap,] <- ob.table
-    } else {
-      observed <- .Call(sumscore_observed, sum(sapply(spec, function(m) slot(m,'outcomes'))),
-                        data, interest, spec[[interest]]@outcomes)
-    }
-    ot.out <- rpf.ot2000.chisq1(spec, param, sum(free[,interest]), interest, observed, quad)
-    got[[interest]] <- ot.out
+      free <- 0
+      if (!is.null(grp$free)) free <- sum(grp$free[,interest])
+      itemname <- colnames(param)[interest]
+      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints, alt=alt, omit=omit)
+      got[[itemname]] <- ot.out
   }
-  got
+    class(got) <- "summary.SitemFit"
+    got
 }
 
-thetaComb <- function(theta, nfact)  #copied from mirt
-{
-  if (nfact == 1L){
-    Theta <- matrix(theta)
-  } else {
-    thetalist <- vector('list', nfact)
-    for(i in 1L:nfact)
-      thetalist[[i]] <- theta
-    Theta <- as.matrix(expand.grid(thetalist))
-  }	
-  return(Theta)
+print.summary.SitemFit <- function(x,...) {
+	cat("Orlando & Thissen (2000) sum-score based item fit test\n")
+	cat("  Magnitudes larger than abs(log(.01))=4.6 are significant at the p=.01 level\n\n")
+	width <- max(sapply(names(x), nchar))
+	fmt <- paste("%", width, "s : n = %4d, ", sep="")
+	for (ix in 1:length(x)) {
+		report1 <- x[[ix]]
+		msg <- sprintf(fmt, names(x)[ix], report1$n)
+		stat <- round(report1$statistic, 2)
+		if (report1$method == "pearson") {
+			msg <- paste(msg, sprintf("S-X2(%3d) = %6.2f, ", report1$df, stat), sep="")
+		} else if (report1$method == "rms") {
+			msg <- paste(msg, "MS=", stat, ", ", sep="")
+		} else {
+			stop(report1$method)
+		}
+		if (report1$log) {
+			msg <- paste(msg, "log(p) = ", round(report1$pval, 2), sep="")
+		} else {
+			msg <- paste(msg, "p = ", round(report1$pval, 4), sep="")
+		}
+		msg <- paste(msg, "\n", sep="")
+		cat(msg)
+	}
 }
 
 ##' Compute the ordinal gamma association statistic
@@ -359,24 +524,25 @@ ms <- function(observed, expected, draws) {
 }
 
 P.cdf.fn <- function(x, g.var, t) {
-  sapply(t, function (t1) {
+  got <- sapply(t, function (t1) {
     n <- length(g.var)
     num <- exp(1-t1) * exp(1i * t1 * sqrt(n))
     den <- pi * (t1 - 1/(1-1i*sqrt(n)))
     pterm <- prod(sqrt(1 - 2*(t1-1)*g.var/x + 2i*t1*g.var*sqrt(n)/x))
     Im(num / (den * pterm))
   })
+#  print(cbind(t,got))
+  got
 }
 
 ##' Compute the P value that the observed and expected tables come from the same distribution
 ##'
-##' This method dramatically improves upon Pearson's X^2
+##' This test is an alternative to Pearson's X^2
 ##' goodness-of-fit test.  In contrast to Pearson's X^2, no ad hoc cell
-##' collapsing is needed to avoid an inflated false positive rate.
+##' collapsing is needed to avoid an inflated false positive rate
+##' in situations of sparse cell frequences.
 ##' The statistic rapidly converges to the Monte-Carlo estimate
-##' as the number of draws increases. In contrast to Pearson's
-##' X^2, the order of the matrices doesn't matter. This test is
-##' commutative with respect to its arguments.
+##' as the number of draws increases.
 ##' 
 ##' @param observed observed matrix
 ##' @param expected expected matrix
@@ -396,13 +562,21 @@ P.cdf.fn <- function(x, g.var, t) {
 
 ptw2011.gof.test <- function(observed, expected) {
   orig.draws <- sum(observed)
+  if (abs(sum(expected) - orig.draws) > 1e-6) {
+	  stop(paste("Total observed - total expected", abs(sum(expected) - orig.draws)))
+  }
+  if (any(c(expected)==0)) {
+	  zeros <- sum(c(expected)==0)
+	  stop(paste("There are", zeros, "zeros in the expected distribution.",
+		     "Did you swap the observed and expected arguments"))
+  }
   observed <- observed / orig.draws
   expected <- expected / orig.draws
 
   X <- ms(observed, expected, orig.draws)
   if (X == 0) return(1)
 
-  n <- prod(dim(observed))
+  n <- length(c(observed))
   D <- diag(1/c(expected))
   P <- matrix(-1/n, n,n)
   diag(P) <- 1 - 1/n
@@ -412,10 +586,16 @@ ptw2011.gof.test <- function(observed, expected) {
   # Eqn 8 needs n variances, but matrix B (Eqn 6) only has n-1 non-zero
   # eigenvalues. Perhaps n-1 degrees of freedom?
   
+# debugging:
 #  plot(function(t) P.cdf.fn(X, g.var, t), 0, 40)
+
   # 310 points should be good enough for 500 bins
   # Perkins, Tygert, Ward (2011, p. 10)
-  got <- integrate(function(t) P.cdf.fn(X, g.var, t), 0, 40, subdivisions=310L)
+
+# If integration tolerance is too large, non-convergence can result,
+# http://r.789695.n4.nabble.com/Need-help-to-understand-integrate-function-td2322093.html
+  got <- try(integrate(function(t) P.cdf.fn(X, g.var, t), 0, 40, subdivisions=310L, rel.tol=1e-10), silent=TRUE)
+  if (inherits(got, "try-error")) return(NA)
   p.value <- 1 - got$value
   smallest <- 6.3e-16  # approx exp(-35)
   if (p.value < smallest) p.value <- smallest
@@ -434,12 +614,13 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' Statically significant entries suggest that the item pair has
 ##' local dependence. Since log(.01)=-4.6, an absolute magitude of 5
 ##' is a reasonable cut-off. Positive entries indicate that the two
-##' items are more correlated than expected. These items may share an
+##' item residuals are more correlated than expected. These items may share an
 ##' unaccounted for latent dimension. Consider a redesign of the items
 ##' or the use of testlets for scoring. Negative entries indicate that
-##' the two items are less correlated than expected.
+##' the two item residuals are less correlated than expected.
 ##'
 ##' @param grp a list with the spec, param, mean, and cov describing the group
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param data data
 ##' @param inames a subset of items to examine
 ##' @param qwidth quadrature width
@@ -447,9 +628,11 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' @param method method to use to calculate P values. The default
 ##' ("rms") uses the root mean square statistic (see \code{\link{ptw2011.gof.test}}).
 ##' To obtain the traditional Pearson X^2 statistic, use method="pearson".
-##' @return a lower triangular matrix of log P values with the sign
+##' @return a list with raw, pval and detail. The pval matrix is a
+##' lower triangular matrix of log P values with the sign
 ##' determined by relative association between the observed and
 ##' expected tables (see \code{\link{ordinal.gamma}})
+##' @aliases chen.thissen.1997
 ##' @references Chen, W.-H. & Thissen, D. (1997). Local dependence
 ##' indexes for item pairs using Item Response Theory. \emph{Journal
 ##' of Educational and Behavioral Statistics, 22}(3), 265-289.
@@ -457,13 +640,17 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 ##' adaptive testing: A case for testlets.  \emph{Journal of
 ##' Educational measurement, 24}(3), 185--201.
-chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49, method="rms") {
+ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson") {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+
   if (is.null(colnames(grp$param))) stop("Item parameter columns must be named")
 
   if (missing(data)) {
       data <- grp$data
   }
-  if (method != "rms" && method != "pearson") stop(paste("Unknown method", method))
+  if (method != "rms" && method != "pearson" && method != "lr") stop(paste("Unknown method", method))
   if (missing(inames)) {
     inames <- colnames(grp$param)
   }
@@ -496,7 +683,6 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
   pval <- matrix(NA, length(items), length(items))
   dimnames(pval) <- list(inames, inames)
 
-  # sort item pairs by fset TODO
   for (iter1 in 2:length(items)) {
     for (iter2 in 1:(iter1-1)) {
       i1 <- items[iter1]
@@ -505,50 +691,73 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
       N <- sum(observed)
       s1 <- spec[[i1]]
       s2 <- spec[[i2]]
-      expected <- matrix(NA, s1@outcomes, s2@outcomes)
+
+      expected <- N * pairwiseExpected(grp, c(iter1, iter2), qwidth, qpoints)
       dimnames(expected) <- dimnames(observed)
 
-      # only integrate over relevant factors
-      f1 <- which(grp$param[1:s1@factors,i1] != 0)
-      f2 <- which(grp$param[1:s2@factors,i2] != 0)
-      fset <- union(f1, f2)
-      mean <- grp$mean[fset]
-      cov <- grp$cov[fset,fset, drop=FALSE]
-      theta <- thetaComb(seq(-qwidth,qwidth,length.out=qpoints), length(mean))
-      prior <- mvtnorm::dmvnorm(theta, mean, cov)
-      prior <- prior/sum(prior)
-      palette <- t(theta)
-      th1 <- palette[match(f1, fset),, drop=FALSE]
-      th2 <- palette[match(f2, fset),, drop=FALSE]
-
-      p1 <- rpf.prob(s1, grp$param[,i1], th1)
-      p2 <- rpf.prob(s2, grp$param[,i2], th2)
-      for (o1 in 1:s1@outcomes) {
-        for (o2 in 1:s2@outcomes) {
-          expected[o1,o2] <- N * sum(p1[o1,] * p2[o2,] * prior)
-        }
-      }
       s <- ordinal.gamma(observed) - ordinal.gamma(expected)
       if (!is.finite(s) || is.na(s) || s==0) s <- 1
-      info <- list(observed=observed, expected=expected, sign=sign(s), gamma=s)
+      info <- list(orig.observed=observed, orig.expected=expected, sign=sign(s), gamma=s)
       gamma[iter1, iter2] <- s
 
       if (method == "rms") {
-          raw[iter1, iter2] <- ms(observed, expected, sum(observed))
-          pval[iter1, iter2] <- sign(s) * -log(ptw2011.gof.test(observed, expected))
-      } else {
-          x2 <- sum((observed - expected)^2 / expected)
-          df <- (s1@outcomes-1) * (s2@outcomes-1)
-          info <- c(info, x2=x2, df=df)
+	      size <- sum(observed)
+	      raw[iter1, iter2] <- ms(observed/size, expected/size, 1)
+	      tmp <- ptw2011.gof.test(observed, expected)
+	      tmp <- 1 / (1+exp(-(logit(tmp) - 2.8)))  # not sure about this! TODO
+	      pval[iter1, iter2] <- sign(s) * -log(tmp)
+      } else if (method == "pearson") {
+	      kc <- .Call(collapse_wrapper, observed, expected)
+	      observed <- kc$O
+	      expected <- kc$E
+	      mask <- !is.na(expected)
+          x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+          df <- (s1@outcomes-1) * (s2@outcomes-1) - kc$collapsed
+          info <- c(info, list(x2=x2, df=df, observed=observed, expected=expected))
 
           raw[iter1, iter2] <- sign(s) * x2
           std[iter1, iter2] <- sign(s) * abs((x2 - df)/sqrt(2*df))
           pval[iter1, iter2] <- sign(s) * -pchisq(x2, df, lower.tail=FALSE, log.p=TRUE)
+      } else if (method == "lr") {
+          mask <- observed > 0
+          g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
+          df <- (s1@outcomes-1) * (s2@outcomes-1)
+          info <- c(info, g2=g2, df=df)
+
+          raw[iter1, iter2] <- sign(s) * g2
+          pval[iter1, iter2] <- sign(s) * -pchisq(g2, df, lower.tail=FALSE, log.p=TRUE)
       }
 
       result[[paste(inames[iter1], inames[iter2], sep=":")]] <- info
     }
   }
-  list(pval=pval, std=std, raw=raw, gamma=gamma, detail=result)
+  retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=result, method=method)
+  class(retobj) <- "summary.ChenThissen1997"
+  retobj
 }
 
+# deprecated name
+chen.thissen.1997 <- ChenThissen1997
+
+print.summary.ChenThissen1997 <- function(x,...) {
+	cat("Chen & Thissen (1997) local dependence test\n")
+	cat("  Magnitudes larger than abs(log(.01))=4.6 are significant at the p=.01 level\n")
+	cat("  A positive (negative) sign indicates more (less) observed correlation than expected\n\n")
+	print(round(x$pval,2))
+}
+
+##' Monte-Carlo test for cross-tabulation tables
+##'
+##' This is for developers.
+##'
+##' @param ob observed table
+##' @param ex expected table
+##' @param trials number of Monte-Carlo trials
+crosstabTest <- function(ob, ex, trials) {
+	if (missing(trials)) trials <- 10000
+	.Call(crosstabTest_wrapper, ob, ex, trials)
+}
+
+pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L) {
+	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L)
+}
