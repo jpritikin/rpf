@@ -12,6 +12,7 @@ struct ifaGroup {
 	int maxAbilities;
 	double *mean;
 	double *cov;
+	std::vector<const char*> factorNames;
 
 	// TODO:
 	// scores
@@ -52,6 +53,18 @@ void ifaGroup::import(SEXP Rlist)
 			getMatrixDims(slotValue, &nrow, &ncol);
 			if (nrow != ncol) Rf_error("cov must be a square matrix (not %dx%d)", nrow, ncol);
 			cov = REAL(slotValue);
+
+			SEXP dimnames;
+			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
+			if (!Rf_isNull(dimnames) && Rf_length(dimnames) == 2) {
+				SEXP names;
+				Rf_protect(names = VECTOR_ELT(dimnames, 0));
+				int nlen = Rf_length(names);
+				factorNames.resize(nlen);
+				for (int nx=0; nx < nlen; ++nx) {
+					factorNames[nx] = CHAR(STRING_ELT(names, nx));
+				}
+			}
 		} else {
 			// ignore
 		}
@@ -311,6 +324,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts)
 	myeap.tpbw1995();
 
 	ba81NormalQuad &quad = myeap.quad;
+	ifaGroup &grp = myeap.grp;
 	Eigen::MatrixXd &slCur = myeap.slCur;
 
 	if (quad.numSpecific == 0) {
@@ -328,17 +342,53 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts)
 	}
 
 	int curMax = myeap.maxScore;
+	int outRows = 1 + curMax;
+	int outCols = 1 + 2 * quad.maxAbilities + triangleLoc1(quad.maxAbilities);
 
-	Eigen::VectorXd ssProb(1+curMax);
+	SEXP dimnames;
+	Rf_protect(dimnames = Rf_allocVector(VECSXP, 2));
+	SEXP names;
+	Rf_protect(names = Rf_allocVector(STRSXP, outRows));
+	for (int rx=0; rx <= curMax; ++rx) {
+		const int SMALLBUF = 10;
+		char buf[SMALLBUF];
+		snprintf(buf, SMALLBUF, "%d", rx);
+                SET_STRING_ELT(names, rx, Rf_mkChar(buf));
+	}
+	SET_VECTOR_ELT(dimnames, 0, names);
+
+	Rf_protect(names = Rf_allocVector(STRSXP, outCols));
+	SET_STRING_ELT(names, 0, Rf_mkChar("p"));
+	for (int ax=0; ax < quad.maxAbilities; ++ax) {
+		const int SMALLBUF = 10;
+		char buf[SMALLBUF];
+		if (grp.factorNames.size()) {
+			SET_STRING_ELT(names, 1+ax, Rf_mkChar(grp.factorNames[ax]));
+		} else {
+			snprintf(buf, SMALLBUF, "f%d", 1+ax);
+			SET_STRING_ELT(names, 1+ax, Rf_mkChar(buf));
+		}
+		snprintf(buf, SMALLBUF, "se%d", 1+ax);
+		SET_STRING_ELT(names, 1+quad.maxAbilities+ax, Rf_mkChar(buf));
+	}
+	for (int cx=0; cx < triangleLoc1(quad.maxAbilities); ++cx) {
+		const int SMALLBUF = 10;
+		char buf[SMALLBUF];
+		snprintf(buf, SMALLBUF, "cov%d", 1+cx);
+		SET_STRING_ELT(names, 1+2*quad.maxAbilities+cx, Rf_mkChar(buf));
+	}
+	SET_VECTOR_ELT(dimnames, 1, names);
+
+	Eigen::VectorXd ssProb(outRows);
 	ssProb = slCur.array().colwise().sum();
 
-	int perScore = quad.maxAbilities + triangleLoc1(quad.maxAbilities);
 	SEXP Rout;
-	Rf_protect(Rout = Rf_allocMatrix(REALSXP, 1+curMax, 1+perScore));
+	Rf_protect(Rout = Rf_allocMatrix(REALSXP, outRows, outCols));
+	Rf_setAttrib(Rout, R_DimNamesSymbol, dimnames);
 	double *out = REAL(Rout);
-	memcpy(out, ssProb.data(), sizeof(double) * (1+curMax));
+	memcpy(out, ssProb.data(), sizeof(double) * outRows);
 	for (int cx=0; cx <= curMax; cx++) {
-		std::vector<double> pad(perScore);
+		std::vector<double> pad(quad.maxAbilities + triangleLoc1(quad.maxAbilities));
 		if (quad.numSpecific == 0) {
 			quad.EAP(&slCur.coeffRef(0, cx), 1/ssProb[cx], pad.data());
 		} else {
@@ -346,12 +396,15 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts)
 			weight.array().rowwise() = slCur.array().col(cx).transpose();
 			quad.EAP(weight.data(), 1/ssProb[cx], pad.data());
 		}
-		for (int sx=0; sx < perScore; ++sx) {
-			out[(1+sx) * (curMax+1) + cx] = pad[sx];
+		for (int sx=0; sx < quad.maxAbilities; ++sx) {
+			out[(1+sx) * outRows + cx] = pad[sx];
+			out[(1+quad.maxAbilities+sx) * outRows + cx] = sqrt(pad[quad.maxAbilities + triangleLoc0(sx)]);
+		}
+		for (int sx=0; sx < triangleLoc1(quad.maxAbilities); ++sx) {
+			out[(1+2*quad.maxAbilities+sx) * outRows + cx] = pad[quad.maxAbilities + sx];
 		}
 	}
 
-	// add dimnames TODO
 	return Rout;
 }
 

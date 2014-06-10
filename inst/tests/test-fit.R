@@ -19,15 +19,18 @@ test_that("tpbw1995-table2", {
   
   got <- sumScoreEAP(grp)
   
-  expect_equal(sum(got[,1]), 1, tolerance=.001)
+  expect_equal(sum(got[,'p']), 1, tolerance=.001)
   
   #cat(deparse(round(got[,2],3)))
+  rownames(got) <- NULL
+  
   ssP <- c(0.325, 0.241, 0.183, 0.123, 0.069, 0.035, 0.016, 0.006, 0.002,  0)
-  expect_equal(got[,1], ssP, tolerance=.01)
+  expect_equal(got[,'p'], ssP, tolerance=.01)
   ssEAP <- c(-0.885, -0.179, 0.332, 0.744, 1.115, 1.482, 1.843, 2.212, 2.622,  2.999)
-  expect_equal(got[,2], ssEAP, tolerance=.01)
+  expect_equal(got[,'f1'], ssEAP, tolerance=.01)
   ssVar <- c(0.494, 0.378, 0.329, 0.299, 0.297, 0.296, 0.29, 0.296, 0.313,  0.328)
-  expect_equal(got[,3], ssVar, tolerance=.01)
+  expect_equal(got[,'se1'], sqrt(ssVar), tolerance=.01)
+  expect_equal(got[,'cov1'], ssVar, tolerance=.01)
 })
 
 verifySumP <- function(grp, sseap, N=2000) {  # a good fit is close to 1
