@@ -4,15 +4,12 @@ set -o errexit
 set -o nounset
 set -o noclobber
 
-if [ ! -e ./util/package ]; then
+if [ ! -e ./util/check ]; then
   echo "$0 must be run from the top of the project tree"
   exit
 fi
 
-git log --oneline -1
-[ -d build ] && rm -r ./build
-mkdir build
-git archive --format=tar HEAD | (cd build; tar -xf -)
+./util/build
 cd build
 
 cran=
@@ -22,8 +19,6 @@ fi
 
 pkg=rpf
 
-./util/rox
-R CMD build .
 # inconsolata is not available from tlmgr; set R_RD4PDF to avoid it
 R_RD4PDF="times,hyper" R CMD check $cran ${pkg}_*.tar.gz || true
 cat ${pkg}.Rcheck/00install.out

@@ -1,0 +1,19 @@
+#!/bin/sh
+
+set -o errexit
+set -o nounset
+set -o noclobber
+
+if [ ! -e ./util/build ]; then
+  echo "$0 must be run from the top of the project tree"
+  exit
+fi
+
+git log --oneline -1
+[ -d build ] && rm -r ./build
+mkdir build
+git archive --format=tar HEAD | (cd build; tar -xf -)
+cd build
+
+./util/rox
+R CMD build .
