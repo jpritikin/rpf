@@ -172,16 +172,16 @@ void ssEAP::tpbw1995()
 		const double *spec = grp.spec[item0];
 		int id = spec[RPF_ISpecID];
 		const int dims = spec[RPF_ISpecDims];
+		Eigen::VectorXd ptheta(dims);
 		double *iparam = grp.getItemParam(item0);
 		int outcomes = itemOutcomes[item0];
+		Eigen::VectorXd oprob(outcomes);
 		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
-			double oprob[outcomes];
 			double *where = quad.wherePrep.data() + qx * quad.maxDims;
-			double ptheta[dims];
 			for (int dx=0; dx < dims; dx++) {
 				ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
 			}
-			librpf_model[id].prob(spec, iparam, ptheta, oprob);
+			librpf_model[id].prob(spec, iparam, ptheta.data(), oprob.data());
 			for (int ox=0; ox < outcomes; ++ox) {
 				slCur(qx, ox) = oprob[ox];
 			}
@@ -197,17 +197,17 @@ void ssEAP::tpbw1995()
 		const double *spec = grp.spec[ix];
 		int id = spec[RPF_ISpecID];
 		const int dims = spec[RPF_ISpecDims];
+		Eigen::VectorXd ptheta(dims);
 		double *iparam = grp.getItemParam(ix);
 		int outcomes = itemOutcomes[ix];
+		Eigen::VectorXd oprob(outcomes);
 		slCur.topLeftCorner(slCur.rows(), curMax + outcomes).setZero();
 		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
-			double oprob[outcomes];
 			double *where = quad.wherePrep.data() + qx * quad.maxDims;
-			double ptheta[dims];
 			for (int dx=0; dx < dims; dx++) {
 				ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
 			}
-			librpf_model[id].prob(spec, iparam, ptheta, oprob);
+			librpf_model[id].prob(spec, iparam, ptheta.data(), oprob.data());
 			for (int cx=0; cx <= curMax; cx++) {
 				for (int ox=0; ox < outcomes; ox++) {
 					slCur(qx, cx + ox) += slPrev(qx, cx) * oprob[ox];
@@ -241,15 +241,15 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter)
 		const double *spec = grp.spec[interest];
 		int id = spec[RPF_ISpecID];
 		const int dims = spec[RPF_ISpecDims];
+		Eigen::VectorXd ptheta(dims);
 		double *iparam = grp.getItemParam(interest);
+		Eigen::VectorXd oprob(outcomes);
 		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
-			double oprob[outcomes];
 			double *where = quad.wherePrep.data() + qx * quad.maxDims;
-			double ptheta[dims];
 			for (int dx=0; dx < dims; dx++) {
 				ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
 			}
-			librpf_model[id].prob(spec, iparam, ptheta, oprob);
+			librpf_model[id].prob(spec, iparam, ptheta.data(), oprob.data());
 			for (int ox=0; ox < outcomes; ox++) {
 				iProb(qx, ox) = oprob[ox];
 			}
@@ -471,15 +471,15 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 			out += (o1 * o2.transpose()) * quad.priQarea[qx];
 		}
 	} else {
+		Eigen::VectorXd ptheta(quad.maxAbilities);
 		for (int qloc=0, qx=0; qx < quad.totalPrimaryPoints; ++qx) {
 			for (int sx=0; sx < quad.quadGridSize; ++sx) {
 				double *where = quad.wherePrep.data() + qloc * quad.maxDims;
-				double ptheta[quad.maxAbilities];
 				for (int dx=0; dx < quad.maxAbilities; dx++) {
 					ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
 				}
-				(*librpf_model[id1].prob)(spec1, i1par, ptheta, o1.data());
-				(*librpf_model[id2].prob)(spec2, i2par, ptheta, o2.data());
+				(*librpf_model[id1].prob)(spec1, i1par, ptheta.data(), o1.data());
+				(*librpf_model[id2].prob)(spec2, i2par, ptheta.data(), o2.data());
 				double area = quad.priQarea[qx] * quad.speQarea[sx * quad.numSpecific + specific];
 				out += (o1 * o2.transpose()) * area;
 				++qloc;

@@ -47,7 +47,7 @@ _mahalanobis(char *err, int dim, double *loc, double *center, double *origCov)
 	}
 
 	Matrix covMat(origCov, dim, dim);
-	Eigen::VectorXd icov(dim * dim);
+	std::vector<double> icov(dim * dim);
 	Matrix icovMat(icov.data(), dim, dim);
 	int info = MatrixSolve(covMat, icovMat, true); // can optimize for symmetry TODO
 	if (info) {
@@ -92,10 +92,10 @@ _dmvnorm(char *err, int dim, double *loc, double *mean, double *origSigma)
 	int iunused;
 	double abstol = 0;
 	int m;
-	double w[dim];
-	double Z[dim];
+	Eigen::VectorXd w(dim);
+	Eigen::VectorXd Z(dim);
 	int ldz=1;
-	int isuppz[2*dim];
+	Eigen::VectorXi isuppz(2*dim);
 	int lwork = -1;
 	double optlWork;
 	int optliWork;
@@ -106,8 +106,8 @@ _dmvnorm(char *err, int dim, double *loc, double *mean, double *origSigma)
 			 &dim, sigma.data(), &dim,
 			 &vunused, &vunused,
 			 &iunused, &iunused,
-			 &abstol, &m, w,
-			 Z, &ldz, isuppz,
+			 &abstol, &m, w.data(),
+			 Z.data(), &ldz, isuppz.data(),
 			 &optlWork, &lwork,
 			 &optliWork, &liwork, &info);
 	if (info != 0) {
@@ -121,7 +121,7 @@ _dmvnorm(char *err, int dim, double *loc, double *mean, double *origSigma)
 	std::vector<int> iwork(liwork);
 
 	F77_CALL(dsyevr)(&jobz, &range, &uplo, &dim, sigma.data(), &dim,
-			 &vunused, &vunused, &iunused, &iunused, &abstol, &m, w, Z, &ldz, isuppz,
+			 &vunused, &vunused, &iunused, &iunused, &abstol, &m, w.data(), Z.data(), &ldz, isuppz.data(),
 			 work.data(), &lwork, iwork.data(), &liwork, &info);
 	if (info < 0) {
 		snprintf(err, ERROR_LEN, "Arg %d is invalid", -info);

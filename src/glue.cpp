@@ -186,15 +186,15 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   double *theta = REAL(r_theta);
   double *param = REAL(r_param);
     
+  Eigen::VectorXd thBuf(dims);
   for (int px=0; px < numPeople; px++) {
-    double thBuf[dims];
-    if (!unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf)) {
+	  if (!unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf.data())) {
 	for (int ox=0; ox < numOutcomes; ox++) {
 	  out[px*numOutcomes + ox] = NA_REAL;
 	}
 	continue;
     }
-    (*librpf_model[id].prob)(spec, param, thBuf, out+px*numOutcomes);
+	  (*librpf_model[id].prob)(spec, param, thBuf.data(), out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
       double prob = out[px*numOutcomes + ox];
       if (!std::isfinite(prob)) {
@@ -244,15 +244,15 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   double *theta = REAL(r_theta);
   double *param = REAL(r_param);
     
+  Eigen::VectorXd thBuf(dims);
   for (int px=0; px < numPeople; px++) {
-    double thBuf[dims];
-    if (!unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf)) {
+	  if (!unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf.data())) {
 	for (int ox=0; ox < numOutcomes; ox++) {
 	  out[px*numOutcomes + ox] = NA_REAL;
 	}
 	continue;
     }
-    (*librpf_model[id].logprob)(spec, param, thBuf, out+px*numOutcomes);
+	  (*librpf_model[id].logprob)(spec, param, thBuf.data(), out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
       double prob = out[px*numOutcomes + ox];
       if (!std::isfinite(prob)) {
@@ -393,13 +393,13 @@ rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
     Rf_error("Item has %d dimensions, but cov is %dx%d",
 	  dims, cov_rows, cov_cols);
 
-  int mask[numParam];
-  memset(mask, 0, sizeof(*mask) * numParam);
+  Eigen::VectorXi mask(numParam);
+  mask.setZero();
 
   SEXP ret;
   Rf_protect(ret = Rf_allocVector(REALSXP, numParam));
   memcpy(REAL(ret), REAL(r_param), sizeof(double) * numParam);
-  (*librpf_model[id].rescale)(spec, REAL(ret), mask,
+  (*librpf_model[id].rescale)(spec, REAL(ret), mask.data(),
 			      REAL(r_mean), REAL(r_cov));
   UNPROTECT(1);
   return ret;
