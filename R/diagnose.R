@@ -308,22 +308,35 @@ collapseCells <- function(On, En, mincell = 1){
         return(list(O=On, E=En))
 }
 
-##' Compute S-Chi-squared fit statistic for 1 item
+##' Compute the S fit statistic for 1 item
 ##'
 ##' Implements the Kang & Chen (2007) polytomous extension to
-##' S-Chi-squared statistic of Orlando & Thissen (2000). Rows with
+##' S statistic of Orlando & Thissen (2000). Rows with
 ##' missing data are ignored.
+##'
+##' This statistic is good at finding a small number of misfitting
+##' items among a large number of well fitting items. However, be
+##' aware that misfitting items can cause other items to misfit.
+##'
+##' Pearson is slightly more powerful than RMS is most cases I
+##' examined.
+##'
+##' Setting \code{alt} to \code{TRUE} causes the tables to
+##' match published articles. However, the default setting of
+##' \code{FALSE} probably provides slightly more powerful for less
+##' than 10 items.
 ##'
 ##' WARNING: The algorithm for collapsing low-count cells has not been
 ##' tested thoroughly.
 ##'
-##' @param spec a list of item specifications
-##' @param param item paramters
-##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
+##' @param grp a list with spec, param, mean, cov, and data
 ##' @param item the item of interest
-##' @param observed a matrix of observed raw scores by the outcome of the item of interest
-##' @param quad the quadrature rule (default is equally spaced intervals with 49 points)
-##'
+##' @param free the number of free parameters involved in estimating the item (to adjust the df)
+##' @param method whether to use a pearson or rms test
+##' @param log whether to return pvalues in log units
+##' @param qwidth the positive width of the quadrature in Z units
+##' @param qpts the number of quadrature points
+##' @param alt whether to include the item of interest in the denominator
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
 ##' polytomous IRT models. ACT Research Report Series.
@@ -331,7 +344,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
-rpf.SitemFit1 <- function(grp, item, free=0, method="pearson", log=FALSE, qwidth=6, qpts=49L, alt=FALSE) {
+SitemFit1 <- function(grp, item, free=0, method="pearson", log=FALSE, qwidth=6, qpts=49L, alt=FALSE) {
     spec <- grp$spec
   c.spec <- lapply(spec, function(m) {
     if (length(m@spec)==0) { stop("Item model",m,"is not implemented") }
@@ -409,20 +422,33 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE) {
 	.Call(ot2000_wrapper, grp, item, width, pts, alt)
 }
 
-##' Compute S-Chi-squared fit statistic for a set of items
+##' Compute the S fit statistic for a set of items
 ##'
-##' Runs \code{\link{rpf.ot2000.chisq1}} for every item and accumulates
+##' Runs \code{\link{SitemFit1}} for every item and accumulates
 ##' the results.
 ##'
-##' TODO: Handle two-tier covariance structure
+##' TODO: Optimize for two-tier covariance structure
+##' TODO: Option to omit some column to improve missing data performance
 ##'
-##' @param spec a list of item specifications
-##' @param param item paramters in columns
-##' @param free a matrix of the same shape as \code{param} indicating whether the parameter is free (TRUE) or fixed
-##' @param data a data frame or matrix of response patterns, 1 per row
+##' @param grp a list with spec, param, mean, cov, data, and the free variable pattern
+##' @param method whether to use a pearson or rms test
+##' @param log whether to return pvalues in log units
+##' @param qwidth the positive width of the quadrature in Z units
+##' @param qpts the number of quadrature points
+##' @param alt whether to include the item of interest in the denominator
 ##' @return
-##' a list of output from \code{\link{rpf.ot2000.chisq1}}
-rpf.SitemFit <- function(grp, method="pearson", log=FALSE, qwidth=6, qpts=49L, alt=FALSE) {
+##' a list of output from \code{\link{SitemFit1}}
+##' @examples
+##' grp <- list(spec=list())
+##' grp$spec[1:20] <- rpf.grm()
+##' grp$param <- sapply(grp$spec, rpf.rparam)
+##' colnames(grp$param) <- paste("i", 1:20, sep="")
+##' grp$mean <- 0
+##' grp$cov <- diag(1)
+##' grp$free <- grp$param != 0
+##' grp$data <- rpf.sample(500, grp=grp)
+##' got <- SitemFit(grp)
+SitemFit <- function(grp, method="pearson", log=FALSE, qwidth=6, qpts=49L, alt=FALSE) {
     spec <- grp$spec
     if (ncol(grp$data) != length(spec)) stop("Dim mismatch between data and spec")
     param <- grp$param
@@ -434,23 +460,10 @@ rpf.SitemFit <- function(grp, method="pearson", log=FALSE, qwidth=6, qpts=49L, a
       free <- 0
       if (!is.null(grp$free)) free <- sum(grp$free[,interest])
       itemname <- colnames(param)[interest]
-      ot.out <- rpf.SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpts=qpts, alt=alt)
+      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpts=qpts, alt=alt)
       got[[itemname]] <- ot.out
   }
   got
-}
-
-thetaComb <- function(theta, nfact)  #copied from mirt
-{
-  if (nfact == 1L){
-    Theta <- matrix(theta)
-  } else {
-    thetalist <- vector('list', nfact)
-    for(i in 1L:nfact)
-      thetalist[[i]] <- theta
-    Theta <- as.matrix(expand.grid(thetalist))
-  }	
-  return(Theta)
 }
 
 ##' Compute the ordinal gamma association statistic
@@ -479,7 +492,7 @@ P.cdf.fn <- function(x, g.var, t) {
 
 ##' Compute the P value that the observed and expected tables come from the same distribution
 ##'
-##' This method dramatically improves upon Pearson's X^2
+##' This test is an alternative to Pearson's X^2
 ##' goodness-of-fit test.  In contrast to Pearson's X^2, no ad hoc cell
 ##' collapsing is needed to avoid an inflated false positive rate
 ##' in situations of sparse cell frequences.
@@ -553,11 +566,15 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' Statically significant entries suggest that the item pair has
 ##' local dependence. Since log(.01)=-4.6, an absolute magitude of 5
 ##' is a reasonable cut-off. Positive entries indicate that the two
-##' items are more correlated than expected. These items may share an
+##' item residuals are more correlated than expected. These items may share an
 ##' unaccounted for latent dimension. Consider a redesign of the items
 ##' or the use of testlets for scoring. Negative entries indicate that
-##' the two items are less correlated than expected.
+##' the two item residuals are less correlated than expected.
 ##'
+##' WARNING: The test currently defaults to the RMS test because cell
+##' collapsing is not implemented yet for Pearson. The null
+##' distribution of the RMS test has not been check thoroughly.
+##' 
 ##' @param grp a list with the spec, param, mean, and cov describing the group
 ##' @param data data
 ##' @param inames a subset of items to examine
@@ -566,7 +583,8 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' @param method method to use to calculate P values. The default
 ##' ("rms") uses the root mean square statistic (see \code{\link{ptw2011.gof.test}}).
 ##' To obtain the traditional Pearson X^2 statistic, use method="pearson".
-##' @return a lower triangular matrix of log P values with the sign
+##' @return a list with raw, pval and detail. The pval matrix is a
+##' lower triangular matrix of log P values with the sign
 ##' determined by relative association between the observed and
 ##' expected tables (see \code{\link{ordinal.gamma}})
 ##' @references Chen, W.-H. & Thissen, D. (1997). Local dependence

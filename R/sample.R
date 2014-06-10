@@ -1,7 +1,8 @@
 ##' Randomly sample response patterns given a list of items
 ##'
 ##' Returns a random sample of response patterns given a list of item
-##' models and parameters.
+##' models and parameters. If \code{grp} is given then items, params,
+##' mean, and cov can be omitted.
 ##'
 ##' @name rpf.sample
 ##' @param theta either a vector (for 1 dimension) or a matrix (for >1
@@ -17,6 +18,7 @@
 ##' @param mean mean vector of latent distribution (optional)
 ##' @param cov covariance matrix of latent distribution (optional)
 ##' @param mcar proportion of generated data to set to NA (missing completely at random)
+##' @param grp a list with spec, param, mean, and cov
 ##' @return Returns a data frame of response patterns
 ##' @export
 ##' @examples
@@ -26,21 +28,6 @@
 ##' i2 <- rpf.nrm(outcomes=3)
 ##' i2.p <- rpf.rparam(i2)
 ##' rpf.sample(5, list(i1,i2), list(i1.p, i2.p))
-##'
-##' # multidimensional items
-##' numItems <- 4
-##' items <- vector("list", numItems)
-##' correct <- vector("list", numItems)
-##'
-##' i1 <- rpf.drm(factors=2)
-##' i2 <- rpf.drm(factors=1, multidimensional=TRUE)
-##'
-##' for (ix in 1:(numItems-1)) {
-##'   items[[ix]] <- i1
-##'   correct[[ix]] <- rpf.rparam(i1)
-##' }
-##' items[[4]] <- i2
-##' correct[[4]] <- rpf.rparam(i2)
 ##' @seealso \code{\link{sample}}
 rpf.sample <- function(theta, items, params, ..., prefix="i",
                        mean=NULL, cov=NULL, mcar=0.0, grp=NULL)

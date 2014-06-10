@@ -85,7 +85,7 @@ test_that("simple case", {
   colnames(param) <- paste("i", 1:3, sep="")
   grp <- list(spec=spec, param=param, data=data, mean=0, cov=matrix(1,1,1))
 
-  got <- rpf.SitemFit(grp, method="pearson")
+  got <- SitemFit(grp, method="pearson")
   
   tbl <- round(t(sapply(got, function(row) c(stat=row$statistic, df=row$df, p=row$pval))),2)
   expect_equal(sum(tbl[,'df']), 9)  # not sure TODO
@@ -104,7 +104,7 @@ test_that("orlando-thissen-2000", {
   grp$free <- grp$param != 0
   grp$data <- rpf.sample(500, grp=grp)
   
-  got <- rpf.SitemFit(grp, method="pearson")
+  got <- SitemFit(grp, method="pearson")
   
   E1orig <- structure(c(2, 3.99, 12.95, 21.82, 21.66, 25.29, 30.5, 32.29,  35.09, 24.41, 34.33, 15.74,
               18.61, 14.44, 10.79, 5.72, 3.82,  1.5, 0.23, 0.12, 0, 0.01, 0.05, 0.18, 0.34,
@@ -138,5 +138,5 @@ if (0) {
   param[3:4,] <- rpf::logit(param[3:4,])
   dat2 <- as.data.frame(lapply(as.data.frame(dat), ordered, levels=0:1))
   grp <- list(spec=spec, param=param, mean=0, cov=diag(1), data=dat2)
-  got <- rpf.SitemFit(grp, method="pearson", alt=FALSE)
+  got <- SitemFit(grp, method="pearson", alt=FALSE)
 }

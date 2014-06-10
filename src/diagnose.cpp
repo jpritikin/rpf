@@ -70,9 +70,9 @@ void ifaGroup::import(SEXP Rlist)
 		}
 	}
 	if (mlen != nrow) Rf_error("Mean length %d does not match cov size %d", mlen, nrow);
-	if (numItems != spec.size()) {
+	if (numItems != int(spec.size())) {
 		Rf_error("param implies %d items but spec is length %d",
-			 numItems, spec.size());
+			 numItems, (int) spec.size());
 	}
 
 	// detect two-tier covariance structure
@@ -105,7 +105,7 @@ void ifaGroup::import(SEXP Rlist)
 		}
 	}
 	std::reverse(orthogonal.begin(), orthogonal.end());
-	if (orthogonal.size() && orthogonal[0] != mlen - orthogonal.size()) {
+	if (orthogonal.size() && orthogonal[0] != mlen - int(orthogonal.size())) {
 		Rf_error("Independent factors must be given after dense factors");
 	}
 
@@ -267,7 +267,6 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter)
 		Eigen::VectorXd ssProb(1+myeap.maxScore);
 		ssProb = slCur.array().colwise().sum();
 
-		int prevMaxScore = myeap.maxScore - (outcomes-1);
 		SEXP Rexpected;
 		Rf_protect(Rexpected = Rf_allocMatrix(REALSXP, 1+myeap.maxScore, outcomes));
 		double *out = REAL(Rexpected);
@@ -430,8 +429,8 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 
 	int i1 = INTEGER(Ritems)[0];
 	int i2 = INTEGER(Ritems)[1];
-	if (i1 < 0 || i1 >= grp.spec.size()) Rf_error("Item %d out of range", i1);
-	if (i2 < 0 || i2 >= grp.spec.size()) Rf_error("Item %d out of range", i2);
+	if (i1 < 0 || i1 >= (int) grp.spec.size()) Rf_error("Item %d out of range", i1);
+	if (i2 < 0 || i2 >= (int) grp.spec.size()) Rf_error("Item %d out of range", i2);
 	if (i1 == i2) Rf_warning("Request to create bivariate distribution of %d with itself", i1);
 
 	double *i1par = &grp.param[i1 * grp.maxParam];
@@ -467,10 +466,6 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 	if (specific == -1) {
 		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
 			double *where = quad.wherePrep.data() + qx * quad.maxDims;
-			double ptheta[quad.maxAbilities];
-			for (int dx=0; dx < quad.maxAbilities; dx++) {
-				ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
-			}
 			(*librpf_model[id1].prob)(spec1, i1par, where, o1.data());
 			(*librpf_model[id2].prob)(spec2, i2par, where, o2.data());
 			out += (o1 * o2.transpose()) * quad.priQarea[qx];
@@ -483,8 +478,8 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 				for (int dx=0; dx < quad.maxAbilities; dx++) {
 					ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
 				}
-				(*librpf_model[id1].prob)(spec1, i1par, where, o1.data());
-				(*librpf_model[id2].prob)(spec2, i2par, where, o2.data());
+				(*librpf_model[id1].prob)(spec1, i1par, ptheta, o1.data());
+				(*librpf_model[id2].prob)(spec2, i2par, ptheta, o2.data());
 				double area = quad.priQarea[qx] * quad.speQarea[sx * quad.numSpecific + specific];
 				out += (o1 * o2.transpose()) * area;
 				++qloc;

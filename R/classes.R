@@ -284,7 +284,8 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' probability vector
 ##'
 ##' Note that in general, exp(rpf.logprob(..)) != rpf.prob(..) because
-##' the range of logits is much wider than the range of probabilities.
+##' the range of logits is much wider than the range of probabilities
+##' due to limitations of floating point numerical precision.
 ##' 
 ##' @param m an item model
 ##' @param param item parameters

@@ -9,6 +9,12 @@ if [ ! -e ./util/package ]; then
   exit
 fi
 
+git log --oneline -1
+[ -d build ] && rm -r ./build
+mkdir build
+git archive --format=tar HEAD | (cd build; tar -xf -)
+cd build
+
 cran=
 if [ "${1-x}" = cran ]; then
   cran=--as-cran
@@ -16,7 +22,6 @@ fi
 
 pkg=rpf
 
-rm -f ${pkg}_*.tar.gz
 ./util/rox
 R CMD build .
 # inconsolata is not available from tlmgr; set R_RD4PDF to avoid it
