@@ -10,10 +10,10 @@ if [ ! -e ./util/build ]; then
 fi
 
 git log --oneline -1
-[ -d build ] && rm -r ./build
-mkdir build
-git archive --format=tar HEAD | (cd build; tar -xf -)
-cd build
+[ -d staging ] && rm -r ./staging
+mkdir staging
+git archive --format=tar HEAD | (cd staging; tar -xf -)
+cd staging
 
 ./util/rox
 R CMD build .

@@ -10,7 +10,7 @@ if [ ! -e ./util/check ]; then
 fi
 
 ./util/build
-cd build
+cd staging
 
 cran=
 if [ "${1-x}" = cran ]; then

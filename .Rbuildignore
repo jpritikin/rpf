@@ -8,5 +8,5 @@
 ^vignettes/figure
 ^src/autodep$
 ^util/
-^build
+^staging
 .dir-locals.el
