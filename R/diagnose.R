@@ -142,7 +142,7 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, group=NULL, wh
     if (any(is.na(r1))) next
     if (all(r1 == 1) || all(r1 == outcomes)) {
       exclude.row <- c(exclude.row, ix)
-      warning(paste("Excluding response", rownames(responses)[ix], "because minimum or maximum"))
+      warning(paste("Excluding response", rownames(responses)[ix], "because it is a minimum or maximum"))
     }
   }
 
@@ -341,7 +341,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
-SitemFit1 <- function(grp, item, free=0, method="pearson", log=FALSE, qwidth=6, qpts=49L, alt=FALSE) {
+SitemFit1 <- function(grp, item, free=0, method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE) {
     spec <- grp$spec
   c.spec <- lapply(spec, function(m) {
     if (length(m@spec)==0) { stop("Item model",m,"is not implemented") }
@@ -410,6 +410,8 @@ SitemFit1 <- function(grp, item, free=0, method="pearson", log=FALSE, qwidth=6, 
     } else {
         stop(paste("Method", method, "not recognized"))
     }
+    out$log <- log
+    out$method <- method
   out
 }
 
@@ -444,8 +446,8 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE) {
 ##' grp$cov <- diag(1)
 ##' grp$free <- grp$param != 0
 ##' grp$data <- rpf.sample(500, grp=grp)
-##' got <- SitemFit(grp)
-SitemFit <- function(grp, method="pearson", log=FALSE, qwidth=6, qpts=49L, alt=FALSE) {
+##' SitemFit(grp)
+SitemFit <- function(grp, method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE) {
     spec <- grp$spec
     if (ncol(grp$data) != length(spec)) stop("Dim mismatch between data and spec")
     param <- grp$param
@@ -460,7 +462,34 @@ SitemFit <- function(grp, method="pearson", log=FALSE, qwidth=6, qpts=49L, alt=F
       ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpts=qpts, alt=alt)
       got[[itemname]] <- ot.out
   }
-  got
+    class(got) <- "summary.SitemFit"
+    got
+}
+
+print.summary.SitemFit <- function(x,...) {
+	cat("Orlando & Thissen (2000) sum-score based item fit test\n")
+	cat("  Magnitudes larger than abs(log(.01))=4.6 are significant at the p=.01 level\n\n")
+	width <- max(sapply(names(x), nchar))
+	fmt <- paste("%", width, "s : ", sep="")
+	for (ix in 1:length(x)) {
+		report1 <- x[[ix]]
+		msg <- sprintf(fmt, names(x)[ix])
+		stat <- round(report1$statistic, 2)
+		if (report1$method == "pearson") {
+			msg <- paste(msg, sprintf("S-X2(%3d) = %6.2f, ", report1$df, stat), sep="")
+		} else if (report1$method == "rms") {
+			msg <- paste(msg, "MS=", stat, ", ", sep="")
+		} else {
+			stop(report1$method)
+		}
+		if (report1$log) {
+			msg <- paste(msg, "log(p) = ", round(report1$pval, 2), sep="")
+		} else {
+			msg <- paste(msg, "p = ", round(report1$pval, 4), sep="")
+		}
+		msg <- paste(msg, "\n", sep="")
+		cat(msg)
+	}
 }
 
 ##' Compute the ordinal gamma association statistic
@@ -580,6 +609,7 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' lower triangular matrix of log P values with the sign
 ##' determined by relative association between the observed and
 ##' expected tables (see \code{\link{ordinal.gamma}})
+##' @aliases chen.thissen.1997
 ##' @references Chen, W.-H. & Thissen, D. (1997). Local dependence
 ##' indexes for item pairs using Item Response Theory. \emph{Journal
 ##' of Educational and Behavioral Statistics, 22}(3), 265-289.
@@ -587,7 +617,7 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 ##' adaptive testing: A case for testlets.  \emph{Journal of
 ##' Educational measurement, 24}(3), 185--201.
-chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49, method="rms") {
+ChenThissen1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson") {
   if (is.null(colnames(grp$param))) stop("Item parameter columns must be named")
 
   if (missing(data)) {
@@ -640,7 +670,7 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
 
       s <- ordinal.gamma(observed) - ordinal.gamma(expected)
       if (!is.finite(s) || is.na(s) || s==0) s <- 1
-      info <- list(observed=observed, expected=expected, sign=sign(s), gamma=s)
+      info <- list(orig.observed=observed, orig.expected=expected, sign=sign(s), gamma=s)
       gamma[iter1, iter2] <- s
 
       if (method == "rms") {
@@ -650,9 +680,13 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
 	      tmp <- 1 / (1+exp(-(logit(tmp) - 2.8)))  # not sure about this! TODO
 	      pval[iter1, iter2] <- sign(s) * -log(tmp)
       } else if (method == "pearson") {
-          x2 <- sum((observed - expected)^2 / expected)
-          df <- (s1@outcomes-1) * (s2@outcomes-1)
-          info <- c(info, x2=x2, df=df)
+	      kc <- .Call(kang_chen_2007_wrapper, observed, expected)
+	      observed <- kc$O
+	      expected <- kc$E
+	      mask <- !is.na(expected)
+          x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+          df <- (s1@outcomes-1) * (s2@outcomes-1) - kc$collapsed
+          info <- c(info, list(x2=x2, df=df, observed=observed, expected=expected))
 
           raw[iter1, iter2] <- sign(s) * x2
           std[iter1, iter2] <- sign(s) * abs((x2 - df)/sqrt(2*df))
@@ -670,7 +704,19 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
       result[[paste(inames[iter1], inames[iter2], sep=":")]] <- info
     }
   }
-  list(pval=pval, std=std, raw=raw, gamma=gamma, detail=result)
+  retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=result, method=method)
+  class(retobj) <- "summary.ChenThissen1997"
+  retobj
+}
+
+# deprecated name
+chen.thissen.1997 <- ChenThissen1997
+
+print.summary.ChenThissen1997 <- function(x,...) {
+	cat("Chen & Thissen (1997) local dependence test\n")
+	cat("  Magnitudes larger than abs(log(.01))=4.6 are significant at the p=.01 level\n")
+	cat("  A positive (negative) sign indicates more (less) observed correlation than expected\n\n")
+	print(round(x$pval,2))
 }
 
 crosstabTest <- function(ob, ex, trials) {
