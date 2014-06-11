@@ -4,7 +4,7 @@ library(mvtnorm)
 
 context("chen & thissen 1997")
 
-test_that("ptw", {
+test_that("ct1997", {
   set.seed(1)
   
   spec <- list()
@@ -25,8 +25,8 @@ test_that("ptw", {
   got <- chen.thissen.1997(grp)
   #cat(deparse(round(got$pval[!is.na(got$pval)], 2)))
   expect_equal(got$pval[!is.na(got$pval)], 
-               c(-2.01, -1.69, -3.65, -6.29, -2.55, -1.4, 1.58, -5.77, 3.6,  2.29,
-                 6.04, 2.93, 8.93, 6.97, 11.21), .001)
+               c(-1.52, -1.74, -2.54, -6.01, -2.74, -1.06, 1.47, -5.77, 2.42,  1.77, 7.01,
+                 2.24, 11.01, 6.99, 21.95), .001)
   #cat(deparse(round(got$gamma[!is.na(got$gamma)], 3)))
   expect_equal(got$gamma[!is.na(got$gamma)],
                c(-0.064, -0.056, -0.099, -0.002, -0.078, -0.022, 0.04, -0.002,

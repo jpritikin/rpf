@@ -119,7 +119,7 @@ test_that("orlando-thissen-2000", {
   mask <- !is.na(got[[1]]$expected)
   expect_equal(got[[1]]$expected[mask], E1[mask], tolerance=.01)
   
-  expect_equal(got[[1]]$pval, 0.3931, tolerance=.001)  # not sure about df TODO
+  expect_equal(got[[1]]$pval, -0.984, tolerance=.01)
 })
 
 if (0) {

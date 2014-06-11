@@ -326,9 +326,6 @@ collapseCells <- function(On, En, mincell = 1){
 ##' \code{FALSE} probably provides slightly more powerful for less
 ##' than 10 items.
 ##'
-##' WARNING: The algorithm for collapsing low-count cells has not been
-##' tested thoroughly.
-##'
 ##' @param grp a list with spec, param, mean, cov, and data
 ##' @param item the item of interest
 ##' @param free the number of free parameters involved in estimating the item (to adjust the df)
@@ -571,10 +568,6 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' or the use of testlets for scoring. Negative entries indicate that
 ##' the two item residuals are less correlated than expected.
 ##'
-##' WARNING: The test currently defaults to the RMS test because cell
-##' collapsing is not implemented yet for Pearson. The null
-##' distribution of the RMS test has not been check thoroughly.
-##' 
 ##' @param grp a list with the spec, param, mean, and cov describing the group
 ##' @param data data
 ##' @param inames a subset of items to examine
@@ -633,7 +626,6 @@ chen.thissen.1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49,
   pval <- matrix(NA, length(items), length(items))
   dimnames(pval) <- list(inames, inames)
 
-  # sort item pairs by fset TODO
   for (iter1 in 2:length(items)) {
     for (iter2 in 1:(iter1-1)) {
       i1 <- items[iter1]

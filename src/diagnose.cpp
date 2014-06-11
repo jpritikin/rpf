@@ -503,119 +503,69 @@ pda(const double *ar, int rows, int cols) {
 
 static const double KANG_CHEN_MIN_EXPECTED = 1.0;  // customizable parameter?
 
-static void find_smallcol(int rows, int cols, double *expected, int rx,
-			  int *goodcol, int *smallcol)
+struct ManhattenCollapse {
+	Eigen::Map<Eigen::ArrayXXi> obs;
+	Eigen::Map<Eigen::ArrayXXd> expected;
+
+	Eigen::DenseIndex smr, smc;
+	double bestFit;
+	Eigen::DenseIndex bestR, bestC;
+	
+	ManhattenCollapse(int rows, int cols, int *oMem, double *eMem)
+		: obs(oMem, rows, cols), expected(eMem, rows, cols) {}
+	void probe(Eigen::DenseIndex br, Eigen::DenseIndex bc);
+	int run();
+};
+
+void ManhattenCollapse::probe(Eigen::DenseIndex br, Eigen::DenseIndex bc)
 {
-  *goodcol = 0;
-  *smallcol = -1;
-  double smallest = -1;
-  for (int cx=0; cx < cols; cx++) {
-    double cell = expected[cx * rows + rx];
-    if (cell != 0 && cell <= KANG_CHEN_MIN_EXPECTED) {
-      if (smallest == -1 || smallest > cell) {
-	smallest = cell;
-	*smallcol = cx;
-      }
-    } else {
-      *goodcol += 1;
-    }
-  }
+	if (br < 0 || bc < 0 || br >= expected.rows() || bc >= expected.cols()) return;
+	if (expected(br, bc) < bestFit) {
+		bestFit = expected(br, bc);
+		bestR = br;
+		bestC = bc;
+	}
 }
 
-static int kang_chen_2007_collapse1(int rows, int cols, int *observed, double *expected, int rx)
+int ManhattenCollapse::run()
 {
-  int collapsed = 0;
-  int smallcol;
-  int goodcol;
-  find_smallcol(rows, cols, expected, rx, &goodcol, &smallcol);
-  if (smallcol == -1) return collapsed;
+	const double worstFit = 1e100;
+	const int maxDist = obs.rows() + obs.cols();
+	int collapsed = 0;
 
-  if (goodcol > cols/2) {
-    // merge left or right
-    while (1) {
-      double biggest = 0;
-      int bigcol = -1;
-      if (smallcol - 1 >= 0) {
-	double cell = expected[(smallcol-1)*rows + rx];
-	if (biggest < cell) {
-	  biggest = cell;
-	  bigcol = smallcol-1;
+	while (expected.minCoeff(&smr, &smc) < KANG_CHEN_MIN_EXPECTED) {
+		bool done = false;
+		for (int dist=1; dist < maxDist && !done; ++dist) {
+			for (int updown=0; updown <= dist && !done; ++updown) {
+				int leftright = dist - updown;
+				bestFit = worstFit;
+				probe(smr + updown, smc + leftright);
+				probe(smr + updown, smc - leftright);
+				probe(smr - updown, smc + leftright);
+				probe(smr - updown, smc - leftright);
+				if (bestFit < worstFit) {
+					expected(bestR, bestC) += expected(smr, smc);
+					obs(bestR, bestC) += obs(smr, smc);
+					expected(smr, smc) = NA_REAL;
+					obs(smr, smc) = NA_REAL;
+					++collapsed;
+					done = true;
+				}
+			}
+		}
+		if (!done) {
+			pda(expected.data(), expected.rows(), expected.cols());
+			Rf_error("Collapse algorithm failed");
+		}
 	}
-      }
-      if (smallcol + 1 < cols) {
-	double cell = expected[(smallcol+1)*rows + rx];
-	if (biggest < cell) {
-	  biggest = cell;
-	  bigcol = smallcol+1;
-	}
-      }
-      if (bigcol==-1) Rf_error("Confused");
-      //Rprintf("collapse col %d to %d on row %d\n", smallcol, bigcol, rx);
-      expected[bigcol*rows + rx] += expected[smallcol*rows + rx];
-      observed[bigcol*rows + rx] += observed[smallcol*rows + rx];
-      expected[smallcol*rows + rx] = NA_REAL;
-      observed[smallcol*rows + rx] = NA_REAL;
-      ++collapsed;
 
-      find_smallcol(rows, cols, expected, rx, &goodcol, &smallcol);
-      if (smallcol == -1) break;
-    }
-  } else {
-    // merge up or down
-    int bigrow;
-    if (rx < rows/2) {
-      bigrow = rx+1;
-    } else {
-      bigrow = rx-1;
-    }
-    for (int cx=0; cx < cols; cx++) {
-      double e1 = expected[cx*rows + rx];
-      if (e1 == 0 || e1 >= KANG_CHEN_MIN_EXPECTED)
-	continue;
-      //Rprintf("collapse row %d to %d at col %d\n", rx, bigrow, cx);
-      expected[cx*rows + bigrow] += expected[cx*rows + rx];
-      observed[cx*rows + bigrow] += observed[cx*rows + rx];
-      expected[cx*rows + rx] = NA_REAL;
-      observed[cx*rows + rx] = NA_REAL;
-      ++collapsed;
-    }
-  }
-  return collapsed;
-}
-
-/*
- * This assumes that the expected counts are greater than 1 in the
- * middle of the table. This may be suboptimal for large tables with
- * isolated regions of low expected counts (is it possible?). It may
- * be necessary to search the whole table at every step for the lowest
- * expected count and fix them in that order instead of assuming
- * anything about where the low expected counts will appear.
- */
-static int kang_chen_2007_collapse(int rows, int cols, int *observed, double *expected)
-{
-  //Rprintf("kang chen 2007\n");
-  //pda(expected, rows, cols);
-  int collapsed = 0;
-  for (int rx=0; rx <= rows/2; rx++) {
-    collapsed += kang_chen_2007_collapse1(rows, cols, observed, expected, rx);
-    if (rx != ((rows-1) -rx)) {
-      collapsed += kang_chen_2007_collapse1(rows, cols, observed, expected, (rows-1) -rx);
-    }
-  }
-  for (int rx=0; rx < rows; rx++) {
-    for (int cx=0; cx < cols; cx++) {
-      double cell = expected[cx * rows + rx];
-      if (cell != 0 && cell <= KANG_CHEN_MIN_EXPECTED) {
-	pda(expected, rows, cols);
-	Rf_error("Failed to collapse cells");
-      }
-    }
-  }
-  return collapsed;
+	return collapsed;
 }
 
 SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
 {
+	omxManageProtectInsanity mpi;
+
   int rows, cols;
   getMatrixDims(r_expected_orig, &rows, &cols);
 
@@ -636,26 +586,14 @@ SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
   memcpy(observed, INTEGER(r_observed_orig), sizeof(int) * rows * cols);
   memcpy(expected, REAL(r_expected_orig), sizeof(double) * rows * cols);
 
-  int collapsed = kang_chen_2007_collapse(rows, cols, observed, expected);
+  ManhattenCollapse mcollapse(rows, cols, observed, expected);
+  int collapsed = mcollapse.run();
 
-  const int returnCount = 3;
-  SEXP names, ans;
-  Rf_protect(names = Rf_allocVector(STRSXP, returnCount));
-  Rf_protect(ans = Rf_allocVector(VECSXP, returnCount));
-
-  int ansC = -1;
-  SET_STRING_ELT(names, ++ansC, Rf_mkChar("O"));
-  SET_VECTOR_ELT(ans,   ansC, r_observed);
-  SET_STRING_ELT(names, ++ansC, Rf_mkChar("E"));
-  SET_VECTOR_ELT(ans,   ansC, r_expected);
-  SET_STRING_ELT(names, ++ansC, Rf_mkChar("collapsed"));
-  SET_VECTOR_ELT(ans,   ansC, Rf_ScalarInteger(collapsed));
-  if (ansC != returnCount-1) Rf_error("Memory corruption");
-
-  Rf_namesgets(ans, names);
-  UNPROTECT(4);
-
-  return ans;
+  MxRList out;
+  out.add("O", r_observed);
+  out.add("E", r_expected);
+  out.add("collapsed", Rf_ScalarInteger(collapsed));
+  return out.asR();
 }
 
 SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes, SEXP Ralter)
