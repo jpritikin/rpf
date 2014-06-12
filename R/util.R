@@ -21,3 +21,42 @@
 sumScoreEAP <- function(grp, width=6.0, pts=49L) {
 	.Call(ssEAP_wrapper, grp, width, pts)
 }
+
+##' Compute the observed sum-score
+##'
+##' @param grp a list with spec, param, and data
+##' @param mask a vector of logicals indicating which items to include
+##' @examples
+##' spec <- list()
+##' spec[1:3] <- rpf.grm(outcomes=3)
+##' param <- sapply(spec, rpf.rparam)
+##' data <- rpf.sample(5, spec, param)
+##' colnames(param) <- colnames(data)
+##' grp <- list(spec=spec, param=param, data=data)
+##' observedSumScore(grp, rep(TRUE, length(spec)))
+observedSumScore <- function(grp, mask) {
+	.Call(observedSumScore_wrapper, grp, mask)
+}
+
+##' Produce an item outcome by observed sum-score table
+##'
+##' @param grp a list with spec, param, and data
+##' @param mask a vector of logicals indicating which items to include
+##' @param interest index or name of the item of interest
+##' @examples
+##' set.seed(1)
+##' spec <- list()
+##' spec[1:3] <- rpf.grm(outcomes=3)
+##' param <- sapply(spec, rpf.rparam)
+##' data <- rpf.sample(5, spec, param)
+##' colnames(param) <- colnames(data)
+##' grp <- list(spec=spec, param=param, data=data)
+##' itemOutcomeBySumScore(grp, c(FALSE,TRUE,TRUE), 1L)
+itemOutcomeBySumScore <- function(grp, mask, interest) {
+	if (is.character(interest)) {
+		interest <- match(interest, colnames(grp$param))
+	}
+	tbl <- .Call(itemOutcomeBySumScore_wrapper, grp, mask, interest)
+	rownames(tbl) <- 0:(nrow(tbl)-1L)
+	tbl
+}

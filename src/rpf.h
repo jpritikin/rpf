@@ -61,13 +61,14 @@ static inline bool strEQ(const char *s1, const char *s2) { return strcmp(s1,s2)=
 
 void getMatrixDims(SEXP r_theta, int *rows, int *cols);
 SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observed, SEXP r_quad);
-SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes, SEXP Ralter);
 SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig);
 SEXP gamma_cor(SEXP r_mat);
 SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts);
 SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter);
 SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials);
 SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems);
+SEXP observedSumScore(SEXP Rgrp, SEXP Rmask);
+SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest);
 
 static inline int triangleLoc1(int diag)
 {

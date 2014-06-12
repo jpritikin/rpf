@@ -416,12 +416,13 @@ static R_CallMethodDef flist[] = {
   {"rpf_dTheta_wrapper", (DL_FUNC) rpf_dTheta_wrapper, 4},
   {"rpf_rescale_wrapper", (DL_FUNC) rpf_rescale_wrapper, 4},
   {"kang_chen_2007_wrapper", (DL_FUNC) kang_chen_2007_wrapper, 2},
-  {"sumscore_observed", (DL_FUNC) sumscore_observed, 5},
   {"ordinal_gamma_wrapper", (DL_FUNC) gamma_cor, 1},
   {"ssEAP_wrapper", (DL_FUNC) sumscoreEAP, 3},
   {"ot2000_wrapper", (DL_FUNC) ot2000_wrapper, 5},
   {"crosstabTest_wrapper", (DL_FUNC) crosstabTest, 3},
   {"pairwiseExpected_wrapper", (DL_FUNC) pairwiseExpected, 4},
+  {"observedSumScore_wrapper", (DL_FUNC) observedSumScore, 2},
+  {"itemOutcomeBySumScore_wrapper", (DL_FUNC) itemOutcomeBySumScore, 3},
   {NULL, NULL, 0}
 };
 
@@ -433,9 +434,7 @@ get_librpf_models(int *version, int *numModels, const struct rpf **model)
   *model = librpf_model;
 }
 
-extern "C" {
-void R_init_rpf(DllInfo *info) {
-  R_registerRoutines(info, NULL, flist, NULL, NULL);
-  R_RegisterCCallable("rpf", "get_librpf_model_GPL", (DL_FUNC) get_librpf_models);
-}
+extern "C" void R_init_rpf(DllInfo *info) {
+	R_registerRoutines(info, NULL, flist, NULL, NULL);
+	R_RegisterCCallable("rpf", "get_librpf_model_GPL", (DL_FUNC) get_librpf_models);
 }

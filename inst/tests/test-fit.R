@@ -105,6 +105,11 @@ test_that("orlando-thissen-2000", {
   grp$data <- rpf.sample(500, grp=grp)
   
   got <- SitemFit(grp, method="pearson")
+  stat <- sapply(got, function(x) x$statistic)
+  names(stat) <- NULL
+  Estat <- c(10.8, 13.38, 19.47, 15.34, 13.62, 6.52, 19.91, 8.19,  8.03, 11.73, 12.84,
+             10.4, 5.08, 9.37, 10.37, 11.74, 20.67, 16.34,  13.5, 16.91)
+  expect_equal(stat, Estat, tolerance=.01)
   
   E1orig <- structure(c(2, 3.99, 12.95, 21.82, 21.66, 25.29, 30.5, 32.29,  35.09, 24.41, 34.33, 15.74,
               18.61, 14.44, 10.79, 5.72, 3.82,  1.5, 0.23, 0.12, 0, 0.01, 0.05, 0.18, 0.34,
@@ -120,6 +125,14 @@ test_that("orlando-thissen-2000", {
   expect_equal(got[[1]]$expected[mask], E1[mask], tolerance=.01)
   
   expect_equal(got[[1]]$pval, -0.984, tolerance=.01)
+
+  got <- SitemFit(grp, method="pearson", alt=TRUE)
+  stat <- sapply(got, function(x) x$statistic)
+  names(stat) <- NULL
+  #cat(deparse(round(stat, 2)))
+  Estat <- c(16.6, 13.68, 13.19, 14.03, 19.86, 11.02, 29.92, 6.95, 18.31,
+             14.78, 10.06, 9.27, 5.67, 9.3, 14.75, 18.03, 20.18, 20.19, 15.89,  11.57)
+  expect_equal(stat, Estat, tolerance=.01)
 })
 
 if (0) {

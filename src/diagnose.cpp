@@ -12,11 +12,14 @@ struct ifaGroup {
 	int maxAbilities;
 	double *mean;
 	double *cov;
+	std::vector<const char*> itemNames;
 	std::vector<const char*> factorNames;
+	std::vector<int> colMap;             // item column to data column mapping
+	SEXP Rdata;
+	int dataRows;
 
 	// TODO:
 	// scores
-	// data
 
 	ifaGroup(bool _twotier) : twotier(_twotier) {}
 	void import(SEXP Rlist);
@@ -28,8 +31,17 @@ void ifaGroup::import(SEXP Rlist)
 	SEXP argNames;
 	Rf_protect(argNames = Rf_getAttrib(Rlist, R_NamesSymbol));
 
+	Rdata = NULL;
+	dataRows = 0;
+	maxAbilities = 0;
+	numSpecific = 0;
+	mean = 0;
+	cov = 0;
+	std::vector<const char *> dataColNames;
+
 	int mlen = 0;
-	int nrow, ncol;
+	int nrow=0, ncol=0; // cov size
+
 	for (int ax=0; ax < Rf_length(Rlist); ++ax) {
 		const char *key = R_CHAR(STRING_ELT(argNames, ax));
 		SEXP slotValue = VECTOR_ELT(Rlist, ax);
@@ -46,6 +58,18 @@ void ifaGroup::import(SEXP Rlist)
 		} else if (strEQ(key, "param")) {
 			param = REAL(slotValue);
 			getMatrixDims(slotValue, &maxParam, &numItems);
+
+			SEXP dimnames;
+			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
+			if (!Rf_isNull(dimnames) && Rf_length(dimnames) == 2) {
+				SEXP names;
+				Rf_protect(names = VECTOR_ELT(dimnames, 1));
+				int nlen = Rf_length(names);
+				itemNames.resize(nlen);
+				for (int nx=0; nx < nlen; ++nx) {
+					itemNames[nx] = CHAR(STRING_ELT(names, nx));
+				}
+			}
 		} else if (strEQ(key, "mean")) {
 			mlen = Rf_length(slotValue);
 			mean = REAL(slotValue);
@@ -65,6 +89,17 @@ void ifaGroup::import(SEXP Rlist)
 					factorNames[nx] = CHAR(STRING_ELT(names, nx));
 				}
 			}
+		} else if (strEQ(key, "data")) {
+			Rdata = slotValue;
+			dataRows = Rf_length(VECTOR_ELT(Rdata, 0));
+
+			SEXP names;
+			Rf_protect(names = Rf_getAttrib(Rdata, R_NamesSymbol));
+			int nlen = Rf_length(names);
+			dataColNames.reserve(nlen);
+			for (int nx=0; nx < nlen; ++nx) {
+				dataColNames.push_back(CHAR(STRING_ELT(names, nx)));
+			}
 		} else {
 			// ignore
 		}
@@ -75,42 +110,62 @@ void ifaGroup::import(SEXP Rlist)
 			 numItems, (int) spec.size());
 	}
 
-	// detect two-tier covariance structure
-	std::vector<int> orthogonal;
-	if (twotier && mlen >= 3) {
-		Eigen::Map<Eigen::MatrixXd> Ecov(cov, mlen, mlen);
-		Eigen::Matrix<Eigen::DenseIndex, Eigen::Dynamic, 1> numCov((Ecov.array() != 0.0).matrix().colwise().count());
-		std::vector<int> candidate;
-		for (int fx=0; fx < numCov.rows(); ++fx) {
-			if (numCov(fx) == 1) candidate.push_back(fx);
-		}
-		if (candidate.size() > 1) {
-			std::vector<bool> mask(numItems);
-			for (int cx=candidate.size() - 1; cx >= 0; --cx) {
-				std::vector<bool> loading(numItems);
-				for (int ix=0; ix < numItems; ++ix) {
-					loading[ix] = param[ix * maxParam + candidate[cx]] != 0;
+	if (Rdata) {
+		if (itemNames.size() == 0) Rf_error("Item parameter matrix must have colnames");
+		colMap.resize(numItems);
+		for (int ix=0; ix < numItems; ++ix) {
+			bool found=false;
+			for (int dc=0; dc < int(dataColNames.size()); ++dc) {
+				if (strEQ(itemNames[ix], dataColNames[dc])) {
+					colMap[ix] = dc;
+					found=true;
+					break;
 				}
-				std::vector<bool> overlap(loading.size());
-				std::transform(loading.begin(), loading.end(),
-					       mask.begin(), overlap.begin(),
-					       std::logical_and<bool>());
-				if (std::find(overlap.begin(), overlap.end(), true) == overlap.end()) {
-					std::transform(loading.begin(), loading.end(),
-						       mask.begin(), mask.begin(),
-						       std::logical_or<bool>());
-					orthogonal.push_back(candidate[cx]);
-				}
+			}
+			if (!found) {
+				Rf_error("Cannot find item '%s' in data", itemNames[ix]);
 			}
 		}
 	}
-	std::reverse(orthogonal.begin(), orthogonal.end());
-	if (orthogonal.size() && orthogonal[0] != mlen - int(orthogonal.size())) {
-		Rf_error("Independent factors must be given after dense factors");
-	}
 
-	maxAbilities = mlen;
-	numSpecific = orthogonal.size();
+	if (mlen > 0) {
+		// detect two-tier covariance structure
+		std::vector<int> orthogonal;
+		if (twotier && mlen >= 3) {
+			Eigen::Map<Eigen::MatrixXd> Ecov(cov, mlen, mlen);
+			Eigen::Matrix<Eigen::DenseIndex, Eigen::Dynamic, 1> numCov((Ecov.array() != 0.0).matrix().colwise().count());
+			std::vector<int> candidate;
+			for (int fx=0; fx < numCov.rows(); ++fx) {
+				if (numCov(fx) == 1) candidate.push_back(fx);
+			}
+			if (candidate.size() > 1) {
+				std::vector<bool> mask(numItems);
+				for (int cx=candidate.size() - 1; cx >= 0; --cx) {
+					std::vector<bool> loading(numItems);
+					for (int ix=0; ix < numItems; ++ix) {
+						loading[ix] = param[ix * maxParam + candidate[cx]] != 0;
+					}
+					std::vector<bool> overlap(loading.size());
+					std::transform(loading.begin(), loading.end(),
+						       mask.begin(), overlap.begin(),
+						       std::logical_and<bool>());
+					if (std::find(overlap.begin(), overlap.end(), true) == overlap.end()) {
+						std::transform(loading.begin(), loading.end(),
+							       mask.begin(), mask.begin(),
+							       std::logical_or<bool>());
+						orthogonal.push_back(candidate[cx]);
+					}
+				}
+			}
+		}
+		std::reverse(orthogonal.begin(), orthogonal.end());
+		if (orthogonal.size() && orthogonal[0] != mlen - int(orthogonal.size())) {
+			Rf_error("Independent factors must be given after dense factors");
+		}
+
+		maxAbilities = mlen;
+		numSpecific = orthogonal.size();
+	}
 }
 
 class ssEAP {
@@ -596,51 +651,97 @@ SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
   return out.asR();
 }
 
-SEXP sumscore_observed(SEXP r_high, SEXP r_data, SEXP r_interest, SEXP r_outcomes, SEXP Ralter)
+static int maxObservedSumScore(ifaGroup &grp, int *itemMask)
 {
-	bool alter = Rf_asLogical(Ralter);
-  int data_rows = Rf_length(VECTOR_ELT(r_data, 0));
-  int data_cols = Rf_length(r_data);
+	int curMax = 0;
+	for (int ix=0; ix < int(grp.spec.size()); ++ix) {
+		if (!itemMask[ix]) continue;
+		const double *spec = grp.spec[ix];
+		int no = spec[RPF_ISpecOutcomes];
+		curMax += no - 1;
+	}
+	return curMax;
+}
 
-  int interest = Rf_asInteger(r_interest);
-  int outcomes = Rf_asInteger(r_outcomes);
-  int high;
-  if (!alter) {
-	  high = Rf_asInteger(r_high) - (outcomes - 1);
-  } else {
-	  high = Rf_asInteger(r_high);
-  }
+static bool computeObservedSumScore(ifaGroup &grp, int *itemMask, int row, int *sumOut)
+{
+	int sum = 0;
+	for (int ix=0; ix < int(grp.spec.size()); ++ix) {
+		if (!itemMask[ix]) continue;
+		int *resp = INTEGER(VECTOR_ELT(grp.Rdata, grp.colMap[ix]));
+		if (resp[row] == NA_INTEGER) return true;
+		sum += resp[row] - 1;
+	}
+	*sumOut = sum;
+	return false;
+}
 
-  if (interest < 1 || interest > data_cols)
-    Rf_error("Interest %d must be between 1 and %d", interest, data_cols);
+SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
+{
+	omxManageProtectInsanity mpi;
 
-  SEXP r_ans;
-  Rf_protect(r_ans = Rf_allocMatrix(INTSXP, high, outcomes));
-  int *ans = INTEGER(r_ans);
-  memset(ans, 0, sizeof(int) * high * outcomes);
+	ifaGroup grp(false);
+	grp.import(Rgrp);
 
-  int *iresp = INTEGER(VECTOR_ELT(r_data, interest-1));
+	if (Rf_length(Rmask) != int(grp.spec.size())) {
+		Rf_error("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));
+	}
+	int *itemMask = LOGICAL(Rmask);
 
-  for (int rx=0; rx < data_rows; rx++) {
-	  bool missing = false;
-    int sum=0;
-    for (int cx=0; cx < data_cols; cx++) {
-      if (!alter && cx+1 == interest) continue;
-      int *resp = INTEGER(VECTOR_ELT(r_data, cx));
-      if (resp[rx] == NA_INTEGER) {
-	      missing = true;
-	      break;
-      }
-      sum += resp[rx] - 1;
-    }
-    if (missing) continue;
-    int pick = iresp[rx];
-    if (pick == NA_INTEGER) continue;
-    ans[(pick-1) * high + sum] += 1;
-  }
+	int maxScore = 1+maxObservedSumScore(grp, itemMask);
 
-  UNPROTECT(1);
-  return r_ans;
+	SEXP Rdist;
+	Rf_protect(Rdist = Rf_allocVector(INTSXP, maxScore));
+	Eigen::Map<Eigen::ArrayXi> distOut(INTEGER(Rdist), maxScore);
+	distOut.setZero();
+
+	for (int rx=0; rx < grp.dataRows; ++rx) {
+		int ss;
+		if (computeObservedSumScore(grp, itemMask, rx, &ss)) continue;
+		distOut[ss] += 1;
+	}
+
+	return Rdist;
+}
+
+SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
+{
+	omxManageProtectInsanity mpi;
+
+	ifaGroup grp(false);
+	grp.import(Rgrp);
+
+	if (Rf_length(Rmask) != int(grp.spec.size())) {
+		Rf_error("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));
+	}
+	int *itemMask = LOGICAL(Rmask);
+
+	int maxScore = 1+maxObservedSumScore(grp, itemMask);
+
+	int interest = Rf_asInteger(Rinterest) - 1;
+	if (interest < 0 || interest >= int(grp.spec.size())) {
+		Rf_error("Item of interest %d must be between 1 and %d", 1+interest, int(grp.spec.size()));
+	}
+
+	const double *spec = grp.spec[interest];
+	int outcomes = spec[RPF_ISpecOutcomes];
+
+	SEXP r_ans;
+	Rf_protect(r_ans = Rf_allocMatrix(INTSXP, maxScore, outcomes));
+	Eigen::Map<Eigen::ArrayXXi> out(INTEGER(r_ans), maxScore, outcomes);
+	out.setZero();
+
+	int *iresp = INTEGER(VECTOR_ELT(grp.Rdata, grp.colMap[interest]));
+
+	for (int rx=0; rx < grp.dataRows; ++rx) {
+		int pick = iresp[rx];
+		if (pick == NA_INTEGER) continue;
+		int ss;
+		if (computeObservedSumScore(grp, itemMask, rx, &ss)) continue;
+		out(ss, pick-1) += 1;
+	}
+
+	return r_ans;
 }
 
 static double table_concordance(double *mat, int rows, int cols, int ii, int jj)

@@ -341,7 +341,11 @@ collapseCells <- function(On, En, mincell = 1){
 ##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
-SitemFit1 <- function(grp, item, free=0, method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE) {
+SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+
     spec <- grp$spec
   c.spec <- lapply(spec, function(m) {
     if (length(m@spec)==0) { stop("Item model",m,"is not implemented") }
@@ -350,21 +354,10 @@ SitemFit1 <- function(grp, item, free=0, method="pearson", log=TRUE, qwidth=6, q
 
     param <- grp$param
     itemIndex <- which(item == colnames(param))
-    obs <- grp$data
 
-    numScores <- 1 + sum(sapply(spec, function(m) slot(m,'outcomes') - 1))
-    if (!alt) {
-	    tblrows <- numScores - (spec[[itemIndex]]$outcomes - 1)
-    } else {
-	    tblrows <- numScores
-    }
-
-    observed <- .Call(sumscore_observed, numScores,
-                      obs, itemIndex, spec[[itemIndex]]$outcomes, alt)
-    if (nrow(observed) != tblrows) {
-	    print(observed)
-	    stop(paste("Expecting", tblrows, "rows in observed matrix"))
-    }
+	mask <- rep(TRUE, ncol(param))
+	if (!alt) mask[itemIndex] <- FALSE
+	observed <- itemOutcomeBySumScore(grp, mask, itemIndex)
 
   max.param <- max(vapply(spec, rpf.numParam, 0))
   if (nrow(param) < max.param) {
@@ -372,9 +365,9 @@ SitemFit1 <- function(grp, item, free=0, method="pearson", log=TRUE, qwidth=6, q
   }
 
     Eproportion <- ot2000md(grp, itemIndex, qwidth, qpts, alt)
-    if (nrow(Eproportion) != tblrows) {
+    if (nrow(Eproportion) != nrow(observed)) {
 	    print(Eproportion)
-	    stop(paste("Expecting", tblrows, "rows in expected matrix"))
+	    stop(paste("Expecting", nrow(observed), "rows in expected matrix"))
     }
     Escale <- matrix(apply(observed, 1, sum), nrow=nrow(Eproportion), ncol=ncol(Eproportion))
     expected <- Eproportion * Escale
@@ -447,7 +440,11 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE) {
 ##' grp$free <- grp$param != 0
 ##' grp$data <- rpf.sample(500, grp=grp)
 ##' SitemFit(grp)
-SitemFit <- function(grp, method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE) {
+SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+
     spec <- grp$spec
     if (ncol(grp$data) != length(spec)) stop("Dim mismatch between data and spec")
     param <- grp$param
@@ -617,7 +614,11 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 ##' adaptive testing: A case for testlets.  \emph{Journal of
 ##' Educational measurement, 24}(3), 185--201.
-ChenThissen1997 <- function(grp, data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson") {
+ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson") {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+
   if (is.null(colnames(grp$param))) stop("Item parameter columns must be named")
 
   if (missing(data)) {
