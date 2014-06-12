@@ -682,6 +682,7 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 
 	ifaGroup grp(false);
 	grp.import(Rgrp);
+	if (grp.dataRows == 0) Rf_error("observedSumScore requires data");
 
 	if (Rf_length(Rmask) != int(grp.spec.size())) {
 		Rf_error("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));
@@ -710,6 +711,7 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 
 	ifaGroup grp(false);
 	grp.import(Rgrp);
+	if (grp.dataRows == 0) Rf_error("itemOutcomeBySumScore requires data");
 
 	if (Rf_length(Rmask) != int(grp.spec.size())) {
 		Rf_error("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));

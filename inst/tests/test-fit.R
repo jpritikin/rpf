@@ -17,7 +17,7 @@ test_that("tpbw1995-table2", {
   
   grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param)
   
-  got <- sumScoreEAP(grp)
+  got <- sumScoreEAP(grp)$tbl
   
   expect_equal(sum(got[,'p']), 1, tolerance=.001)
   
@@ -65,6 +65,7 @@ if (0) {
 }
 
 test_that("simple case", {
+  require(rpf)
   set.seed(1)
 
   spec <- list()

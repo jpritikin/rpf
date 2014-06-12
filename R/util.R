@@ -18,8 +18,50 @@
 ##'  
 ##'  grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param)
 ##'  sumScoreEAP(grp)
-sumScoreEAP <- function(grp, width=6.0, pts=49L) {
-	.Call(ssEAP_wrapper, grp, width, pts)
+##' @references
+##' Li, Z., & Cai, L. (2012, July). Summed score likelihood based indices for testing
+##' latent variable distribution fit in Item Response Theory. Paper presented at
+##' the annual International Meeting of the Psychometric Society, Lincoln,
+##' NE. Retrieved from http://www.cse.ucla.edu/downloads/files/SD2-final-4.pdf
+sumScoreEAP <- function(grp, ..., width=6.0, pts=49L, distributionTest=NULL) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+	result <- list(tbl=.Call(ssEAP_wrapper, grp, width, pts))
+	if ((is.null(distributionTest) && !is.null(grp$data)) || (!is.null(distributionTest) && distributionTest)) {
+		if (!is.null(distributionTest) && is.null(grp$data)) {
+			stop("distributionTest cannot be conducted because there is no data")
+		}
+		result$distributionTest <- TRUE
+		obs <- matrix(observedSumScore(grp, rep(TRUE, ncol(grp$param))), ncol=1)
+		size <- sum(obs)
+		expected <- matrix(size * result$tbl[,1], ncol=1)
+		result$rms.p <- log(ptw2011.gof.test(expected, obs))
+
+		kc <- .Call(kang_chen_2007_wrapper, obs, expected)
+		obs <- kc$O
+		expected <- kc$E
+		mask <- !is.na(expected) & expected!=0
+		result$pearson.chisq <- sum((obs[mask] - expected[mask])^2 / expected[mask])
+		result$pearson.df <- sum(mask)-1L
+		result$pearson.p <- pchisq(result$pearson.chisq, result$pearson.df, lower.tail=FALSE, log.p=TRUE)
+	}
+	class(result) <- "summary.sumScoreEAP"
+	result
+}
+
+print.summary.sumScoreEAP <- function(x,...) {
+	print(x$tbl)
+	if (x$distributionTest) {
+		cat("\nLatent distribution fit test:\n")
+	}
+	if (!is.null(x$rms.p)) {
+		cat(sprintf("  RMS log(p) = %.2f\n", x$rms.p))
+	}
+	if (!is.null(x$pearson.p)) {
+		cat(sprintf("  Pearson X^2(%3d) = %.2f, log(p) = %.2f\n",
+			    x$pearson.df, x$pearson.chisq, x$pearson.p))
+	}
 }
 
 ##' Compute the observed sum-score
