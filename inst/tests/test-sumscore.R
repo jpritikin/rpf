@@ -38,3 +38,79 @@ test_that("itemOutcomeBySumScore", {
                     .Dim = c(5L, 3L), .Dimnames = list(c("0", "1", "2",  "3", "4"), c("a","b","c")))
   expect_equal(tbl$table, want)  
 })
+
+# Thissen, Pommerich, Billeaud, & Williams (1995)
+test_that("tpbw1995-table2", {
+  spec <- list()
+  spec[1:3] <- rpf.grm(outcomes=4)
+  
+  param <- matrix(c(1.87, .65, 1.97, 3.14,
+                    2.66, .12, 1.57, 2.69,
+                    1.24, .08, 2.03, 4.3), nrow=4)
+  # fix parameterization
+  param <- apply(param, 2, function(p) c(p[1], p[2:4] * -p[1]))
+  
+  grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param)
+  
+  got <- sumScoreEAP(grp)$tbl
+  
+  expect_equal(sum(got[,'p']), 1, tolerance=.001)
+  
+  #cat(deparse(round(got[,2],3)))
+  rownames(got) <- NULL
+  
+  ssP <- c(0.325, 0.241, 0.183, 0.123, 0.069, 0.035, 0.016, 0.006, 0.002,  0)
+  expect_equal(got[,'p'], ssP, tolerance=.01)
+  ssEAP <- c(-0.885, -0.179, 0.332, 0.744, 1.115, 1.482, 1.843, 2.212, 2.622,  2.999)
+  expect_equal(got[,'f1'], ssEAP, tolerance=.01)
+  ssVar <- c(0.494, 0.378, 0.329, 0.299, 0.297, 0.296, 0.29, 0.296, 0.313,  0.328)
+  expect_equal(got[,'se1'], sqrt(ssVar), tolerance=.01)
+  expect_equal(got[,'cov1'], ssVar, tolerance=.01)
+})
+
+verifySumP <- function(grp, sseap, N=2000) {  # a good fit is close to 1
+  sim <- apply(sapply(rpf.sample(N, grp=grp), unclass), 1, function(r) sum(r-1))
+  observed <- tabulate(1+sim, length(sseap[,1]))
+  #  print(observed/N)
+  ptw2011.gof.test(observed, N*sseap[,1])
+}
+
+if (0) {
+  fm <- read.flexmirt("~/ifa/ifa-2d-mg/2d-mg-prm.txt")
+  
+  got <- sumScoreEAP(fm$G1, 5, 21L)  # matches flexmirt exactly
+  verifySumP(fm$G1, got)
+  
+  got <- sumScoreEAP(fm$G2, 5, 21L)  # doesn't match flexmirt
+  verifySumP(fm$G2, got, N=5000)  # but looks feasible
+  
+  got <- sumScoreEAP(fm$G3, 5, 21L)  # doesn't match flexmirt
+  verifySumP(fm$G3, got, N=5000)  # but looks feasible
+}
+
+test_that("2tier sumScoreEAP", {
+  set.seed(1)
+  require(rpf)
+  numItems <- 6
+  spec <- list()
+  spec[1:numItems] <- rpf.drm(factors=3)
+  param <- sapply(spec, rpf.rparam)
+  gsize <- numItems/3
+  for (gx in 0:2) {
+    if (gx != 1) {
+      param['a2', seq(gx * gsize+1, (gx+1)*gsize)] <- 0
+    }
+    if (gx != 2) {
+      param['a3', seq(gx * gsize+1, (gx+1)*gsize)] <- 0
+    }
+  }
+  grp <- list(spec=spec, param=param, mean=runif(3, -1, 1), cov=diag(runif(3,.5,2)))
+  got <- sumScoreEAP(grp, qwidth=2, qpoints=3L) #TODO
+  
+  grp1 <- list(spec=spec[1:4], param=param[c(1,2,4:6), 1:4],
+               mean=grp$mean[1:2], cov=grp$cov[1:2,1:2])
+  grp2 <- list(spec=spec[4:5], param=param[c(1,3,4:6), 5:6],
+               mean=grp$mean[c(1,3)], cov=diag(diag(grp$cov)[c(1,3)]))
+  got1 <- ssEAP(grp1, qwidth=2, qpoints=3L, debug=TRUE)
+  got2 <- ssEAP(grp2, qwidth=2, qpoints=3L, debug=TRUE)
+})

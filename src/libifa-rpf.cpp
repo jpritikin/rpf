@@ -935,16 +935,6 @@ irt_rpf_nominal_deriv1(const double *spec,
 }
 
 static void
-pda(const double *ar, int rows, int cols) {   // column major order
-	for (int rx=0; rx < rows; rx++) {
-		for (int cx=0; cx < cols; cx++) {
-			Rprintf("%.6g, ", ar[cx * rows + rx]);
-		}
-		Rprintf("\n");
-	}
-}
-
-static void
 irt_rpf_nominal_deriv2(const double *spec,
 		       const double *param,
 		       double *out)

@@ -4,66 +4,6 @@ library(rpf)
 
 context("ot2000")
 
-# Thissen, Pommerich, Billeaud, & Williams (1995)
-test_that("tpbw1995-table2", {
-  spec <- list()
-  spec[1:3] <- rpf.grm(outcomes=4)
-  
-  param <- matrix(c(1.87, .65, 1.97, 3.14,
-                    2.66, .12, 1.57, 2.69,
-                    1.24, .08, 2.03, 4.3), nrow=4)
-  # fix parameterization
-  param <- apply(param, 2, function(p) c(p[1], p[2:4] * -p[1]))
-  
-  grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param)
-  
-  got <- sumScoreEAP(grp)$tbl
-  
-  expect_equal(sum(got[,'p']), 1, tolerance=.001)
-  
-  #cat(deparse(round(got[,2],3)))
-  rownames(got) <- NULL
-  
-  ssP <- c(0.325, 0.241, 0.183, 0.123, 0.069, 0.035, 0.016, 0.006, 0.002,  0)
-  expect_equal(got[,'p'], ssP, tolerance=.01)
-  ssEAP <- c(-0.885, -0.179, 0.332, 0.744, 1.115, 1.482, 1.843, 2.212, 2.622,  2.999)
-  expect_equal(got[,'f1'], ssEAP, tolerance=.01)
-  ssVar <- c(0.494, 0.378, 0.329, 0.299, 0.297, 0.296, 0.29, 0.296, 0.313,  0.328)
-  expect_equal(got[,'se1'], sqrt(ssVar), tolerance=.01)
-  expect_equal(got[,'cov1'], ssVar, tolerance=.01)
-})
-
-verifySumP <- function(grp, sseap, N=2000) {  # a good fit is close to 1
-  sim <- apply(sapply(rpf.sample(N, grp=grp), unclass), 1, function(r) sum(r-1))
-  observed <- tabulate(1+sim, length(sseap[,1]))
-#  print(observed/N)
-  ptw2011.gof.test(observed, N*sseap[,1])
-}
-
-if (0) {
-  fm <- read.flexmirt("~/ifa/ifa-2d-mg/2d-mg-prm.txt")
-  
-  got <- sumScoreEAP(fm$G1, 5, 21L)  # matches flexmirt exactly
-  verifySumP(fm$G1, got)
-  
-  got <- sumScoreEAP(fm$G2, 5, 21L)  # doesn't match flexmirt
-  verifySumP(fm$G2, got, N=5000)  # but looks feasible
-  
-  got <- sumScoreEAP(fm$G3, 5, 21L)  # doesn't match flexmirt
-  verifySumP(fm$G3, got, N=5000)  # but looks feasible
-}
-
-if (0) {
-  # cai2009
-  fm <- structure(list(G1 = structure(list(param = structure(c(0.992675,  0.646717, 0, 0, 0.876469, 1.41764, 1.25402, 0, 0, 0.0826927,  1.76547, 1.20309, 0, 0, -0.346706, 2.1951, 0.844399, 0, 0, -0.978301,  1.37774, 0, 1.06694, 0, 0.992373, 1.80365, 0, 0.814109, 0, 0.213559,  2.15718, 0, 1.58086, 0, -0.418129, 1.18201, 0, 1.56533, 0, -1.24173,  1.80474, 0, 0, 1.0774, 0.810718, 2.60754, 0, 0, 1.23507, 0.0598008,  1.01874, 0, 0, 0.724402, -0.294029, 1.68916, 0, 0, 1.37546, -1.13333 ), .Dim = c(5L, 12L), .Dimnames = list(NULL, c("i1", "i2", "i3",  "i4", "i5", "i6", "i7", "i8", "i9", "i10", "i11", "i12"))), mean = structure(c(0.822622,  -0.290462, 0.19672, 0.733993), .Names = c("X6", "X7", "X8", "X9" )), cov = structure(c(0.826046, 0, 0, 0, 0, 1.656, 0, 0, 0, 0,  1.11263, 0, 0, 0, 0, 1.07878), .Dim = c(4L, 4L))), .Names = c("param",  "mean", "cov")),
-                       G2 = structure(list(param = structure(c(0.992675,  0.646717, 0, 0, 0, 0.876469, 1.41764, 1.25402, 0, 0, 0, 0.0826927,  1.76547, 1.20309, 0, 0, 0, -0.346706, 2.1951, 0.844399, 0, 0,  0, -0.978301, 1.37774, 0, 1.06694, 0, 0, 0.992373, 1.80365, 0,  0.814109, 0, 0, 0.213559, 2.15718, 0, 1.58086, 0, 0, -0.418129,  1.18201, 0, 1.56533, 0, 0, -1.24173, 1.80474, 0, 0, 1.0774, 0,  0.810718, 2.60754, 0, 0, 1.23507, 0, 0.0598008, 1.01874, 0, 0,  0.724402, 0, -0.294029, 1.68916, 0, 0, 1.37546, 0, -1.13333,  1.75531, 0, 0, 0, 1.20652, 0.875564, 1.26308, 0, 0, 0, 1.25013,  0.196607, 1.44526, 0, 0, 0, 0.990354, -0.351181, 1.89461, 0,  0, 0, 0.85611, -1.09382), .Dim = c(6L, 16L), .Dimnames = list(     NULL, c("i1", "i2", "i3", "i4", "i5", "i6", "i7", "i8", "i9",      "i10", "i11", "i12", "i13", "i14", "i15", "i16"))), mean = structure(c(0,  0, 0, 0, 0), .Names = c("X6", "X7", "X8", "X9", "X10")), cov = structure(c(1,  0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0,  0, 0, 1), .Dim = c(5L, 5L))), .Names = c("param", "mean", "cov" ))), .Names = c("G1", "G2"))
-  spec <- list()
-  spec[1:ncol(fm$G2$param)] <- rpf.grm(factors = 5)
-  fm$G2$spec <- spec
-  got <- sumScoreEAP(fm$G2, 5, 21L)
-  verifySumP(fm$G2, got, N=3000)  # wrong
-}
-
 test_that("simple case", {
   require(rpf)
   set.seed(1)

@@ -63,7 +63,7 @@ void getMatrixDims(SEXP r_theta, int *rows, int *cols);
 SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observed, SEXP r_quad);
 SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig);
 SEXP gamma_cor(SEXP r_mat);
-SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask);
+SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug);
 SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, SEXP Rmask);
 SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials);
 SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems);
@@ -78,4 +78,14 @@ static inline int triangleLoc1(int diag)
 static inline int triangleLoc0(int diag)
 {
 	return triangleLoc1(diag+1) - 1;  // 0 2 5 9 14 ..
+}
+
+static inline void
+pda(const double *ar, int rows, int cols) {   // column major order
+	for (int rx=0; rx < rows; rx++) {
+		for (int cx=0; cx < cols; cx++) {
+			Rprintf("%.6g, ", ar[cx * rows + rx]);
+		}
+		Rprintf("\n");
+	}
 }

@@ -1,8 +1,18 @@
-ssEAP <- function(grp, width, qpoints, mask) {
+##' Internal sum-score EAP engine
+##'
+##' Do not call this directly. For developers only
+##' 
+##' @param grp grp
+##' @param qwidth qwidth
+##' @param qpoints qpoints
+##' @param mask mask
+##' @param twotier twotier
+##' @param debug debug
+ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 	if (missing(mask)) {
 		mask <- rep(TRUE, ncol(grp$param))
 	}
-	.Call(ssEAP_wrapper, grp, width, qpoints, mask)
+	.Call(ssEAP_wrapper, grp, qwidth, qpoints, mask, twotier, debug)
 }
 
 ##' Compute the sum-score EAP table
