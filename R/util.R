@@ -1,8 +1,8 @@
-ssEAP <- function(grp, width, pts, mask) {
+ssEAP <- function(grp, width, qpoints, mask) {
 	if (missing(mask)) {
 		mask <- rep(TRUE, ncol(grp$param))
 	}
-	.Call(ssEAP_wrapper, grp, width, pts, mask)
+	.Call(ssEAP_wrapper, grp, width, qpoints, mask)
 }
 
 ##' Compute the sum-score EAP table
@@ -16,8 +16,8 @@ ssEAP <- function(grp, width, pts, mask) {
 ##' 
 ##' @param grp a list with spec, param, mean, and cov
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
-##' @param width positive width of quadrature in Z units
-##' @param pts number of quadrature points
+##' @param qwidth positive width of quadrature in Z units
+##' @param qpoints number of quadrature points
 ##' @param distributionTest whether to perform the latent distribution test
 ##' @param omit number of items to omit from the latent distribution test
 ##' @examples
@@ -38,11 +38,11 @@ ssEAP <- function(grp, width, pts, mask) {
 ##' latent variable distribution fit in Item Response Theory. Paper presented at
 ##' the annual International Meeting of the Psychometric Society, Lincoln,
 ##' NE. Retrieved from http://www.cse.ucla.edu/downloads/files/SD2-final-4.pdf
-sumScoreEAP <- function(grp, ..., width=6.0, pts=49L, distributionTest=NULL, omit=0L) {
+sumScoreEAP <- function(grp, ..., qwidth=6.0, qpoints=49L, distributionTest=NULL, omit=0L) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
-	tbl <- ssEAP(grp, width, pts)
+	tbl <- ssEAP(grp, qwidth, qpoints)
 	rownames(tbl) <- 0:(nrow(tbl)-1)
 	result <- list(tbl=tbl, distributionTest=FALSE)
 	if ((is.null(distributionTest) && !is.null(grp$data)) || (!is.null(distributionTest) && distributionTest)) {
@@ -57,7 +57,7 @@ sumScoreEAP <- function(grp, ..., width=6.0, pts=49L, distributionTest=NULL, omi
 			omit <- min(sum(nacount != 0), omit)
 			toOmit <- names(nacount)[1:omit]
 			mask[match(toOmit, colnames(grp$param))] <- FALSE
-			tbl <- ssEAP(grp, width, pts, mask)
+			tbl <- ssEAP(grp, qwidth, qpoints, mask)
 			result$omitted <- toOmit
 		}
 		oss <- observedSumScore(grp, mask)

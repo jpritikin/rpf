@@ -338,7 +338,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##' @param method whether to use a pearson or rms test
 ##' @param log whether to return pvalues in log units
 ##' @param qwidth the positive width of the quadrature in Z units
-##' @param qpts the number of quadrature points
+##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
 ##' @param omit number of items to omit
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
@@ -348,7 +348,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
-SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE, omit=0L) {
+SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L, alt=FALSE, omit=0L) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -383,7 +383,7 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
     stop(paste("param matrix must have", max.param ,"rows"))
   }
 
-    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpts, alt, mask)
+    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpoints, alt, mask)
     if (nrow(Eproportion) != nrow(observed)) {
 	    print(Eproportion)
 	    stop(paste("Expecting", nrow(observed), "rows in expected matrix"))
@@ -447,7 +447,7 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
 ##' @param method whether to use a pearson or rms test
 ##' @param log whether to return pvalues in log units
 ##' @param qwidth the positive width of the quadrature in Z units
-##' @param qpts the number of quadrature points
+##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
 ##' @param omit number of items to omit
 ##' @return
@@ -462,7 +462,7 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
 ##' grp$free <- grp$param != 0
 ##' grp$data <- rpf.sample(500, grp=grp)
 ##' SitemFit(grp)
-SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE, omit=0L) {
+SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L, alt=FALSE, omit=0L) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -478,7 +478,7 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, a
       free <- 0
       if (!is.null(grp$free)) free <- sum(grp$free[,interest])
       itemname <- colnames(param)[interest]
-      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpts=qpts, alt=alt, omit=omit)
+      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints, alt=alt, omit=omit)
       got[[itemname]] <- ot.out
   }
     class(got) <- "summary.SitemFit"
@@ -758,6 +758,6 @@ crosstabTest <- function(ob, ex, trials) {
 	.Call(crosstabTest_wrapper, ob, ex, trials)
 }
 
-pairwiseExpected <- function(grp, items, qwidth=6, qpts=49L) {
-	.Call(pairwiseExpected_wrapper, grp, qwidth, qpts, items - 1L)
+pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L) {
+	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L)
 }
