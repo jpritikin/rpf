@@ -401,16 +401,9 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts)
 
 	SEXP dimnames;
 	Rf_protect(dimnames = Rf_allocVector(VECSXP, 2));
-	SEXP names;
-	Rf_protect(names = Rf_allocVector(STRSXP, outRows));
-	for (int rx=0; rx <= curMax; ++rx) {
-		const int SMALLBUF = 10;
-		char buf[SMALLBUF];
-		snprintf(buf, SMALLBUF, "%d", rx);
-                SET_STRING_ELT(names, rx, Rf_mkChar(buf));
-	}
-	SET_VECTOR_ELT(dimnames, 0, names);
+	SET_VECTOR_ELT(dimnames, 0, R_NilValue);
 
+	SEXP names;
 	Rf_protect(names = Rf_allocVector(STRSXP, outCols));
 	SET_STRING_ELT(names, 0, Rf_mkChar("p"));
 	for (int ax=0; ax < quad.maxAbilities; ++ax) {

@@ -31,9 +31,10 @@ test_that("itemOutcomeBySumScore", {
   data <- rpf.sample(5, spec, param)
   colnames(param) <- colnames(data)
   grp <- list(spec=spec, param=param, data=data)
+  levels(grp$data[,1]) <- c('a','b','c')
   tbl <- itemOutcomeBySumScore(grp, c(FALSE,TRUE,TRUE), 1L)
   
   want <- structure(c(1L, 0L, 0L, 0L, 0L, 1L, 0L, 0L, 1L, 0L, 0L, 1L, 0L,  0L, 1L),
-                    .Dim = c(5L, 3L), .Dimnames = list(c("0", "1", "2",  "3", "4"), NULL))
+                    .Dim = c(5L, 3L), .Dimnames = list(c("0", "1", "2",  "3", "4"), c("a","b","c")))
   expect_equal(tbl, want)  
 })

@@ -27,7 +27,9 @@ sumScoreEAP <- function(grp, ..., width=6.0, pts=49L, distributionTest=NULL) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
-	result <- list(tbl=.Call(ssEAP_wrapper, grp, width, pts))
+	tbl <- .Call(ssEAP_wrapper, grp, width, pts)
+	rownames(tbl) <- 0:(nrow(tbl)-1)
+	result <- list(tbl=tbl)
 	if ((is.null(distributionTest) && !is.null(grp$data)) || (!is.null(distributionTest) && distributionTest)) {
 		if (!is.null(distributionTest) && is.null(grp$data)) {
 			stop("distributionTest cannot be conducted because there is no data")
@@ -100,5 +102,7 @@ itemOutcomeBySumScore <- function(grp, mask, interest) {
 	}
 	tbl <- .Call(itemOutcomeBySumScore_wrapper, grp, mask, interest)
 	rownames(tbl) <- 0:(nrow(tbl)-1L)
+	col <- colnames(grp$param)[interest]
+	colnames(tbl) <- levels(grp$data[,col])
 	tbl
 }
