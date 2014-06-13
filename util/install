@@ -11,5 +11,9 @@ fi
 
 pkg=rpf
 
-#./util/rox
-R CMD INSTALL .
+CPUS=1
+if [ -f /proc/cpuinfo ]; then
+  CPUS=$(grep ^processor /proc/cpuinfo  | wc -l)
+fi
+
+MAKEFLAGS="-j $CPUS" R CMD INSTALL .
