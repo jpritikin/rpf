@@ -318,6 +318,11 @@ collapseCells <- function(On, En, mincell = 1){
 ##' items among a large number of well fitting items. However, be
 ##' aware that misfitting items can cause other items to misfit.
 ##'
+##' Observed tables cannot be computed when data is
+##' missing. Therefore, you can optionally omit items with the
+##' greatest number of responses missing relative to the item of
+##' interest.
+##' 
 ##' Pearson is slightly more powerful than RMS is most cases I
 ##' examined.
 ##'
@@ -329,11 +334,13 @@ collapseCells <- function(On, En, mincell = 1){
 ##' @param grp a list with spec, param, mean, cov, and data
 ##' @param item the item of interest
 ##' @param free the number of free parameters involved in estimating the item (to adjust the df)
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param method whether to use a pearson or rms test
 ##' @param log whether to return pvalues in log units
 ##' @param qwidth the positive width of the quadrature in Z units
 ##' @param qpts the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
+##' @param omit number of items to omit
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
 ##' polytomous IRT models. ACT Research Report Series.
@@ -341,7 +348,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
-SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE) {
+SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE, omit=0L) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -357,14 +364,26 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 
 	mask <- rep(TRUE, ncol(param))
 	if (!alt) mask[itemIndex] <- FALSE
-	observed <- itemOutcomeBySumScore(grp, mask, itemIndex)
+	if (omit > 0L) {
+		omask <- rep(TRUE, ncol(param))
+		omask[itemIndex] <- FALSE
+		if (omit >= sum(omask)) stop("Cannot omit all the items")
+		rowMask <- !is.na(grp$data[,colnames(param)[itemIndex]])
+		nacount <- sort(-sapply(grp$data[rowMask, omask], function(x) sum(is.na(x))))
+		omit <- min(sum(nacount != 0), omit)
+		toOmit <- names(nacount)[1:omit]
+		#print(c(colnames(param)[itemIndex], toOmit))
+		mask[match(toOmit, colnames(grp$param))] <- FALSE
+	}
+	iobss <- itemOutcomeBySumScore(grp, mask, itemIndex)
+	observed <-iobss$table
 
   max.param <- max(vapply(spec, rpf.numParam, 0))
   if (nrow(param) < max.param) {
     stop(paste("param matrix must have", max.param ,"rows"))
   }
 
-    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpts, alt)
+    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpts, alt, mask)
     if (nrow(Eproportion) != nrow(observed)) {
 	    print(Eproportion)
 	    stop(paste("Expecting", nrow(observed), "rows in expected matrix"))
@@ -405,13 +424,14 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
     }
     out$log <- log
     out$method <- method
-  out
+	out$n <- iobss$n
+	out
 }
 
-ot2000md <- function(grp, item, width, pts, alt=FALSE) {
+ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
 	if (missing(width)) width <- 6
 	if (missing(pts)) pts <- 49L
-	.Call(ot2000_wrapper, grp, item, width, pts, alt)
+	.Call(ot2000_wrapper, grp, item, width, pts, alt, mask)
 }
 
 ##' Compute the S fit statistic for a set of items
@@ -423,11 +443,13 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE) {
 ##' TODO: Option to omit some column to improve missing data performance
 ##'
 ##' @param grp a list with spec, param, mean, cov, data, and the free variable pattern
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param method whether to use a pearson or rms test
 ##' @param log whether to return pvalues in log units
 ##' @param qwidth the positive width of the quadrature in Z units
 ##' @param qpts the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
+##' @param omit number of items to omit
 ##' @return
 ##' a list of output from \code{\link{SitemFit1}}
 ##' @examples
@@ -440,7 +462,7 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE) {
 ##' grp$free <- grp$param != 0
 ##' grp$data <- rpf.sample(500, grp=grp)
 ##' SitemFit(grp)
-SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE) {
+SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, alt=FALSE, omit=0L) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -456,7 +478,7 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpts=49L, a
       free <- 0
       if (!is.null(grp$free)) free <- sum(grp$free[,interest])
       itemname <- colnames(param)[interest]
-      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpts=qpts, alt=alt)
+      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpts=qpts, alt=alt, omit=omit)
       got[[itemname]] <- ot.out
   }
     class(got) <- "summary.SitemFit"
@@ -467,10 +489,10 @@ print.summary.SitemFit <- function(x,...) {
 	cat("Orlando & Thissen (2000) sum-score based item fit test\n")
 	cat("  Magnitudes larger than abs(log(.01))=4.6 are significant at the p=.01 level\n\n")
 	width <- max(sapply(names(x), nchar))
-	fmt <- paste("%", width, "s : ", sep="")
+	fmt <- paste("%", width, "s : n = %4d, ", sep="")
 	for (ix in 1:length(x)) {
 		report1 <- x[[ix]]
-		msg <- sprintf(fmt, names(x)[ix])
+		msg <- sprintf(fmt, names(x)[ix], report1$n)
 		stat <- round(report1$statistic, 2)
 		if (report1$method == "pearson") {
 			msg <- paste(msg, sprintf("S-X2(%3d) = %6.2f, ", report1$df, stat), sep="")
@@ -520,9 +542,7 @@ P.cdf.fn <- function(x, g.var, t) {
 ##' collapsing is needed to avoid an inflated false positive rate
 ##' in situations of sparse cell frequences.
 ##' The statistic rapidly converges to the Monte-Carlo estimate
-##' as the number of draws increases. In contrast to Pearson's
-##' X^2, the order of the matrices doesn't matter. This test is
-##' commutative with respect to its arguments.
+##' as the number of draws increases.
 ##' 
 ##' @param observed observed matrix
 ##' @param expected expected matrix
@@ -544,6 +564,11 @@ ptw2011.gof.test <- function(observed, expected) {
   orig.draws <- sum(observed)
   if (abs(sum(expected) - orig.draws) > 1e-6) {
 	  stop(paste("Total observed - total expected", abs(sum(expected) - orig.draws)))
+  }
+  if (any(c(expected)==0)) {
+	  zeros <- sum(c(expected)==0)
+	  stop(paste("There are", zeros, "zeros in the expected distribution.",
+		     "Did you swap the observed and expected arguments"))
   }
   observed <- observed / orig.draws
   expected <- expected / orig.draws
@@ -595,6 +620,7 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' the two item residuals are less correlated than expected.
 ##'
 ##' @param grp a list with the spec, param, mean, and cov describing the group
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param data data
 ##' @param inames a subset of items to examine
 ##' @param qwidth quadrature width
@@ -720,6 +746,13 @@ print.summary.ChenThissen1997 <- function(x,...) {
 	print(round(x$pval,2))
 }
 
+##' Monte-Carlo test for cross-tabulation tables
+##'
+##' This is for developers.
+##'
+##' @param ob observed table
+##' @param ex expected table
+##' @param trials number of Monte-Carlo trials
 crosstabTest <- function(ob, ex, trials) {
 	if (missing(trials)) trials <- 10000
 	.Call(crosstabTest_wrapper, ob, ex, trials)

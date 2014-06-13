@@ -1,10 +1,25 @@
+ssEAP <- function(grp, width, pts, mask) {
+	if (missing(mask)) {
+		mask <- rep(TRUE, ncol(grp$param))
+	}
+	.Call(ssEAP_wrapper, grp, width, pts, mask)
+}
+
 ##' Compute the sum-score EAP table
 ##'
 ##' TODO: Optimize for two-tier covariance structure
+##'
+##' Observed tables cannot be computed when data is
+##' missing. Therefore, you can optionally omit items with the
+##' greatest number of responses missing when conducting the
+##' distribution test.
 ##' 
 ##' @param grp a list with spec, param, mean, and cov
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param width positive width of quadrature in Z units
 ##' @param pts number of quadrature points
+##' @param distributionTest whether to perform the latent distribution test
+##' @param omit number of items to omit from the latent distribution test
 ##' @examples
 ##' # see Thissen, Pommerich, Billeaud, & Williams (1995, Table 2)
 ##'  spec <- list()
@@ -23,22 +38,34 @@
 ##' latent variable distribution fit in Item Response Theory. Paper presented at
 ##' the annual International Meeting of the Psychometric Society, Lincoln,
 ##' NE. Retrieved from http://www.cse.ucla.edu/downloads/files/SD2-final-4.pdf
-sumScoreEAP <- function(grp, ..., width=6.0, pts=49L, distributionTest=NULL) {
+sumScoreEAP <- function(grp, ..., width=6.0, pts=49L, distributionTest=NULL, omit=0L) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
-	tbl <- .Call(ssEAP_wrapper, grp, width, pts)
+	tbl <- ssEAP(grp, width, pts)
 	rownames(tbl) <- 0:(nrow(tbl)-1)
-	result <- list(tbl=tbl)
+	result <- list(tbl=tbl, distributionTest=FALSE)
 	if ((is.null(distributionTest) && !is.null(grp$data)) || (!is.null(distributionTest) && distributionTest)) {
 		if (!is.null(distributionTest) && is.null(grp$data)) {
 			stop("distributionTest cannot be conducted because there is no data")
 		}
 		result$distributionTest <- TRUE
-		obs <- matrix(observedSumScore(grp, rep(TRUE, ncol(grp$param))), ncol=1)
+		mask <- rep(TRUE, ncol(grp$param))
+		if (omit > 0) {
+			if (omit >= ncol(grp$param)) stop("Cannot omit all the items")
+			nacount <- sort(-sapply(grp$data, function(x) sum(is.na(x))))
+			omit <- min(sum(nacount != 0), omit)
+			toOmit <- names(nacount)[1:omit]
+			mask[match(toOmit, colnames(grp$param))] <- FALSE
+			tbl <- ssEAP(grp, width, pts, mask)
+			result$omitted <- toOmit
+		}
+		oss <- observedSumScore(grp, mask)
+		result$n <- oss$n
+		obs <- matrix(oss$dist, ncol=1)
 		size <- sum(obs)
-		expected <- matrix(size * result$tbl[,1], ncol=1)
-		result$rms.p <- log(ptw2011.gof.test(expected, obs))
+		expected <- matrix(size * tbl[,1], ncol=1)
+		result$rms.p <- log(ptw2011.gof.test(obs, expected))
 
 		kc <- .Call(collapse_wrapper, obs, expected)
 		obs <- kc$O
@@ -55,7 +82,10 @@ sumScoreEAP <- function(grp, ..., width=6.0, pts=49L, distributionTest=NULL) {
 print.summary.sumScoreEAP <- function(x,...) {
 	print(x$tbl)
 	if (x$distributionTest) {
-		cat("\nLatent distribution fit test:\n")
+		cat(sprintf("\nLatent distribution fit test (n=%d):\n", x$n))
+	}
+	if (!is.null(x$omitted)) {
+		cat(paste("  Omitted:", paste(x$omitted, collapse=" "), "\n"))
 	}
 	if (!is.null(x$rms.p)) {
 		cat(sprintf("  RMS log(p) = %.2f\n", x$rms.p))
@@ -79,7 +109,14 @@ print.summary.sumScoreEAP <- function(x,...) {
 ##' grp <- list(spec=spec, param=param, data=data)
 ##' observedSumScore(grp, rep(TRUE, length(spec)))
 observedSumScore <- function(grp, mask) {
-	.Call(observedSumScore_wrapper, grp, mask)
+	got <- .Call(observedSumScore_wrapper, grp, mask)
+	class(got) <- "summary.observedSumScore"
+	got
+}
+
+print.summary.observedSumScore <- function(x,...) {
+	print(x$dist)
+	cat(sprintf("  N = %d\n", x$n))
 }
 
 ##' Produce an item outcome by observed sum-score table
@@ -100,9 +137,15 @@ itemOutcomeBySumScore <- function(grp, mask, interest) {
 	if (is.character(interest)) {
 		interest <- match(interest, colnames(grp$param))
 	}
-	tbl <- .Call(itemOutcomeBySumScore_wrapper, grp, mask, interest)
-	rownames(tbl) <- 0:(nrow(tbl)-1L)
+	got <- .Call(itemOutcomeBySumScore_wrapper, grp, mask, interest)
+	rownames(got$table) <- 0:(nrow(got$table)-1L)
 	col <- colnames(grp$param)[interest]
-	colnames(tbl) <- levels(grp$data[,col])
-	tbl
+	colnames(got$table) <- levels(grp$data[,col])
+	class(got) <- "summary.itemOutcomeBySumScore"
+	got
+}
+
+print.summary.itemOutcomeBySumScore <- function(x,...) {
+	print(x$table)
+	cat(sprintf("  N = %d\n", x$n))
 }

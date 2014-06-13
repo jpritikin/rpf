@@ -173,6 +173,7 @@ class ssEAP {
 public:
 	ifaGroup grp;
 	ba81NormalQuad quad;
+	int *mask;
 	int maxScore;
 	std::vector<int> items;
 	std::vector<int> itemOutcomes;
@@ -180,16 +181,15 @@ public:
 	Eigen::MatrixXd slPrev;
 	
 	ssEAP() : grp(false) {}
-	void setup(SEXP grp, double qwidth, int qpts);
+	void setup(SEXP grp, double qwidth, int qpts, int *_mask);
 	void setLastItem(int which);
 	void tpbw1995();
 };
 
-#include <iostream> //TODO remove
-
-void ssEAP::setup(SEXP robj, double qwidth, int qpts)
+void ssEAP::setup(SEXP robj, double qwidth, int qpts, int *_mask)
 {
-	lastItem = 0;
+	lastItem = -1;
+	mask = _mask;
 
 	grp.import(robj);
 
@@ -198,15 +198,6 @@ void ssEAP::setup(SEXP robj, double qwidth, int qpts)
 	Eigen::MatrixXd priCov = fullCov.block(0, 0, dense, dense);
 	Eigen::VectorXd sVar = fullCov.diagonal().tail(grp.numSpecific);
 	quad.setup(qwidth, qpts, grp.mean, priCov, sVar);
-
-	maxScore = 0;
-	itemOutcomes.reserve(grp.numItems);
-	for (int cx = 0; cx < grp.numItems; cx++) {
-		const double *spec = grp.spec[cx];
-		int no = spec[RPF_ISpecOutcomes];
-		itemOutcomes.push_back(no);
-		maxScore += no - 1;
-	}
 }
 
 void ssEAP::setLastItem(int which)
@@ -216,9 +207,19 @@ void ssEAP::setLastItem(int which)
 
 void ssEAP::tpbw1995()
 {
-	items.reserve(grp.numItems);
-	for (int ix=0; ix < grp.numItems; ++ix) if (ix != lastItem) items.push_back(ix);
-	items.push_back(lastItem);
+	maxScore = 0;
+	itemOutcomes.reserve(grp.numItems);
+	for (int cx = 0; cx < grp.numItems; cx++) {
+		const double *spec = grp.spec[cx];
+		int no = spec[RPF_ISpecOutcomes];
+		itemOutcomes.push_back(no);
+		if ((lastItem != -1 && cx == lastItem) || mask[cx]) {
+			maxScore += no - 1;
+			if (cx != lastItem) items.push_back(cx);
+		}
+	}
+
+	if (lastItem >= 0) items.push_back(lastItem);
 
 	slCur.resize(quad.totalQuadPoints, 1+maxScore);
 	int curMax = 0;
@@ -273,7 +274,7 @@ void ssEAP::tpbw1995()
 	}
 }
 
-SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter)
+SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, SEXP Rmask)
 {
 	omxManageProtectInsanity mpi;
 
@@ -282,7 +283,7 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter)
 	int interest = Rf_asInteger(Ritem) - 1;
 
 	ssEAP myeap;
-	myeap.setup(robj, qwidth, qpts);
+	myeap.setup(robj, qwidth, qpts, LOGICAL(Rmask));
 	myeap.setLastItem(interest);
 	myeap.tpbw1995();
 
@@ -366,7 +367,7 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter)
 	}
 }
 
-SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts)
+SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask)
 {
 	omxManageProtectInsanity mpi;
 
@@ -374,7 +375,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts)
 	int qpts = Rf_asInteger(Rpts);
 
 	ssEAP myeap;
-	myeap.setup(robj, qwidth, qpts);
+	myeap.setup(robj, qwidth, qpts, LOGICAL(Rmask));
 	myeap.tpbw1995();
 
 	ba81NormalQuad &quad = myeap.quad;
@@ -682,20 +683,25 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 	}
 	int *itemMask = LOGICAL(Rmask);
 
-	int maxScore = 1+maxObservedSumScore(grp, itemMask);
+	int numScores = 1+maxObservedSumScore(grp, itemMask);
 
 	SEXP Rdist;
-	Rf_protect(Rdist = Rf_allocVector(INTSXP, maxScore));
-	Eigen::Map<Eigen::ArrayXi> distOut(INTEGER(Rdist), maxScore);
+	Rf_protect(Rdist = Rf_allocVector(INTSXP, numScores));
+	Eigen::Map<Eigen::ArrayXi> distOut(INTEGER(Rdist), numScores);
 	distOut.setZero();
 
+	int rowsIncluded = 0;
 	for (int rx=0; rx < grp.dataRows; ++rx) {
 		int ss;
 		if (computeObservedSumScore(grp, itemMask, rx, &ss)) continue;
 		distOut[ss] += 1;
+		++rowsIncluded;
 	}
 
-	return Rdist;
+	MxRList out;
+	out.add("dist", Rdist);
+	out.add("n", Rf_ScalarInteger(rowsIncluded));
+	return out.asR();
 }
 
 SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
@@ -711,7 +717,7 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 	}
 	int *itemMask = LOGICAL(Rmask);
 
-	int maxScore = 1+maxObservedSumScore(grp, itemMask);
+	int numScores = 1+maxObservedSumScore(grp, itemMask);
 
 	int interest = Rf_asInteger(Rinterest) - 1;
 	if (interest < 0 || interest >= int(grp.spec.size())) {
@@ -722,21 +728,26 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 	int outcomes = spec[RPF_ISpecOutcomes];
 
 	SEXP r_ans;
-	Rf_protect(r_ans = Rf_allocMatrix(INTSXP, maxScore, outcomes));
-	Eigen::Map<Eigen::ArrayXXi> out(INTEGER(r_ans), maxScore, outcomes);
+	Rf_protect(r_ans = Rf_allocMatrix(INTSXP, numScores, outcomes));
+	Eigen::Map<Eigen::ArrayXXi> out(INTEGER(r_ans), numScores, outcomes);
 	out.setZero();
 
 	int *iresp = INTEGER(VECTOR_ELT(grp.Rdata, grp.colMap[interest]));
 
+	int rowsIncluded = 0;
 	for (int rx=0; rx < grp.dataRows; ++rx) {
 		int pick = iresp[rx];
 		if (pick == NA_INTEGER) continue;
 		int ss;
 		if (computeObservedSumScore(grp, itemMask, rx, &ss)) continue;
 		out(ss, pick-1) += 1;
+		++rowsIncluded;
 	}
 
-	return r_ans;
+	MxRList lout;
+	lout.add("table", r_ans);
+	lout.add("n", Rf_ScalarInteger(rowsIncluded));
+	return lout.asR();
 }
 
 static double table_concordance(double *mat, int rows, int cols, int ii, int jj)

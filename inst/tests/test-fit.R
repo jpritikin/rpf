@@ -136,6 +136,32 @@ test_that("orlando-thissen-2000", {
   expect_equal(stat, Estat, tolerance=.01)
 })
 
+test_that("fit w/ mcar", {
+  require(rpf)
+  set.seed(7)
+  grp <- list(spec=list())
+  grp$spec[1:20] <- rpf.grm()
+  grp$param <- sapply(grp$spec, rpf.rparam)
+  colnames(grp$param) <- paste("i", 1:20, sep="")
+  grp$mean <- 0
+  grp$cov <- diag(1)
+  grp$free <- grp$param != 0
+  grp$data <- rpf.sample(500, grp=grp, mcar=.1)
+
+  got <- sumScoreEAP(grp, omit=3L)
+  expect_equal(got$n, 101L)
+  expect_equal(got$rms.p, -1.87, tolerance=.01)
+  expect_equal(got$pearson.df, 16L)
+  expect_equal(got$pearson.p, -1.46, tolerance=.01)
+  
+  got <- SitemFit(grp, omit=2L)
+  stat <- sapply(got, function(x) x$statistic)
+  names(stat) <- NULL
+  Estat <- c(6.68, 6.87, 9.6, 14.31, 11.74, 11.63, 15.05, 2.08, 6.16, 6.8,
+             10.28, 2.37, 6.86, 6.47, 10.02, 11.48, 13.96, 9.96, 8.24, 11.77 )
+  expect_equal(stat, Estat, tolerance=.01)
+})
+
 if (0) {
   library(mirt)
   dat <- expand.table(LSAT6)
