@@ -610,7 +610,7 @@ int ManhattenCollapse::run()
 	return collapsed;
 }
 
-SEXP kang_chen_2007_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
+SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
 {
 	omxManageProtectInsanity mpi;
 

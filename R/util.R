@@ -40,7 +40,7 @@ sumScoreEAP <- function(grp, ..., width=6.0, pts=49L, distributionTest=NULL) {
 		expected <- matrix(size * result$tbl[,1], ncol=1)
 		result$rms.p <- log(ptw2011.gof.test(expected, obs))
 
-		kc <- .Call(kang_chen_2007_wrapper, obs, expected)
+		kc <- .Call(collapse_wrapper, obs, expected)
 		obs <- kc$O
 		expected <- kc$E
 		mask <- !is.na(expected) & expected!=0

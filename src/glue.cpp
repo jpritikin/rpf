@@ -415,7 +415,7 @@ static R_CallMethodDef flist[] = {
   {"rpf_dLL_wrapper", (DL_FUNC) rpf_dLL_wrapper, 4},
   {"rpf_dTheta_wrapper", (DL_FUNC) rpf_dTheta_wrapper, 4},
   {"rpf_rescale_wrapper", (DL_FUNC) rpf_rescale_wrapper, 4},
-  {"kang_chen_2007_wrapper", (DL_FUNC) kang_chen_2007_wrapper, 2},
+  {"collapse_wrapper", (DL_FUNC) collapse_wrapper, 2},
   {"ordinal_gamma_wrapper", (DL_FUNC) gamma_cor, 1},
   {"ssEAP_wrapper", (DL_FUNC) sumscoreEAP, 3},
   {"ot2000_wrapper", (DL_FUNC) ot2000_wrapper, 5},

@@ -382,7 +382,7 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 	if (alt) {
 		kc <- collapseCells(observed, expected)
 	} else {
-		kc <- .Call(kang_chen_2007_wrapper, observed, expected)
+		kc <- .Call(collapse_wrapper, observed, expected)
 	}
         out$observed <- observed <- kc$O
         out$expected <- expected <- kc$E
@@ -681,7 +681,7 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 	      tmp <- 1 / (1+exp(-(logit(tmp) - 2.8)))  # not sure about this! TODO
 	      pval[iter1, iter2] <- sign(s) * -log(tmp)
       } else if (method == "pearson") {
-	      kc <- .Call(kang_chen_2007_wrapper, observed, expected)
+	      kc <- .Call(collapse_wrapper, observed, expected)
 	      observed <- kc$O
 	      expected <- kc$E
 	      mask <- !is.na(expected)
