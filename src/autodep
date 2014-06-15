@@ -1,9 +1,10 @@
-ba81quad.o: Makevars ba81quad.cpp rpf.h   \
+ba81quad.o: Makevars.in ba81quad.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
-diagnose.o: Makevars diagnose.cpp rpf.h   \
+diagnose.o: Makevars.in diagnose.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
-dmvnorm.o: Makevars dmvnorm.cpp rpf.h   \
+dmvnorm.o: Makevars.in dmvnorm.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
-glue.o: Makevars glue.cpp rpf.h   \
+glue.o: Makevars.in glue.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
-libifa-rpf.o: Makevars libifa-rpf.cpp ../inst/include/libifa-rpf.h
+libifa-rpf.o: Makevars.in libifa-rpf.cpp ../inst/include/libifa-rpf.h   \
+  
