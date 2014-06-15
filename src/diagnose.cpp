@@ -169,6 +169,14 @@ void ifaGroup::import(SEXP Rlist)
 		maxAbilities = mlen;
 		numSpecific = orthogonal.size();
 
+		for (int ix=0; ix < numItems; ++ix) {
+			const int dims = spec[ix][RPF_ISpecDims];
+			if (dims > maxAbilities) {
+				Rf_error("Item %d has %d factors but only %d factors are given in the latent distribution",
+					 1+ix, dims, maxAbilities);
+			}
+		}
+
 		if (numSpecific) {
 			Sgroup.assign(numItems, 0);
 			for (int ix=0; ix < numItems; ix++) {
