@@ -393,6 +393,8 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
     }
     Escale <- matrix(apply(observed, 1, sum), nrow=nrow(Eproportion), ncol=ncol(Eproportion))
     expected <- Eproportion * Escale
+	names(dimnames(observed)) <- c("sumScore", "outcome")
+	dimnames(expected) <- dimnames(observed)
     out <- list(orig.observed=observed, orig.expected = expected)
 
     mask <- apply(observed, 1, sum) != 0
