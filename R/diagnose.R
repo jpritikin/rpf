@@ -440,7 +440,6 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
 ##' the results.
 ##'
 ##' TODO: Optimize for two-tier covariance structure
-##' TODO: Option to omit some column to improve missing data performance
 ##'
 ##' @param grp a list with spec, param, mean, cov, data, and the free variable pattern
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
