@@ -353,6 +353,9 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
 
+	if (missing(qwidth) && !is.null(grp$qwidth)) { qwidth <- grp$qwidth }
+	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
+
     spec <- grp$spec
   c.spec <- lapply(spec, function(m) {
     if (length(m@spec)==0) { stop("Item model",m,"is not implemented") }
@@ -465,6 +468,9 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
+
+	if (missing(qwidth) && !is.null(grp$qwidth)) { qwidth <- grp$qwidth }
+	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
 
     spec <- grp$spec
     if (ncol(grp$data) != length(spec)) stop("Dim mismatch between data and spec")
@@ -649,6 +655,9 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
   if (missing(data)) {
       data <- grp$data
   }
+	if (missing(qwidth) && !is.null(grp$qwidth)) { qwidth <- grp$qwidth }
+	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
+
   if (method != "rms" && method != "pearson" && method != "lr") stop(paste("Unknown method", method))
   if (missing(inames)) {
     inames <- colnames(grp$param)
