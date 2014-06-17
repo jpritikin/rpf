@@ -22,9 +22,9 @@ set.seed(1)
 
 test_that("1 dimensional items", {
   i1 <- rpf.drm()
-  i1.p <- rpf.rparam(i1)
+  i1.p <- rpf.rparam(i1, version=1)
   i2 <- rpf.nrm(outcomes=3)
-  i2.p <- rpf.rparam(i2)
+  i2.p <- rpf.rparam(i2, version=1)
   data <- rpf.sample(3, list(i1,i2), list(i1.p, i2.p))
   compare.df(unclass(data), data.frame(i1=c(2,1,1), i2=c(3,3,3)))
 
@@ -41,7 +41,7 @@ test_that("multidimension, no design", {
   i1 <- rpf.drm(factors=2)
   for (ix in 1:numItems) {
     items[[ix]] <- i1
-    correct[[ix]] <- rpf.rparam(i1)
+    correct[[ix]] <- rpf.rparam(i1, version=1)
   }
 
   data <- rpf.sample(3, items, correct)
@@ -57,7 +57,7 @@ test_that("1d and 2d", {
   items <- vector("list", numItems)
   for (ix in seq(1,numItems,2)) items[[ix]] <- i1
   for (ix in seq(2,numItems,2)) items[[ix]] <- i2
-  correct <- lapply(items, rpf.rparam)
+  correct <- lapply(items, rpf.rparam, version=1)
   data <- rpf.sample(4, items, correct)
   expect_true(all(dim(data) == c(4,4)))
 })

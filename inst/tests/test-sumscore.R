@@ -8,7 +8,7 @@ test_that("observedSumScore", {
   set.seed(1)
   spec <- list()
   spec[1:3] <- rpf.grm(outcomes=3)
-  param <- sapply(spec, rpf.rparam)
+  param <- sapply(spec, rpf.rparam, version=1)
   data <- rpf.sample(5, spec, param)
   colnames(param) <- colnames(data)
   grp <- list(spec=spec, param=param, data=data)
@@ -27,7 +27,7 @@ test_that("itemOutcomeBySumScore", {
   set.seed(1)
   spec <- list()
   spec[1:3] <- rpf.grm(outcomes=3)
-  param <- sapply(spec, rpf.rparam)
+  param <- sapply(spec, rpf.rparam, version=1)
   data <- rpf.sample(5, spec, param)
   colnames(param) <- colnames(data)
   grp <- list(spec=spec, param=param, data=data)
@@ -94,7 +94,7 @@ test_that("2tier sumScoreEAP", {
   numItems <- 6
   spec <- list()
   spec[1:numItems] <- rpf.drm(factors=3)
-  param <- sapply(spec, rpf.rparam)
+  param <- sapply(spec, rpf.rparam, version=1)
   gsize <- numItems/3
   for (gx in 0:2) {
     if (gx != 1) {

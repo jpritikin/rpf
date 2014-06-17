@@ -38,7 +38,7 @@ test_that("orlando-thissen-2000", {
   set.seed(7)
   grp <- list(spec=list())
   grp$spec[1:20] <- rpf.grm()
-  grp$param <- sapply(grp$spec, rpf.rparam)
+  grp$param <- sapply(grp$spec, rpf.rparam, version=1L)
   colnames(grp$param) <- paste("i", 1:20, sep="")
   grp$mean <- 0
   grp$cov <- diag(1)
@@ -56,7 +56,9 @@ test_that("orlando-thissen-2000", {
               18.61, 14.44, 10.79, 5.72, 3.82,  1.5, 0.23, 0.12, 0, 0.01, 0.05, 0.18, 0.34,
               0.71, 1.5, 2.71,  4.91, 5.59, 12.67, 9.26, 17.39, 21.56, 26.21, 23.28, 27.18,
               19.5,  5.77, 5.88), .Dim = c(20L, 2L))
-  expect_equal(got[[1]]$orig.expected, E1orig, tolerance=.01)
+  oexp <- got[[1]]$orig.expected
+  dimnames(oexp) <- NULL
+  expect_equal(oexp, E1orig, tolerance=.01)
   
   E1 <- structure(c(2, 3.99, 12.95, 21.82, 21.66, 25.29, 30.5, 32.29,  35.09, 24.41, 34.33,
                     15.74, 18.61, 14.44, 10.79, 5.72, 3.82,  1.85, 0, 0, 0, 0, 0, 0, 0, 1.3,
@@ -81,7 +83,7 @@ test_that("fit w/ mcar", {
   set.seed(7)
   grp <- list(spec=list())
   grp$spec[1:20] <- rpf.grm()
-  grp$param <- sapply(grp$spec, rpf.rparam)
+  grp$param <- sapply(grp$spec, rpf.rparam, version=1L)
   colnames(grp$param) <- paste("i", 1:20, sep="")
   grp$mean <- 0
   grp$cov <- diag(1)

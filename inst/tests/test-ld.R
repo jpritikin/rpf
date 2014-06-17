@@ -9,7 +9,7 @@ test_that("ct1997", {
   
   spec <- list()
   spec[1:6] <- rpf.grm(factors=2)
-  gen.param <- sapply(spec, rpf.rparam)
+  gen.param <- sapply(spec, rpf.rparam, version=1)
   colnames(gen.param) <- paste("i", 1:ncol(gen.param), sep="")
   gen.param[2,] <- c(0,0,.5,.5,1,1)
   
