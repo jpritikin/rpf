@@ -414,6 +414,7 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
         out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
 	    out$df <- nrow(observed) * (ncol(observed) - 1)
         out$df <- out$df - free - sum(is.na(expected));
+	out$df[out$df < 1] <- 1
         out$pval <- pchisq(out$statistic, out$df, lower.tail=FALSE, log.p=log)
     } else if (method == "rms") {
       pval <- crosstabTest(observed, expected)
