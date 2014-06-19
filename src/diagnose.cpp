@@ -625,7 +625,7 @@ int ManhattenCollapse::run()
 					expected(bestR, bestC) += expected(smr, smc);
 					obs(bestR, bestC) += obs(smr, smc);
 					expected(smr, smc) = NA_REAL;
-					obs(smr, smc) = NA_REAL;
+					obs(smr, smc) = NA_INTEGER;
 					++collapsed;
 					done = true;
 				}
