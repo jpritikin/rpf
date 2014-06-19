@@ -8,7 +8,7 @@ test_that("observedSumScore", {
   set.seed(1)
   spec <- list()
   spec[1:3] <- rpf.grm(outcomes=3)
-  param <- sapply(spec, rpf.rparam)
+  param <- sapply(spec, rpf.rparam, version=1)
   data <- rpf.sample(5, spec, param)
   colnames(param) <- colnames(data)
   grp <- list(spec=spec, param=param, data=data)
@@ -27,7 +27,7 @@ test_that("itemOutcomeBySumScore", {
   set.seed(1)
   spec <- list()
   spec[1:3] <- rpf.grm(outcomes=3)
-  param <- sapply(spec, rpf.rparam)
+  param <- sapply(spec, rpf.rparam, version=1)
   data <- rpf.sample(5, spec, param)
   colnames(param) <- colnames(data)
   grp <- list(spec=spec, param=param, data=data)
@@ -94,7 +94,7 @@ test_that("2tier sumScoreEAP", {
   numItems <- 6
   spec <- list()
   spec[1:numItems] <- rpf.drm(factors=3)
-  param <- sapply(spec, rpf.rparam)
+  param <- sapply(spec, rpf.rparam, version=1)
   gsize <- numItems/3
   for (gx in 0:2) {
     if (gx != 1) {
@@ -107,9 +107,11 @@ test_that("2tier sumScoreEAP", {
   grp <- list(spec=spec, param=param, mean=runif(3, -1, 1), cov=diag(runif(3,.5,2)))
   got <- sumScoreEAP(grp, qwidth=2, qpoints=3L) #TODO
   
-  grp1 <- list(spec=spec[1:4], param=param[c(1,2,4:6), 1:4],
+  spec2 <- list()
+  spec2[1:6] <- rpf.drm(factors=2)
+  grp1 <- list(spec=spec2[1:4], param=param[c(1,2,4:6), 1:4],
                mean=grp$mean[1:2], cov=grp$cov[1:2,1:2])
-  grp2 <- list(spec=spec[4:5], param=param[c(1,3,4:6), 5:6],
+  grp2 <- list(spec=spec2[4:5], param=param[c(1,3,4:6), 5:6],
                mean=grp$mean[c(1,3)], cov=diag(diag(grp$cov)[c(1,3)]))
   got1 <- ssEAP(grp1, qwidth=2, qpoints=3L, debug=TRUE)
   got2 <- ssEAP(grp2, qwidth=2, qpoints=3L, debug=TRUE)

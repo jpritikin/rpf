@@ -223,13 +223,13 @@ ChenThissen1997(grp)
 ##   Magnitudes larger than abs(log(.01))=4.6 are significant at the p=.01 level
 ##   A positive (negative) sign indicates more (less) observed correlation than expected
 ## 
-##       i1    i2   i3   i4   i5 i6
-## i1    NA    NA   NA   NA   NA NA
-## i2 -1.48    NA   NA   NA   NA NA
-## i3  3.22  1.73   NA   NA   NA NA
-## i4 -1.87 -1.66 2.83   NA   NA NA
-## i5  1.35 -6.16 4.43 6.04   NA NA
-## i6 -2.77 -3.13 4.14 8.17 3.09 NA
+##       i1    i2    i3    i4    i5 i6
+## i1    NA    NA    NA    NA    NA NA
+## i2 -5.69    NA    NA    NA    NA NA
+## i3  6.02 -3.78    NA    NA    NA NA
+## i4  9.83 -5.75  3.72    NA    NA NA
+## i5  8.79 -6.64  9.15  8.11    NA NA
+## i6  5.69 -3.92 -2.29 -7.21 -7.95 NA
 </code></pre>
 
 <h2>Sum-score item fit test</h2>
@@ -240,12 +240,12 @@ ChenThissen1997(grp)
 <pre><code>## Orlando &amp; Thissen (2000) sum-score based item fit test
 ##   Magnitudes larger than abs(log(.01))=4.6 are significant at the p=.01 level
 ## 
-## i1 : n = 1000, S-X2(  6) =   4.13, log(p) = -0.42
-## i2 : n = 1000, S-X2(  6) =  24.83, log(p) = -7.91
-## i3 : n = 1000, S-X2(  6) =  11.93, log(p) = -2.76
-## i4 : n = 1000, S-X2(  6) =   4.90, log(p) = -0.59
-## i5 : n = 1000, S-X2(  6) =   3.35, log(p) = -0.27
-## i6 : n = 1000, S-X2(  6) =  12.40, log(p) = -2.93
+## i1 : n = 1000, S-X2(  4) =   5.33, log(p) = -1.37
+## i2 : n = 1000, S-X2(  4) =   7.92, log(p) = -2.36
+## i3 : n = 1000, S-X2(  5) =   1.63, log(p) = -0.11
+## i4 : n = 1000, S-X2(  3) =   4.22, log(p) = -1.43
+## i5 : n = 1000, S-X2(  4) =   8.11, log(p) = -2.44
+## i6 : n = 1000, S-X2(  4) =  11.69, log(p) = -3.92
 </code></pre>
 
 <h2>Sum-score EAP table</h2>
@@ -253,18 +253,18 @@ ChenThissen1997(grp)
 <pre><code class="r">sumScoreEAP(grp)
 </code></pre>
 
-<pre><code>##         p      f1    se1   cov1
-## 0 0.05098 -1.4652 0.6640 0.4409
-## 1 0.11846 -1.0449 0.6501 0.4227
-## 2 0.16849 -0.5751 0.6412 0.4111
-## 3 0.20736 -0.0645 0.6698 0.4487
-## 4 0.22294  0.4205 0.6904 0.4766
-## 5 0.16908  0.8296 0.7082 0.5015
-## 6 0.06270  1.1920 0.7350 0.5402
+<pre><code>##           p      f1    se1   cov1
+## 0 6.175e-01 -0.3251 0.8608 0.7410
+## 1 2.754e-01  0.2473 0.8832 0.7801
+## 2 7.840e-02  1.0375 0.8436 0.7116
+## 3 2.266e-02  1.6895 0.6736 0.4537
+## 4 5.280e-03  2.0984 0.6253 0.3910
+## 5 7.494e-04  2.4169 0.6357 0.4041
+## 6 4.608e-05  2.6814 0.6425 0.4129
 ## 
 ## Latent distribution fit test (n=1000):
-##   RMS log(p) = -1.02
-##   Pearson X^2(  6) = 8.19, log(p) = -1.49
+##   RMS log(p) = -1.49
+##   Pearson X^2(  4) = 4.39, log(p) = -1.03
 </code></pre>
 
 <h2>Rasch residual-based infit/outfit</h2>

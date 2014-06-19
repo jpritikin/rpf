@@ -6,7 +6,7 @@ struct ifaGroup {
 	bool twotier;
 	std::vector<double*> spec;
 	int numItems;
-	int maxParam;
+	int paramRows;
 	double *param;
 	int numSpecific;
 	std::vector<int> Sgroup;
@@ -25,7 +25,7 @@ struct ifaGroup {
 
 	ifaGroup(bool _twotier) : twotier(_twotier) {}
 	void import(SEXP Rlist);
-	double *getItemParam(int ix) { return param + maxParam * ix; }
+	double *getItemParam(int ix) { return param + paramRows * ix; }
 	double area(int qx, int ix);
 };
 
@@ -60,7 +60,7 @@ void ifaGroup::import(SEXP Rlist)
 			}
 		} else if (strEQ(key, "param")) {
 			param = REAL(slotValue);
-			getMatrixDims(slotValue, &maxParam, &numItems);
+			getMatrixDims(slotValue, &paramRows, &numItems);
 
 			SEXP dimnames;
 			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
@@ -146,7 +146,7 @@ void ifaGroup::import(SEXP Rlist)
 				for (int cx=candidate.size() - 1; cx >= 0; --cx) {
 					std::vector<bool> loading(numItems);
 					for (int ix=0; ix < numItems; ++ix) {
-						loading[ix] = param[ix * maxParam + candidate[cx]] != 0;
+						loading[ix] = param[ix * paramRows + candidate[cx]] != 0;
 					}
 					std::vector<bool> overlap(loading.size());
 					std::transform(loading.begin(), loading.end(),
@@ -169,17 +169,37 @@ void ifaGroup::import(SEXP Rlist)
 		maxAbilities = mlen;
 		numSpecific = orthogonal.size();
 
+		for (int ix=0; ix < numItems; ++ix) {
+			const int dims = spec[ix][RPF_ISpecDims];
+			if (dims > maxAbilities) {
+				Rf_error("Item %d has %d factors but only %d factors are given in the latent distribution",
+					 1+ix, dims, maxAbilities);
+			}
+		}
+
 		if (numSpecific) {
 			Sgroup.assign(numItems, 0);
 			for (int ix=0; ix < numItems; ix++) {
 				for (int dx=orthogonal[0]; dx < maxAbilities; ++dx) {
-					if (param[ix * maxParam + dx] != 0) {
+					if (param[ix * paramRows + dx] != 0) {
 						Sgroup[ix] = dx - orthogonal[0];
 						continue;
 					}
 				}
 			}
 		}
+	}
+
+	int maxParam = 0;
+	for (int ix=0; ix < numItems; ++ix) {
+		const int id = spec[ix][RPF_ISpecID];
+		int par = librpf_model[id].numParam(spec[ix]);
+		if (maxParam < par)
+			maxParam = par;
+	}
+	if (paramRows < maxParam) {
+		Rf_error("At least %d rows are required in the item parameter matrix, only %d found",
+			 maxParam, paramRows);
 	}
 }
 
@@ -502,8 +522,8 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 	if (i2 < 0 || i2 >= (int) grp.spec.size()) Rf_error("Item %d out of range", i2);
 	if (i1 == i2) Rf_warning("Request to create bivariate distribution of %d with itself", i1);
 
-	double *i1par = &grp.param[i1 * grp.maxParam];
-	double *i2par = &grp.param[i2 * grp.maxParam];
+	double *i1par = &grp.param[i1 * grp.paramRows];
+	double *i2par = &grp.param[i2 * grp.paramRows];
 
 	int specific = -1;
 	if (grp.numSpecific) {
@@ -605,7 +625,7 @@ int ManhattenCollapse::run()
 					expected(bestR, bestC) += expected(smr, smc);
 					obs(bestR, bestC) += obs(smr, smc);
 					expected(smr, smc) = NA_REAL;
-					obs(smr, smc) = NA_REAL;
+					obs(smr, smc) = NA_INTEGER;
 					++collapsed;
 					done = true;
 				}

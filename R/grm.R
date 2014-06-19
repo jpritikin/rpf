@@ -50,9 +50,20 @@ setMethod("rpf.modify", signature(m="rpf.mdim.graded", factors="numeric"),
           })
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.graded"),
-          function(m) {
-              a <- rlnorm(m@factors, meanlog=0, sdlog=.5)
-              b <- rnorm(m@outcomes-1)
-              b <- b[order(-b)]
-              c(a=a,b=b)
+          function(m, version) {
+		  if (version == 1L) {
+			  a <- rlnorm(m@factors, meanlog=0, sdlog=.5)
+			  b <- rnorm(m@outcomes-1)
+			  b <- b[order(-b)]
+			  c(a=a,b=b)
+		  } else {
+			  a <- rlnorm(m@factors, meanlog=log(4+m@outcomes)-1.7, sdlog=.5)
+			  width <- runif(1, 1, 2)
+			  mid <- rnorm(1)
+			  thresh <- seq(-width,width,length.out=m@outcomes-1)
+			  tvar <- runif(1, .01, .1)
+			  b <- mid + thresh + rnorm(length(thresh), sd=sqrt(tvar))
+			  b <- b[order(-b)] * sqrt(sum(a^2))
+			  c(a=a,b=b)
+		  }
           })

@@ -10,16 +10,20 @@
 \alias{rpf.rparam,rpf.mdim.nrm-method}
 \title{Generates item parameters}
 \usage{
-rpf.rparam(m)
+rpf.rparam(m, version = 2L)
 }
 \arguments{
 \item{m}{an item model}
+
+\item{version}{the version of random parameters}
 }
 \value{
 item parameters
 }
 \description{
-This function generates random item parameters.
+This function generates random item parameters. The version
+argument is available if you are writing a test that depends on
+reproducable random parameters (using \code{set.seed}).
 }
 \examples{
 i1 <- rpf.drm()

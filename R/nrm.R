@@ -99,7 +99,7 @@ getT <- function(m, tx) {
 }
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
-          function(m) {
+          function(m, version) {
             a <- rlnorm(m@factors, sdlog=.5)
             ak <- abs(rnorm(m@outcomes-1, mean=1, sd=.25))
             ck <- sort(rnorm(m@outcomes-1))

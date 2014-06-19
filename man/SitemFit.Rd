@@ -32,7 +32,6 @@ the results.
 }
 \details{
 TODO: Optimize for two-tier covariance structure
-TODO: Option to omit some column to improve missing data performance
 }
 \examples{
 grp <- list(spec=list())

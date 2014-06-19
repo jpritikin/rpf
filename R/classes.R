@@ -410,9 +410,12 @@ rpf.info <- function(ii, ii.p, where, basis=1) {
 
 ##' Generates item parameters
 ##'
-##' This function generates random item parameters.
+##' This function generates random item parameters. The version
+##' argument is available if you are writing a test that depends on
+##' reproducable random parameters (using \code{set.seed}).
 ##' 
 ##' @param m an item model
+##' @param version the version of random parameters
 ##' @return item parameters
 ##' @docType methods
 ##' @aliases
@@ -426,7 +429,7 @@ rpf.info <- function(ii, ii.p, where, basis=1) {
 ##' @examples
 ##' i1 <- rpf.drm()
 ##' rpf.rparam(i1)
-setGeneric("rpf.rparam", function(m) standardGeneric("rpf.rparam"))
+setGeneric("rpf.rparam", function(m, version=2L) standardGeneric("rpf.rparam"))
 
 ##' The ogive constant
 ##'

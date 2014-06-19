@@ -52,6 +52,10 @@ sumScoreEAP <- function(grp, ..., qwidth=6.0, qpoints=49L, distributionTest=NULL
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
+
+	if (missing(qwidth) && !is.null(grp$qwidth)) { qwidth <- grp$qwidth }
+	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
+
 	tbl <- ssEAP(grp, qwidth, qpoints)
 	rownames(tbl) <- 0:(nrow(tbl)-1)
 	result <- list(tbl=tbl, distributionTest=FALSE)
