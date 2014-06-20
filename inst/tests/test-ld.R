@@ -33,6 +33,23 @@ test_that("ct1997", {
                  0.061, 0.021, 0.085, 0.043, 0.18, 0.168, 0.3), .01)
 })
 
+test_that("ct1997 2tier", {
+  require(rpf)
+	spec <- list()
+	spec[1:5] <- rpf.drm(factors=3)
+	gen.param <- sapply(spec, rpf.rparam)
+  gen.param['a2', 1:2] <- 0
+  gen.param['a3', 3] <- 0
+  gen.param[c('a2','a3'), 4:5] <- 0
+  colnames(gen.param) <- paste("i", 1:ncol(gen.param), sep="")
+	resp <- rpf.sample(500, spec, gen.param)
+	grp <- list(spec=spec, param=gen.param, mean=runif(3, 0, 1), cov=diag(runif(3,1,2)), data=resp)
+	slow <- ChenThissen1997(grp, qpoints=13L, qwidth=4, .twotier=FALSE)
+	fast <- ChenThissen1997(grp, qpoints=13L, qwidth=4, .twotier=TRUE)
+  expect_equal(slow$raw[!is.na(slow$raw)],
+               fast$raw[!is.na(fast$raw)], .001)
+})
+
 drawRandomProportion <- function(expected) {
   total <- sum(expected)
   prob <- expected / total

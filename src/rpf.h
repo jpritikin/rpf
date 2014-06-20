@@ -66,7 +66,7 @@ SEXP gamma_cor(SEXP r_mat);
 SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug);
 SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, SEXP Rmask);
 SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials);
-SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems);
+SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier);
 SEXP observedSumScore(SEXP Rgrp, SEXP Rmask);
 SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest);
 

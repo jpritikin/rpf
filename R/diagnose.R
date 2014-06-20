@@ -648,7 +648,7 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 ##' adaptive testing: A case for testlets.  \emph{Journal of
 ##' Educational measurement, 24}(3), 185--201.
-ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson") {
+ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson", .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -703,7 +703,7 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
       s1 <- spec[[i1]]
       s2 <- spec[[i2]]
 
-      expected <- N * pairwiseExpected(grp, c(iter1, iter2), qwidth, qpoints)
+      expected <- N * pairwiseExpected(grp, c(iter1, iter2), qwidth, qpoints, .twotier)
       dimnames(expected) <- dimnames(observed)
 
       s <- ordinal.gamma(observed) - ordinal.gamma(expected)
@@ -769,6 +769,6 @@ crosstabTest <- function(ob, ex, trials) {
 	.Call(crosstabTest_wrapper, ob, ex, trials)
 }
 
-pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L) {
-	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L)
+pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, twotier) {
+	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L, twotier)
 }

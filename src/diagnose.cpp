@@ -162,6 +162,7 @@ void ifaGroup::import(SEXP Rlist)
 			}
 		}
 		std::reverse(orthogonal.begin(), orthogonal.end());
+		if (orthogonal.size() == 1) orthogonal.clear();
 		if (orthogonal.size() && orthogonal[0] != mlen - int(orthogonal.size())) {
 			Rf_error("Independent factors must be given after dense factors");
 		}
@@ -496,7 +497,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 	return Rout;
 }
 
-SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
+SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier)
 {
 	omxManageProtectInsanity mpi;
 
@@ -504,7 +505,7 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 	int qpts = Rf_asInteger(Rpts);
 	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
 
-	ifaGroup grp(true);
+	ifaGroup grp(Rf_asLogical(Rtwotier));
 	grp.import(robj);
 	
 	// factor out? TODO
@@ -525,12 +526,16 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 	double *i1par = &grp.param[i1 * grp.paramRows];
 	double *i2par = &grp.param[i2 * grp.paramRows];
 
-	int specific = -1;
+	int specific1 = -1;
+	int specific2 = -1;
 	if (grp.numSpecific) {
-		for (int ax=quad.maxDims; ax < quad.maxAbilities; ax++) {
-			if (i1par[ax] != 0 && i2par[ax] != 0) {
-				specific = ax - quad.maxDims;
-				break;
+		int priDims = quad.maxDims-1;
+		for (int ax=priDims; ax < quad.maxAbilities; ax++) {
+			if (i1par[ax] != 0) {
+				specific1 = ax - priDims;
+			}
+			if (i2par[ax] != 0) {
+				specific2 = ax - priDims;
 			}
 		}
 	}
@@ -549,17 +554,20 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 	Eigen::Map<Eigen::MatrixXd> out(outMem, outcomes1, outcomes2);
 	out.setZero();
 
+	// See Cai & Hansen (2012) Eqn 25, 26
+
 	Eigen::VectorXd o1(outcomes1);
 	Eigen::VectorXd o2(outcomes2);
 
-	if (specific == -1) {
-		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
-			double *where = quad.wherePrep.data() + qx * quad.maxDims;
+	if (specific1 == -1 && specific2 == -1) {
+		int specificIncr = quad.numSpecific? quad.quadGridSize : 1;
+		for (int qx=0; qx < quad.totalPrimaryPoints; ++qx) {
+			double *where = quad.wherePrep.data() + qx * quad.maxDims * specificIncr;
 			(*librpf_model[id1].prob)(spec1, i1par, where, o1.data());
 			(*librpf_model[id2].prob)(spec2, i2par, where, o2.data());
 			out += (o1 * o2.transpose()) * quad.priQarea[qx];
 		}
-	} else {
+	} else if (specific1 == specific2) {
 		Eigen::VectorXd ptheta(quad.maxAbilities);
 		for (int qloc=0, qx=0; qx < quad.totalPrimaryPoints; ++qx) {
 			for (int sx=0; sx < quad.quadGridSize; ++sx) {
@@ -569,10 +577,38 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems)
 				}
 				(*librpf_model[id1].prob)(spec1, i1par, ptheta.data(), o1.data());
 				(*librpf_model[id2].prob)(spec2, i2par, ptheta.data(), o2.data());
-				double area = quad.priQarea[qx] * quad.speQarea[sx * quad.numSpecific + specific];
+				double area = quad.priQarea[qx] * quad.speQarea[sx * quad.numSpecific + specific1];
 				out += (o1 * o2.transpose()) * area;
 				++qloc;
 			}
+		}
+	} else if (specific1 != specific2) {
+		Eigen::VectorXd spo1(outcomes1);
+		Eigen::VectorXd spo2(outcomes2);
+		Eigen::VectorXd ptheta(quad.maxAbilities);
+		for (int qloc=0, qx=0; qx < quad.totalPrimaryPoints; ++qx) {
+			o1.setZero();
+			o2.setZero();
+			for (int sx=0; sx < quad.quadGridSize; ++sx) {
+				double *where = quad.wherePrep.data() + qloc * quad.maxDims;
+				for (int dx=0; dx < quad.maxAbilities; dx++) {
+					ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
+				}
+				(*librpf_model[id1].prob)(spec1, i1par, ptheta.data(), spo1.data());
+				(*librpf_model[id2].prob)(spec2, i2par, ptheta.data(), spo2.data());
+				if (specific1 == -1) {
+					if (sx==0) o1 = spo1;
+				} else {
+					o1 += spo1 * quad.speQarea[sx * quad.numSpecific + specific1];
+				}
+				if (specific2 == -1) {
+					if (sx==0) o2 = spo2;
+				} else {
+					o2 += spo2 * quad.speQarea[sx * quad.numSpecific + specific2];
+				}
+				++qloc;
+			}
+			out += (o1 * o2.transpose()) * quad.priQarea[qx];
 		}
 	}
 
