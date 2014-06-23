@@ -424,6 +424,7 @@ static R_CallMethodDef flist[] = {
   {"observedSumScore_wrapper", (DL_FUNC) observedSumScore, 2},
   {"itemOutcomeBySumScore_wrapper", (DL_FUNC) itemOutcomeBySumScore, 3},
   {"findIdenticalRowsData", (DL_FUNC) findIdenticalRowsData, 5},
+  {"CaiHansen2012_wrapper", (DL_FUNC) CaiHansen2012, 3},
   {NULL, NULL, 0}
 };
 

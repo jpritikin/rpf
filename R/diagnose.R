@@ -694,6 +694,8 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
   pval <- matrix(NA, length(items), length(items))
   dimnames(pval) <- list(inames, inames)
 
+	# If we move this whole loop into C then we can avoid
+	# set up of the quadrature
   for (iter1 in 2:length(items)) {
     for (iter2 in 1:(iter1-1)) {
       i1 <- items[iter1]
@@ -771,4 +773,60 @@ crosstabTest <- function(ob, ex, trials) {
 
 pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, twotier) {
 	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L, twotier)
+}
+
+CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
+	.Call(CaiHansen2012_wrapper, grp, method, .twotier)
+}
+
+##' Multinomial fit test
+##'
+##' Rows with missing data are ignored.
+##' 
+##' The full information test is described in Bartholomew & Tzamourani
+##' (1999, Section 3)
+##' 
+##' @param grp a list with the spec, param, mean, and cov describing the group
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @param method lr (default) or pearson
+##' @param log whether to report p-value in log units
+##' @param .twotier whether to use the two-tier optimization (default TRUE)
+##' @references Bartholomew, D. J., & Tzamourani, P. (1999). The
+##' goodness-of-fit of latent trait models in attitude
+##' measurement. Sociological Methods and Research, 27, 525–546.
+multinomialFit <- function(grp, ..., method="lr", log=TRUE, .twotier=TRUE) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+	if (is.null(grp$weightColumn)) {
+		wc <- "freq"
+		grp$data <- compressDataFrame(grp$data, wc)
+		grp$weightColumn <- wc
+	}
+	sumFree <- 0
+	if (is.null(grp$free)) {
+		warning("Free parameters should be indicated in free matrix")
+	} else {
+		sumFree <- sum(grp$free)
+	}
+	stat <- CaiHansen2012(grp, method, .twotier)
+	bins <- prod(sapply(grp$spec, function(s) s$outcomes))
+	out <- list(statistic=stat,
+		    df=bins - sumFree - 1)
+	out$pval <- pchisq(stat, out$df, lower.tail=FALSE, log.p=log)
+	out$log <- log
+	out$method <- method
+	class(out) <- "summary.multinomialFit"
+	out
+}
+
+print.summary.multinomialFit <- function(x,...) {
+	cat("Full information multinomial fit test\n")
+	part1 <- paste(x$method, "(", x$df, ") = ", round(x$statistic, 2), sep="")
+	if (x$log) {
+		part2 <- paste("log(p) = ", round(x$pval,2), sep="")
+	} else {
+		part2 <- paste("p = ", round(x$pval,4), sep="")
+	}
+	cat(paste("  ", part1, ", ", part2, "\n", sep=""))
 }

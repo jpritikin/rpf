@@ -1,5 +1,7 @@
 ba81quad.o: Makevars.in ba81quad.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
+dataframe.o: Makevars.in dataframe.cpp rpf.h   \
+ ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
 diagnose.o: Makevars.in diagnose.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
 dmvnorm.o: Makevars.in dmvnorm.cpp rpf.h   \
@@ -8,3 +10,5 @@ glue.o: Makevars.in glue.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
 libifa-rpf.o: Makevars.in libifa-rpf.cpp ../inst/include/libifa-rpf.h   \
   
+m2.o: Makevars.in m2.cpp rpf.h     \
+ ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h

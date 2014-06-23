@@ -101,4 +101,5 @@ SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
 	} catch(...) {
 		string_to_try_Rf_error( "c++ exception (unknown reason)" );
 	}
+	return 0; // not reached
 }

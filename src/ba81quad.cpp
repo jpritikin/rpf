@@ -35,8 +35,10 @@ struct sortAreaHelper {  // could be generalized with a template
 };
 
 ba81NormalQuad::ba81NormalQuad() :
-	One(1.0), quadGridSize(0)
+	quadGridSize(0), maxDims(-1), primaryDims(-1), numSpecific(-1),
+	maxAbilities(-1)
 {
+	setOne(1);
 }
 
 void ba81NormalQuad::pointToWhere(const int *quad, double *where, int upto)
@@ -52,6 +54,23 @@ void ba81NormalQuad::decodeLocation(int qx, const int dims, int *quad)
 		quad[dx] = qx % quadGridSize;
 		qx = qx / quadGridSize;
 	}
+}
+
+void ba81NormalQuad::setup0()
+{
+	quadGridSize = 1;
+	numSpecific = 0;
+	primaryDims = 0;
+	maxDims = 1;
+	maxAbilities = 0;
+	totalQuadPoints = 1;
+	Qpoint.clear();
+	Qpoint.reserve(1);
+	Qpoint.push_back(0);
+	priQarea.clear();
+	priQarea.push_back(One);
+	wherePrep.clear();
+	wherePrep.push_back(0);
 }
 
 void ba81NormalQuad::setup(double Qwidth, int Qpoints, double *means,
@@ -253,4 +272,385 @@ void ba81NormalQuad::EAP(double *thrDweight, double scalingFactor, double *score
 		double ma1 = scorePad[sdim];
 		scorePad[maxAbilities + triangleLoc0(sdim)] -= ma1 * ma1;
 	}
+}
+
+ifaGroup::ifaGroup(bool _twotier) : Rdata(NULL),
+		qwidth(6.0), qpoints(49),
+		twotier(_twotier),
+		maxAbilities(0),
+		numSpecific(0),
+		mean(0),
+		cov(0),
+		dataRows(0), weightColumnName(0), rowWeight(0), outcomeProb(0)
+{}
+
+ifaGroup::~ifaGroup()
+{
+	Free(outcomeProb);
+}
+
+void ifaGroup::importSpec(SEXP slotValue)
+{
+	for (int sx=0; sx < Rf_length(slotValue); ++sx) {
+		SEXP model = VECTOR_ELT(slotValue, sx);
+		if (!OBJECT(model)) {
+			Rf_error("Item models must inherit rpf.base");
+		}
+		SEXP Rspec;
+		Rf_protect(Rspec = R_do_slot(model, Rf_install("spec")));
+		spec.push_back(REAL(Rspec));
+	}
+
+	dataColumns.reserve(spec.size());
+	itemOutcomes.reserve(spec.size());
+	cumItemOutcomes.reserve(spec.size());
+
+	paramRows = 0;
+	totalOutcomes = 0;
+	for (int cx = 0; cx < numItems(); cx++) {
+		const double *ispec = spec[cx];
+		int id = ispec[RPF_ISpecID];
+		int no = ispec[RPF_ISpecOutcomes];
+		itemOutcomes.push_back(no);
+		cumItemOutcomes.push_back(totalOutcomes);
+		totalOutcomes += no;
+
+		int numParam = (*librpf_model[id].numParam)(ispec);
+		if (paramRows < numParam)
+			paramRows = numParam;
+	}
+}
+
+void ifaGroup::import(SEXP Rlist)
+{
+	SEXP argNames;
+	Rf_protect(argNames = Rf_getAttrib(Rlist, R_NamesSymbol));
+
+	std::vector<const char *> dataColNames;
+
+	int mlen = 0;
+	int nrow=0, ncol=0; // cov size
+
+	int pmatRows=-1, pmatCols=-1;
+
+	for (int ax=0; ax < Rf_length(Rlist); ++ax) {
+		const char *key = R_CHAR(STRING_ELT(argNames, ax));
+		SEXP slotValue = VECTOR_ELT(Rlist, ax);
+		if (strEQ(key, "spec")) {
+			importSpec(slotValue);
+		} else if (strEQ(key, "param")) {
+			param = REAL(slotValue);
+			getMatrixDims(slotValue, &pmatRows, &pmatCols);
+
+			SEXP dimnames;
+			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
+			if (!Rf_isNull(dimnames) && Rf_length(dimnames) == 2) {
+				SEXP names;
+				Rf_protect(names = VECTOR_ELT(dimnames, 1));
+				int nlen = Rf_length(names);
+				itemNames.resize(nlen);
+				for (int nx=0; nx < nlen; ++nx) {
+					itemNames[nx] = CHAR(STRING_ELT(names, nx));
+				}
+			}
+		} else if (strEQ(key, "mean")) {
+			mlen = Rf_length(slotValue);
+			mean = REAL(slotValue);
+		} else if (strEQ(key, "cov")) {
+			getMatrixDims(slotValue, &nrow, &ncol);
+			if (nrow != ncol) Rf_error("cov must be a square matrix (not %dx%d)", nrow, ncol);
+			cov = REAL(slotValue);
+
+			SEXP dimnames;
+			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
+			if (!Rf_isNull(dimnames) && Rf_length(dimnames) == 2) {
+				SEXP names;
+				Rf_protect(names = VECTOR_ELT(dimnames, 0));
+				int nlen = Rf_length(names);
+				factorNames.resize(nlen);
+				for (int nx=0; nx < nlen; ++nx) {
+					factorNames[nx] = CHAR(STRING_ELT(names, nx));
+				}
+			}
+		} else if (strEQ(key, "data")) {
+			Rdata = slotValue;
+			dataRows = Rf_length(VECTOR_ELT(Rdata, 0));
+
+			SEXP names;
+			Rf_protect(names = Rf_getAttrib(Rdata, R_NamesSymbol));
+			int nlen = Rf_length(names);
+			dataColNames.reserve(nlen);
+			for (int nx=0; nx < nlen; ++nx) {
+				dataColNames.push_back(CHAR(STRING_ELT(names, nx)));
+			}
+		} else if (strEQ(key, "weightColumn")) {
+			if (Rf_length(slotValue) != 1) {
+				Rf_error("You can only have one weightColumn");
+			}
+			weightColumnName = CHAR(STRING_ELT(slotValue, 0));
+		} else if (strEQ(key, "qwidth")) {
+			qwidth = Rf_asReal(slotValue);
+		} else if (strEQ(key, "qpoints")) {
+			qpoints = Rf_asInteger(slotValue);
+		} else {
+			// ignore
+		}
+	}
+	if (mlen != nrow) Rf_error("Mean length %d does not match cov size %d", mlen, nrow);
+
+	if (numItems() != pmatCols) {
+		Rf_error("param implies %d items but spec is length %d",
+			 pmatCols, numItems());
+	}
+
+	if (Rdata) {
+		if (itemNames.size() == 0) Rf_error("Item parameter matrix must have colnames");
+		for (int ix=0; ix < numItems(); ++ix) {
+			bool found=false;
+			for (int dc=0; dc < int(dataColNames.size()); ++dc) {
+				if (strEQ(itemNames[ix], dataColNames[dc])) {
+					dataColumns.push_back(INTEGER(VECTOR_ELT(Rdata, dc)));
+					found=true;
+					break;
+				}
+			}
+			if (!found) {
+				Rf_error("Cannot find item '%s' in data", itemNames[ix]);
+			}
+		}
+		if (weightColumnName) {
+			for (int dc=0; dc < int(dataColNames.size()); ++dc) {
+				if (strEQ(weightColumnName, dataColNames[dc])) {
+					rowWeight = REAL(VECTOR_ELT(Rdata, dc));
+					break;
+				}
+			}
+			if (!rowWeight) {
+				Rf_error("Cannot find weight column '%s'", weightColumnName);
+			}
+		}
+		rowMap.reserve(dataRows);
+		for (int rx=0; rx < dataRows; ++rx) rowMap.push_back(rx);
+	}
+
+	maxAbilities = mlen;
+	detectTwoTier();
+	sanityCheck();
+
+	if (pmatRows < paramRows) {
+		Rf_error("At least %d rows are required in the item parameter matrix, only %d found",
+			 paramRows, pmatRows);
+	}
+
+	if (mean) {
+		Eigen::Map<Eigen::MatrixXd> fullCov(cov, maxAbilities, maxAbilities);
+		int dense = maxAbilities - numSpecific;
+		Eigen::MatrixXd priCov = fullCov.block(0, 0, dense, dense);
+		Eigen::VectorXd sVar = fullCov.diagonal().tail(numSpecific);
+
+		quad.setup(qwidth, qpoints, mean, priCov, sVar);
+	}
+}
+
+void ifaGroup::setLatentDistribution(int dims, double *_mean, double *_cov)
+{
+	maxAbilities = dims;
+	mean = _mean;
+	cov = _cov;
+}
+
+void ifaGroup::detectTwoTier()
+{
+	int mlen = maxAbilities;
+
+	if (!twotier || mlen < 3) return;
+
+	std::vector<int> orthogonal;
+	if (mlen >= 3) {
+		Eigen::Map<Eigen::MatrixXd> Ecov(cov, mlen, mlen);
+		Eigen::Matrix<Eigen::DenseIndex, Eigen::Dynamic, 1> numCov((Ecov.array() != 0.0).matrix().colwise().count());
+		std::vector<int> candidate;
+		for (int fx=0; fx < numCov.rows(); ++fx) {
+			if (numCov(fx) == 1) candidate.push_back(fx);
+		}
+		if (candidate.size() > 1) {
+			std::vector<bool> mask(numItems());
+			for (int cx=candidate.size() - 1; cx >= 0; --cx) {
+				std::vector<bool> loading(numItems());
+				for (int ix=0; ix < numItems(); ++ix) {
+					loading[ix] = param[ix * paramRows + candidate[cx]] != 0;
+				}
+				std::vector<bool> overlap(loading.size());
+				std::transform(loading.begin(), loading.end(),
+					       mask.begin(), overlap.begin(),
+					       std::logical_and<bool>());
+				if (std::find(overlap.begin(), overlap.end(), true) == overlap.end()) {
+					std::transform(loading.begin(), loading.end(),
+						       mask.begin(), mask.begin(),
+						       std::logical_or<bool>());
+					orthogonal.push_back(candidate[cx]);
+				}
+			}
+		}
+		std::reverse(orthogonal.begin(), orthogonal.end());
+	}
+	if (orthogonal.size() == 1) orthogonal.clear();
+	if (orthogonal.size() && orthogonal[0] != mlen - int(orthogonal.size())) {
+		Rf_error("Independent factors must be given after dense factors");
+	}
+
+	numSpecific = orthogonal.size();
+
+	if (numSpecific) {
+		Sgroup.assign(numItems(), 0);
+		for (int ix=0; ix < numItems(); ix++) {
+			for (int dx=orthogonal[0]; dx < maxAbilities; ++dx) {
+				if (param[ix * paramRows + dx] != 0) {
+					Sgroup[ix] = dx - orthogonal[0];
+					continue;
+				}
+			}
+		}
+	}
+}
+
+void ifaGroup::sanityCheck()
+{
+	if (!mean) return;
+
+	for (int ix=0; ix < numItems(); ++ix) {
+		const int dims = spec[ix][RPF_ISpecDims];
+
+		int loadings = 0;
+		for (int dx=0; dx < dims; ++dx) {
+			if (getItemParam(ix)[dx] != 0) loadings += 1;
+		}
+		if (loadings > maxAbilities) {
+			Rf_error("Item %d has more factor loadings (%d) than there are factors (%d)",
+				 1+ix, loadings, maxAbilities);
+		}
+	}
+}
+
+double ifaGroup::area(int qx, int ix)
+{
+	if (numSpecific == 0) {
+		return quad.priQarea[qx];
+	} else {
+		int px = qx / quad.quadGridSize;
+		int sx = qx % quad.quadGridSize;
+		return quad.priQarea[px] * quad.speQarea[sx * quad.numSpecific + Sgroup[ix]];
+	}
+}
+
+// Depends on item parameters, but not latent distribution
+void ifaGroup::ba81OutcomeProb(double *param, bool wantLog)
+{
+	const int maxDims = quad.maxDims;
+	outcomeProb = Realloc(outcomeProb, totalOutcomes * quad.totalQuadPoints, double);
+
+#pragma omp parallel for num_threads(Global->numThreads)
+	for (int ix=0; ix < numItems(); ix++) {
+		double *qProb = outcomeProb + cumItemOutcomes[ix] * quad.totalQuadPoints;
+		const double *ispec = spec[ix];
+		int id = ispec[RPF_ISpecID];
+		int dims = ispec[RPF_ISpecDims];
+		Eigen::VectorXd ptheta(dims);
+		double *iparam = param + paramRows * ix;
+		rpf_prob_t prob_fn = wantLog? librpf_model[id].logprob : librpf_model[id].prob;
+
+		for (int qx=0; qx < quad.totalQuadPoints; qx++) {
+			double *where = quad.wherePrep.data() + qx * maxDims;
+			for (int dx=0; dx < dims; dx++) {
+				ptheta[dx] = where[std::min(dx, maxDims-1)];
+			}
+
+			(*prob_fn)(ispec, iparam, ptheta.data(), qProb);
+			qProb += itemOutcomes[ix];
+		}
+	}
+}
+
+void ifaGroup::ba81LikelihoodSlow2(const int px, double *out)
+{
+	const int totalQuadPoints = quad.totalQuadPoints;
+	double *oProb = outcomeProb;
+	std::vector<double> &priQarea = quad.priQarea;
+
+	for (int qx=0; qx < totalQuadPoints; ++qx) {
+		out[qx] = priQarea[qx];
+	}
+
+	const int row = rowMap[px];
+	for (int ix=0; ix < numItems(); ix++) {
+		int pick = dataColumns[ix][row];
+		if (pick == NA_INTEGER) {
+			oProb += itemOutcomes[ix] * totalQuadPoints;
+			continue;
+		}
+		pick -= 1;
+
+		for (int qx=0; qx < totalQuadPoints; ++qx) {
+			out[qx] *= oProb[pick];
+			oProb += itemOutcomes[ix];
+		}
+	}
+}
+
+void ifaGroup::cai2010EiEis(const int px, double *lxk, double *Eis, double *Ei)
+{
+	double *oProb = outcomeProb;
+	const int totalQuadPoints = quad.totalQuadPoints;
+	const int totalPrimaryPoints = quad.totalPrimaryPoints;
+	const int specificPoints = quad.quadGridSize;
+	std::vector<double> &speQarea = quad.speQarea;
+	std::vector<double> &priQarea = quad.priQarea;
+
+	for (int qx=0, qloc = 0; qx < totalPrimaryPoints; qx++) {
+		for (int sx=0; sx < specificPoints * numSpecific; sx++) {
+			lxk[qloc] = speQarea[sx];
+			++qloc;
+		}
+	}
+
+	const int row = rowMap[px];
+	for (int ix=0; ix < numItems(); ix++) {
+		int pick = dataColumns[ix][row];
+		if (pick == NA_INTEGER) {
+			oProb += itemOutcomes[ix] * totalQuadPoints;
+			continue;
+		}
+		pick -= 1;
+		int Sgroup1 = Sgroup[ix];
+		double *out1 = lxk;
+		for (int qx=0; qx < quad.totalQuadPoints; qx++) {
+			out1[Sgroup1] *= oProb[pick];
+			oProb += itemOutcomes[ix];
+			out1 += numSpecific;
+		}
+	}
+
+	for (int qx=0; qx < totalPrimaryPoints * numSpecific; ++qx) Eis[qx] = 0;
+	for (int qx=0; qx < totalPrimaryPoints; ++qx) Ei[qx] = priQarea[qx];
+
+	int eisloc = 0;
+	for (int qx=0, qloc = 0; qx < totalPrimaryPoints; qx++) {
+		for (int sx=0; sx < specificPoints; sx++) {
+			for (int sgroup=0; sgroup < numSpecific; ++sgroup) {
+				double piece = lxk[qloc];
+				Eis[eisloc + sgroup] += piece;
+				++qloc;
+			}
+		}
+		for (int sgroup=0; sgroup < numSpecific; ++sgroup) {
+			Ei[qx] *= Eis[eisloc + sgroup] * quad.getReciprocalOfOne();
+		}
+		eisloc += numSpecific;
+	}
+}
+
+void ifaGroup::setGridFineness(double width, int points)
+{
+	if (std::isfinite(width)) qwidth = width;
+	if (points != NA_INTEGER) qpoints = points;
 }

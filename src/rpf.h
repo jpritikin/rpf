@@ -71,6 +71,7 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask);
 SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest);
 SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
 			   SEXP skipMissingness, SEXP skipDefvars);
+SEXP CaiHansen2012(SEXP Rgrp, SEXP Rmethod, SEXP Rtwotier);
 
 static inline int triangleLoc1(int diag)
 {

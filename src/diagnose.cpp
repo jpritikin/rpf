@@ -2,219 +2,6 @@
 
 #include <stdlib.h>
 
-struct ifaGroup {
-	bool twotier;
-	std::vector<double*> spec;
-	int numItems;
-	int paramRows;
-	double *param;
-	int numSpecific;
-	std::vector<int> Sgroup;
-	int maxAbilities;
-	double *mean;
-	double *cov;
-	std::vector<const char*> itemNames;
-	std::vector<const char*> factorNames;
-	std::vector<int> colMap;             // item column to data column mapping
-	SEXP Rdata;
-	int dataRows;
-	ba81NormalQuad quad;
-
-	// TODO:
-	// scores
-
-	ifaGroup(bool _twotier) : twotier(_twotier) {}
-	void import(SEXP Rlist);
-	double *getItemParam(int ix) { return param + paramRows * ix; }
-	double area(int qx, int ix);
-};
-
-void ifaGroup::import(SEXP Rlist)
-{
-	SEXP argNames;
-	Rf_protect(argNames = Rf_getAttrib(Rlist, R_NamesSymbol));
-
-	Rdata = NULL;
-	dataRows = 0;
-	maxAbilities = 0;
-	numSpecific = 0;
-	mean = 0;
-	cov = 0;
-	std::vector<const char *> dataColNames;
-
-	int mlen = 0;
-	int nrow=0, ncol=0; // cov size
-
-	for (int ax=0; ax < Rf_length(Rlist); ++ax) {
-		const char *key = R_CHAR(STRING_ELT(argNames, ax));
-		SEXP slotValue = VECTOR_ELT(Rlist, ax);
-		if (strEQ(key, "spec")) {
-			for (int sx=0; sx < Rf_length(slotValue); ++sx) {
-				SEXP model = VECTOR_ELT(slotValue, sx);
-				if (!OBJECT(model)) {
-					Rf_error("Item models must inherit rpf.base");
-				}
-				SEXP Rspec;
-				Rf_protect(Rspec = R_do_slot(model, Rf_install("spec")));
-				spec.push_back(REAL(Rspec));
-			}
-		} else if (strEQ(key, "param")) {
-			param = REAL(slotValue);
-			getMatrixDims(slotValue, &paramRows, &numItems);
-
-			SEXP dimnames;
-			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
-			if (!Rf_isNull(dimnames) && Rf_length(dimnames) == 2) {
-				SEXP names;
-				Rf_protect(names = VECTOR_ELT(dimnames, 1));
-				int nlen = Rf_length(names);
-				itemNames.resize(nlen);
-				for (int nx=0; nx < nlen; ++nx) {
-					itemNames[nx] = CHAR(STRING_ELT(names, nx));
-				}
-			}
-		} else if (strEQ(key, "mean")) {
-			mlen = Rf_length(slotValue);
-			mean = REAL(slotValue);
-		} else if (strEQ(key, "cov")) {
-			getMatrixDims(slotValue, &nrow, &ncol);
-			if (nrow != ncol) Rf_error("cov must be a square matrix (not %dx%d)", nrow, ncol);
-			cov = REAL(slotValue);
-
-			SEXP dimnames;
-			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
-			if (!Rf_isNull(dimnames) && Rf_length(dimnames) == 2) {
-				SEXP names;
-				Rf_protect(names = VECTOR_ELT(dimnames, 0));
-				int nlen = Rf_length(names);
-				factorNames.resize(nlen);
-				for (int nx=0; nx < nlen; ++nx) {
-					factorNames[nx] = CHAR(STRING_ELT(names, nx));
-				}
-			}
-		} else if (strEQ(key, "data")) {
-			Rdata = slotValue;
-			dataRows = Rf_length(VECTOR_ELT(Rdata, 0));
-
-			SEXP names;
-			Rf_protect(names = Rf_getAttrib(Rdata, R_NamesSymbol));
-			int nlen = Rf_length(names);
-			dataColNames.reserve(nlen);
-			for (int nx=0; nx < nlen; ++nx) {
-				dataColNames.push_back(CHAR(STRING_ELT(names, nx)));
-			}
-		} else {
-			// ignore
-		}
-	}
-	if (mlen != nrow) Rf_error("Mean length %d does not match cov size %d", mlen, nrow);
-	if (numItems != int(spec.size())) {
-		Rf_error("param implies %d items but spec is length %d",
-			 numItems, (int) spec.size());
-	}
-
-	if (Rdata) {
-		if (itemNames.size() == 0) Rf_error("Item parameter matrix must have colnames");
-		colMap.resize(numItems);
-		for (int ix=0; ix < numItems; ++ix) {
-			bool found=false;
-			for (int dc=0; dc < int(dataColNames.size()); ++dc) {
-				if (strEQ(itemNames[ix], dataColNames[dc])) {
-					colMap[ix] = dc;
-					found=true;
-					break;
-				}
-			}
-			if (!found) {
-				Rf_error("Cannot find item '%s' in data", itemNames[ix]);
-			}
-		}
-	}
-
-	if (mlen > 0) {
-		// detect two-tier covariance structure
-		std::vector<int> orthogonal;
-		if (twotier && mlen >= 3) {
-			Eigen::Map<Eigen::MatrixXd> Ecov(cov, mlen, mlen);
-			Eigen::Matrix<Eigen::DenseIndex, Eigen::Dynamic, 1> numCov((Ecov.array() != 0.0).matrix().colwise().count());
-			std::vector<int> candidate;
-			for (int fx=0; fx < numCov.rows(); ++fx) {
-				if (numCov(fx) == 1) candidate.push_back(fx);
-			}
-			if (candidate.size() > 1) {
-				std::vector<bool> mask(numItems);
-				for (int cx=candidate.size() - 1; cx >= 0; --cx) {
-					std::vector<bool> loading(numItems);
-					for (int ix=0; ix < numItems; ++ix) {
-						loading[ix] = param[ix * paramRows + candidate[cx]] != 0;
-					}
-					std::vector<bool> overlap(loading.size());
-					std::transform(loading.begin(), loading.end(),
-						       mask.begin(), overlap.begin(),
-						       std::logical_and<bool>());
-					if (std::find(overlap.begin(), overlap.end(), true) == overlap.end()) {
-						std::transform(loading.begin(), loading.end(),
-							       mask.begin(), mask.begin(),
-							       std::logical_or<bool>());
-						orthogonal.push_back(candidate[cx]);
-					}
-				}
-			}
-		}
-		std::reverse(orthogonal.begin(), orthogonal.end());
-		if (orthogonal.size() == 1) orthogonal.clear();
-		if (orthogonal.size() && orthogonal[0] != mlen - int(orthogonal.size())) {
-			Rf_error("Independent factors must be given after dense factors");
-		}
-
-		maxAbilities = mlen;
-		numSpecific = orthogonal.size();
-
-		for (int ix=0; ix < numItems; ++ix) {
-			const int dims = spec[ix][RPF_ISpecDims];
-			if (dims > maxAbilities) {
-				Rf_error("Item %d has %d factors but only %d factors are given in the latent distribution",
-					 1+ix, dims, maxAbilities);
-			}
-		}
-
-		if (numSpecific) {
-			Sgroup.assign(numItems, 0);
-			for (int ix=0; ix < numItems; ix++) {
-				for (int dx=orthogonal[0]; dx < maxAbilities; ++dx) {
-					if (param[ix * paramRows + dx] != 0) {
-						Sgroup[ix] = dx - orthogonal[0];
-						continue;
-					}
-				}
-			}
-		}
-	}
-
-	int maxParam = 0;
-	for (int ix=0; ix < numItems; ++ix) {
-		const int id = spec[ix][RPF_ISpecID];
-		int par = librpf_model[id].numParam(spec[ix]);
-		if (maxParam < par)
-			maxParam = par;
-	}
-	if (paramRows < maxParam) {
-		Rf_error("At least %d rows are required in the item parameter matrix, only %d found",
-			 maxParam, paramRows);
-	}
-}
-
-double ifaGroup::area(int qx, int ix)
-{
-	if (numSpecific == 0) {
-		return quad.priQarea[qx];
-	} else {
-		int px = qx / quad.quadGridSize;
-		int sx = qx % quad.quadGridSize;
-		return quad.priQarea[px] * quad.speQarea[sx * quad.numSpecific + Sgroup[ix]];
-	}
-}
-
 class ssEAP {
 	int lastItem;
 public:
@@ -222,7 +9,6 @@ public:
 	int *mask;
 	int maxScore;
 	std::vector<int> items;
-	std::vector<int> itemOutcomes;
 	Eigen::ArrayXXd slCur;
 	Eigen::ArrayXXd slPrev;
 	
@@ -237,13 +23,8 @@ void ssEAP::setup(SEXP robj, double qwidth, int qpts, int *_mask)
 	lastItem = -1;
 	mask = _mask;
 
+	grp.setGridFineness(qwidth, qpts);
 	grp.import(robj);
-
-	Eigen::Map<Eigen::MatrixXd> fullCov(grp.cov, grp.maxAbilities, grp.maxAbilities);
-	int dense = grp.maxAbilities - grp.numSpecific;
-	Eigen::MatrixXd priCov = fullCov.block(0, 0, dense, dense);
-	Eigen::VectorXd sVar = fullCov.diagonal().tail(grp.numSpecific);
-	grp.quad.setup(qwidth, qpts, grp.mean, priCov, sVar);
 }
 
 void ssEAP::setLastItem(int which)
@@ -254,11 +35,9 @@ void ssEAP::setLastItem(int which)
 void ssEAP::tpbw1995()
 {
 	maxScore = 0;
-	itemOutcomes.reserve(grp.numItems);
-	for (int cx = 0; cx < grp.numItems; cx++) {
+	for (int cx = 0; cx < grp.numItems(); cx++) {
 		const double *spec = grp.spec[cx];
 		int no = spec[RPF_ISpecOutcomes];
-		itemOutcomes.push_back(no);
 		if ((lastItem != -1 && cx == lastItem) || mask[cx]) {
 			maxScore += no - 1;
 			if (cx != lastItem) items.push_back(cx);
@@ -277,7 +56,7 @@ void ssEAP::tpbw1995()
 		const int dims = spec[RPF_ISpecDims];
 		Eigen::VectorXd ptheta(dims);
 		double *iparam = grp.getItemParam(item0);
-		int outcomes = itemOutcomes[item0];
+		int outcomes = grp.itemOutcomes[item0];
 		Eigen::VectorXd oprob(outcomes);
 		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
 			double *where = quad.wherePrep.data() + qx * quad.maxDims;
@@ -302,7 +81,7 @@ void ssEAP::tpbw1995()
 		const int dims = spec[RPF_ISpecDims];
 		Eigen::VectorXd ptheta(dims);
 		double *iparam = grp.getItemParam(ix);
-		int outcomes = itemOutcomes[ix];
+		int outcomes = grp.itemOutcomes[ix];
 		Eigen::VectorXd oprob(outcomes);
 		slCur.topLeftCorner(slCur.rows(), curMax + outcomes).setZero();
 		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
@@ -341,7 +120,7 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, 
 	myeap.setLastItem(interest);
 	myeap.tpbw1995();
 
-	int outcomes = myeap.itemOutcomes[interest];
+	int outcomes = myeap.grp.itemOutcomes[interest];
 
 	ifaGroup &grp = myeap.grp;
 	ba81NormalQuad &quad = myeap.grp.quad;
@@ -501,21 +280,13 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwot
 {
 	omxManageProtectInsanity mpi;
 
-	double qwidth = Rf_asReal(Rwidth);
-	int qpts = Rf_asInteger(Rpts);
 	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
 
 	ifaGroup grp(Rf_asLogical(Rtwotier));
+	grp.setGridFineness(Rf_asReal(Rwidth), Rf_asInteger(Rpts));
 	grp.import(robj);
 	
-	// factor out? TODO
-	Eigen::Map<Eigen::MatrixXd> fullCov(grp.cov, grp.maxAbilities, grp.maxAbilities);
-	int dense = grp.maxAbilities - grp.numSpecific;
-	Eigen::MatrixXd priCov = fullCov.block(0, 0, dense, dense);
-	Eigen::VectorXd sVar = fullCov.diagonal().tail(grp.numSpecific);
-
-	ba81NormalQuad quad;
-	quad.setup(qwidth, qpts, grp.mean, priCov, sVar);
+	ba81NormalQuad &quad = grp.quad;
 
 	int i1 = INTEGER(Ritems)[0];
 	int i2 = INTEGER(Ritems)[1];
@@ -540,11 +311,11 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwot
 		}
 	}
 
-	double *spec1 = grp.spec[i1];
+	const double *spec1 = grp.spec[i1];
 	int id1 = spec1[RPF_ISpecID];
 	int outcomes1 = spec1[RPF_ISpecOutcomes];
 
-	double *spec2 = grp.spec[i2];
+	const double *spec2 = grp.spec[i2];
 	int id2 = spec1[RPF_ISpecID];
 	int outcomes2 = spec2[RPF_ISpecOutcomes];
 
@@ -727,7 +498,7 @@ static bool computeObservedSumScore(ifaGroup &grp, int *itemMask, int row, int *
 	int sum = 0;
 	for (int ix=0; ix < int(grp.spec.size()); ++ix) {
 		if (!itemMask[ix]) continue;
-		int *resp = INTEGER(VECTOR_ELT(grp.Rdata, grp.colMap[ix]));
+		const int *resp = grp.dataColumn(ix);
 		if (resp[row] == NA_INTEGER) return true;
 		sum += resp[row] - 1;
 	}
@@ -797,7 +568,7 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 	Eigen::Map<Eigen::ArrayXXi> out(INTEGER(r_ans), numScores, outcomes);
 	out.setZero();
 
-	int *iresp = INTEGER(VECTOR_ELT(grp.Rdata, grp.colMap[interest]));
+	const int *iresp = grp.dataColumn(interest);
 
 	int rowsIncluded = 0;
 	for (int rx=0; rx < grp.dataRows; ++rx) {
