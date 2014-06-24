@@ -32,9 +32,11 @@ Imports:
     mvtnorm
 Depends:
     methods,
+    parallel,
     R (>= 2.14.0)
 VignetteBuilder: knitr
 Collate:
+    'init.R'
     'classes.R'
     'drm.R'
     'nrm.R'

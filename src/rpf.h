@@ -23,9 +23,18 @@
 #include <R_ext/Lapack.h>
 #include <vector>
 #include "Eigen/Core"
+
+#if defined(_OPENMP)
+#include <omp.h>
+#else
+static inline int omp_get_thread_num() { return 0; }
+#endif
+
 #include "../inst/include/libifa-rpf.h"
 #include "dmvnorm.h"
 #include "ba81quad.h"
+
+extern int GlobalNumberOfCores;
 
 class omxManageProtectInsanity {
 	PROTECT_INDEX initialpix;
