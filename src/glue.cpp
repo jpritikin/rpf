@@ -423,6 +423,7 @@ static R_CallMethodDef flist[] = {
   {"pairwiseExpected_wrapper", (DL_FUNC) pairwiseExpected, 5},
   {"observedSumScore_wrapper", (DL_FUNC) observedSumScore, 2},
   {"itemOutcomeBySumScore_wrapper", (DL_FUNC) itemOutcomeBySumScore, 3},
+  {"findIdenticalRowsData", (DL_FUNC) findIdenticalRowsData, 5},
   {NULL, NULL, 0}
 };
 

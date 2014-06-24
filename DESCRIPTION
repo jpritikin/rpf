@@ -41,6 +41,7 @@ Collate:
     'mcm.R'
     'grm.R'
     'sample.R'
+    'dataframe.R'
     'diagnose.R'
     'science.R'
     'kct.R'

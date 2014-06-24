@@ -69,6 +69,8 @@ SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials);
 SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier);
 SEXP observedSumScore(SEXP Rgrp, SEXP Rmask);
 SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest);
+SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
+			   SEXP skipMissingness, SEXP skipDefvars);
 
 static inline int triangleLoc1(int diag)
 {
@@ -88,4 +90,14 @@ pda(const double *ar, int rows, int cols) {   // column major order
 		}
 		Rprintf("\n");
 	}
+}
+
+static inline void string_to_try_Rf_error( const std::string& str )
+{
+	Rf_error("%s", str.c_str());
+}
+
+static inline void exception_to_try_Rf_error( const std::exception& ex )
+{
+	string_to_try_Rf_error(ex.what());
 }
