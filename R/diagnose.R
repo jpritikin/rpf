@@ -680,6 +680,7 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
   if (!is.data.frame(data)) {
       data <- as.data.frame(data)  #safe? TODO
   }
+	dataMap <- match(colnames(grp$param), colnames(data))
 
   # assume param and data in the same order? TODO
   items <- match(inames, colnames(grp$param))
@@ -700,12 +701,26 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
     for (iter2 in 1:(iter1-1)) {
       i1 <- items[iter1]
       i2 <- items[iter2]
-      observed <- table(data[,c(i1,i2)])
+      observed <- table(data[,dataMap[c(i1,i2)]])
       N <- sum(observed)
       s1 <- spec[[i1]]
       s2 <- spec[[i2]]
 
-      expected <- N * pairwiseExpected(grp, c(iter1, iter2), qwidth, qpoints, .twotier)
+      expected <- N * pairwiseExpected(grp, c(i1, i2), qwidth, qpoints, .twotier)
+      if (any(dim(observed) != dim(expected))) {
+	      if (dim(observed)[1] != dim(expected)[1]) {
+		      bad <- i1
+		      margin <- 1
+	      } else {
+		      bad <- i2
+		      margin <- 2
+	      }
+	      Eoutcomes <- dim(expected)[margin]
+	      lev <- dimnames(observed)[[margin]]
+	      stop(paste(colnames(grp$param)[bad], " has ", Eoutcomes,
+			 " outcomes in the model but the data has ", length(lev), " (",
+			 paste(lev, collapse=", "),")", sep=""))
+      }
       dimnames(expected) <- dimnames(observed)
 
       s <- ordinal.gamma(observed) - ordinal.gamma(expected)

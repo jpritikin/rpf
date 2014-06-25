@@ -50,6 +50,35 @@ test_that("ct1997 2tier", {
                fast$raw[!is.na(fast$raw)], .001)
 })
 
+mxSimplify2Array <- function(x) {
+  par <- x
+  len <- sapply(par, length)
+  biggest <- which(len == max(len))[1]
+  out <- matrix(NA, nrow=max(len), ncol=length(par))
+  for (x in 1:length(par)) {
+    out[1:len[x],x] <- par[[x]]
+  }
+  rownames(out) <- names(par[[biggest]])
+  out
+}
+
+test_that("ct1997 permutations", {
+  require(rpf)
+  set.seed(1)
+  grp <- list(spec=list())
+  grp$spec[1:10] <- lapply(sample.int(6, 10, replace=TRUE), function(o) rpf.grm(outcomes=1+o))
+  grp$param <- mxSimplify2Array(lapply(grp$spec, rpf.rparam))
+  colnames(grp$param) <- paste("i", 1:10, sep="")
+  grp$mean <- 0
+  grp$cov <- diag(1)
+  grp$free <- !is.na(grp$param) & grp$param != 0
+  grp$data <- rpf.sample(500, grp=grp)
+  grp$data <- grp$data[,colnames(grp$data)[sample.int(10)]]
+  
+  ChenThissen1997(grp, inames = colnames(grp$param)[sample.int(10, 9)])
+  # will stop if something is wrong
+})
+
 drawRandomProportion <- function(expected) {
   total <- sum(expected)
   prob <- expected / total
