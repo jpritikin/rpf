@@ -42,6 +42,7 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
 	    if (missing(params)) params <- grp$param
 	    if (missing(mean)) mean <- grp$mean
 	    if (missing(cov)) cov <- grp$cov
+	    if (missing(theta)) theta <- nrow(grp$data)
     }
 
   numItems <- length(items)
