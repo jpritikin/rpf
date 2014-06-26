@@ -348,7 +348,8 @@ collapseCells <- function(On, En, mincell = 1){
 ##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
-SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L, alt=FALSE, omit=0L) {
+SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L,
+		      alt=FALSE, omit=0L, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -386,7 +387,7 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
     stop(paste("param matrix must have", max.param ,"rows"))
   }
 
-    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpoints, alt, mask)
+    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpoints, alt, mask, .twotier)
     if (nrow(Eproportion) != nrow(observed)) {
 	    print(Eproportion)
 	    stop(paste("Expecting", nrow(observed), "rows in expected matrix"))
@@ -434,18 +435,16 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 	out
 }
 
-ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
+ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
 	if (missing(width)) width <- 6
 	if (missing(pts)) pts <- 49L
-	.Call(ot2000_wrapper, grp, item, width, pts, alt, mask)
+	.Call(ot2000_wrapper, grp, item, width, pts, alt, mask, .twotier)
 }
 
 ##' Compute the S fit statistic for a set of items
 ##'
 ##' Runs \code{\link{SitemFit1}} for every item and accumulates
 ##' the results.
-##'
-##' TODO: Optimize for two-tier covariance structure
 ##'
 ##' @param grp a list with spec, param, mean, cov, data, and the free variable pattern
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
@@ -467,7 +466,8 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
 ##' grp$free <- grp$param != 0
 ##' grp$data <- rpf.sample(500, grp=grp)
 ##' SitemFit(grp)
-SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L, alt=FALSE, omit=0L) {
+SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L,
+		     alt=FALSE, omit=0L, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -486,7 +486,8 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
       free <- 0
       if (!is.null(grp$free)) free <- sum(grp$free[,interest])
       itemname <- colnames(param)[interest]
-      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints, alt=alt, omit=omit)
+      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints,
+			  alt=alt, omit=omit, .twotier=.twotier)
       got[[itemname]] <- ot.out
   }
     class(got) <- "summary.SitemFit"
@@ -786,8 +787,8 @@ crosstabTest <- function(ob, ex, trials) {
 	.Call(crosstabTest_wrapper, ob, ex, trials)
 }
 
-pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, twotier) {
-	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L, twotier)
+pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, .twotier) {
+	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L, .twotier)
 }
 
 CaiHansen2012 <- function(grp, method, .twotier = FALSE) {

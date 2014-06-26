@@ -418,7 +418,7 @@ static R_CallMethodDef flist[] = {
   {"collapse_wrapper", (DL_FUNC) collapse_wrapper, 2},
   {"ordinal_gamma_wrapper", (DL_FUNC) gamma_cor, 1},
   {"ssEAP_wrapper", (DL_FUNC) sumscoreEAP, 6},
-  {"ot2000_wrapper", (DL_FUNC) ot2000_wrapper, 6},
+  {"ot2000_wrapper", (DL_FUNC) ot2000_wrapper, 7},
   {"crosstabTest_wrapper", (DL_FUNC) crosstabTest, 3},
   {"pairwiseExpected_wrapper", (DL_FUNC) pairwiseExpected, 5},
   {"observedSumScore_wrapper", (DL_FUNC) observedSumScore, 2},

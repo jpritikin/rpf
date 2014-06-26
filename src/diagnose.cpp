@@ -1,21 +1,44 @@
 #include "rpf.h"
 
-#include <stdlib.h>
-
 class ssEAP {
 	int lastItem;
+	void tpbw1995Prep();
+
+	template <typename T1, typename T2>
+	void aggregateSpecific(Eigen::ArrayBase<T1> &inMat, Eigen::ArrayBase<T2> &Eis);
+
+	template <typename T1, typename T2, typename T3>
+	void tt2prod(Eigen::ArrayBase<T1> &slCur, Eigen::ArrayBase<T2> &buffer, Eigen::ArrayBase<T3> &perSpecific);
+
+	template <typename T1, typename T2, typename T3>
+	void prod2ss(Eigen::ArrayBase<T1> &buffer, Eigen::ArrayBase<T2> &ssCur, Eigen::ArrayBase<T3> &perSpecific);
+
 public:
 	ifaGroup grp;
 	int *mask;
 	int maxScore;
 	std::vector<int> items;
+
+	Eigen::ArrayXXd ttCur;
+	Eigen::ArrayXi ttCurMax;
 	Eigen::ArrayXXd slCur;
+	Eigen::ArrayXd ssProbCur;
+
+	Eigen::ArrayXXd ttPrev;
+	Eigen::ArrayXi ttPrevCurMax;
 	Eigen::ArrayXXd slPrev;
+	Eigen::ArrayXd ssProbPrev;
 	
 	ssEAP(bool twotier) : grp(twotier) {}
 	void setup(SEXP grp, double qwidth, int qpts, int *_mask);
 	void setLastItem(int which);
+	void tpbw1995Vanilla();
+	void tpbw1995TwoTier();
 	void tpbw1995();
+
+	// tt2ss == two-tier to sum-score
+	template <typename T1, typename T2, typename T3>
+	void tt2ss(Eigen::ArrayBase<T1> &curMax, Eigen::ArrayBase<T2> &slCur, Eigen::ArrayBase<T3> &ssProbCur);
 };
 
 void ssEAP::setup(SEXP robj, double qwidth, int qpts, int *_mask)
@@ -32,7 +55,7 @@ void ssEAP::setLastItem(int which)
 	lastItem = which;
 }
 
-void ssEAP::tpbw1995()
+void ssEAP::tpbw1995Prep()
 {
 	maxScore = 0;
 	for (int cx = 0; cx < grp.numItems(); cx++) {
@@ -45,9 +68,26 @@ void ssEAP::tpbw1995()
 	}
 
 	if (lastItem >= 0) items.push_back(lastItem);
+}
 
+void ssEAP::tpbw1995()
+{
+	tpbw1995Prep();
+
+	if (grp.numSpecific == 0) {
+		tpbw1995Vanilla();
+	} else {
+		tpbw1995TwoTier();
+	}
+}
+
+void ssEAP::tpbw1995Vanilla()
+{
 	ba81NormalQuad &quad = grp.quad;
 	slCur.resize(quad.totalQuadPoints, 1+maxScore);
+	Eigen::Map<Eigen::ArrayXd> areaCol(quad.priQarea.data(), quad.priQarea.size());
+	slCur.colwise() = areaCol;
+
 	int curMax = 0;
 	int item0 = items[0];
 	{
@@ -65,7 +105,7 @@ void ssEAP::tpbw1995()
 			}
 			librpf_model[id].prob(spec, iparam, ptheta.data(), oprob.data());
 			for (int ox=0; ox < outcomes; ++ox) {
-				slCur(qx, ox) = oprob[ox];
+				slCur(qx, ox) *= oprob[ox];
 			}
 		}
 		curMax += outcomes - 1;
@@ -97,17 +137,200 @@ void ssEAP::tpbw1995()
 			}
 		}
 		curMax += outcomes - 1;
+		R_CheckUserInterrupt();
 	}
 
-	// For two-tier, we probably need to compute each specific group of items
-	// separately and then use the brute-force method. TODO
-
-	Eigen::Map<Eigen::ArrayXd> areaCol(quad.priQarea.data(), quad.priQarea.size());
-	slCur.colwise() *= areaCol;
-	slPrev.colwise() *= areaCol;
+	ssProbCur.resize(1+maxScore);
+	ssProbCur = slCur.colwise().sum();
+	ssProbPrev.resize(1+maxScore);     // make smaller TODO
+	ssProbPrev = slPrev.colwise().sum();
 }
 
-SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, SEXP Rmask)
+template <typename T1, typename T2>
+void ssEAP::aggregateSpecific(Eigen::ArrayBase<T1> &inMat, Eigen::ArrayBase<T2> &Eis)
+{
+	ba81NormalQuad &quad = grp.quad;
+
+	Eis.setZero();
+	for (int qx=0, qloc = 0, eisloc = 0; qx < quad.totalPrimaryPoints; qx++) {
+		for (int sx=0; sx < quad.quadGridSize; sx++) {
+			for (int sgroup=0; sgroup < quad.numSpecific; ++sgroup) {
+				Eis.row(eisloc + sgroup) += inMat.row(qloc);
+				++qloc;
+			}
+		}
+		eisloc += quad.numSpecific;
+	}
+}
+
+template <typename T1, typename T2, typename T3>
+void ssEAP::tt2prod(Eigen::ArrayBase<T1> &tt, Eigen::ArrayBase<T2> &buffer, Eigen::ArrayBase<T3> &perSpecific)
+{
+	ba81NormalQuad &quad = grp.quad;
+
+	int combinations = perSpecific.prod();
+	int destRows = tt.rows() / perSpecific.rows();
+	buffer.setOnes();
+
+	for (int qx=0; qx < destRows; qx++) {
+		for (int cx=0; cx < combinations; ++cx) {
+			int chip = cx;
+			for (int sgroup=0; sgroup < quad.numSpecific; ++sgroup) {
+				int col = chip % perSpecific[sgroup];
+				chip /= perSpecific[sgroup];
+				buffer(qx, cx) *= tt(qx * perSpecific.rows() + sgroup, col);
+			}
+		}
+	}
+}
+
+template <typename T1, typename T2, typename T3>
+void ssEAP::prod2ss(Eigen::ArrayBase<T1> &buffer, Eigen::ArrayBase<T2> &ssMat, Eigen::ArrayBase<T3> &perSpecific)
+{
+	ba81NormalQuad &quad = grp.quad;
+
+	int combinations = perSpecific.prod();
+
+	ssMat.setZero();
+	for (int cx=0; cx < combinations; ++cx) {
+		int chip = cx;
+		int ss = 0;
+		for (int sgroup=0; sgroup < quad.numSpecific; ++sgroup) {
+			ss += chip % perSpecific[sgroup];
+			chip /= perSpecific[sgroup];
+		}
+		ssMat.col(ss) += buffer.col(cx);
+	}
+}
+
+template <typename T1, typename T2, typename T3>
+void ssEAP::tt2ss(Eigen::ArrayBase<T1> &curMax1, Eigen::ArrayBase<T2> &curTbl,
+		  Eigen::ArrayBase<T3> &outTbl)
+{
+	int numScores = 1+maxScore;
+	ba81NormalQuad &quad = grp.quad;
+
+	Eigen::ArrayXXd Eis(quad.totalPrimaryPoints * quad.numSpecific, numScores);
+	aggregateSpecific(curTbl, Eis);
+
+	Eigen::ArrayXi perSpecific = curMax1 + 1;
+	int combinations = perSpecific.prod();
+
+	Eigen::ArrayXXd prodEis(quad.totalPrimaryPoints, combinations);
+	tt2prod(Eis, prodEis, perSpecific);
+
+	outTbl.derived().resize(quad.totalPrimaryPoints, numScores);
+	prod2ss(prodEis, outTbl, perSpecific);
+
+	Eigen::Map<Eigen::ArrayXd> areaCol(quad.priQarea.data(), quad.priQarea.size());
+	outTbl.colwise() *= areaCol;
+}
+
+void ssEAP::tpbw1995TwoTier()
+{
+	int numScores = 1+maxScore;
+
+	ba81NormalQuad &quad = grp.quad;
+
+	Eigen::ArrayXd speAreaCol(quad.totalQuadPoints * quad.numSpecific);
+	for (int qx=0, qloc = 0; qx < quad.totalPrimaryPoints; qx++) {
+		for (int sx=0; sx < quad.quadGridSize * quad.numSpecific; sx++) {
+			speAreaCol[qloc] = quad.speQarea[sx];
+			++qloc;
+		}
+	}
+
+	ttCur.resize(quad.totalQuadPoints * quad.numSpecific, numScores);
+	ttPrev.resize(quad.totalQuadPoints * quad.numSpecific, numScores);
+	ttCur.colwise() = speAreaCol;
+	ttPrev.colwise() = speAreaCol;
+
+	ttCurMax.resize(quad.numSpecific);
+	ttCurMax.setZero();
+	ttPrevCurMax = ttCurMax;
+
+	int item0 = items[0];
+	{
+		const double *spec = grp.spec[item0];
+		int id = spec[RPF_ISpecID];
+		const int dims = spec[RPF_ISpecDims];
+		Eigen::VectorXd ptheta(dims);
+		double *iparam = grp.getItemParam(item0);
+		int outcomes = grp.itemOutcomes[item0];
+		int Sgroup = grp.Sgroup[item0];
+		Eigen::VectorXd oprob(outcomes);
+		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
+			double *where = quad.wherePrep.data() + qx * quad.maxDims;
+			for (int dx=0; dx < dims; dx++) {
+				ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
+			}
+			librpf_model[id].prob(spec, iparam, ptheta.data(), oprob.data());
+			for (int ox=0; ox < outcomes; ++ox) {
+				ttCur(qx * quad.numSpecific + Sgroup, ox) *= oprob[ox];
+			}
+		}
+		ttCurMax(Sgroup) += outcomes - 1;
+	}
+
+	for (int curItem=1; curItem < int(items.size()); ++curItem) {
+		int ix = items[curItem];
+		ttPrev = ttCur; // can't swap because we only update the item's Sgroup
+		ttPrevCurMax = ttCurMax;
+		const double *spec = grp.spec[ix];
+		int id = spec[RPF_ISpecID];
+		const int dims = spec[RPF_ISpecDims];
+		Eigen::VectorXd ptheta(dims);
+		double *iparam = grp.getItemParam(ix);
+		int outcomes = grp.itemOutcomes[ix];
+		int Sgroup = grp.Sgroup[ix];
+		Eigen::VectorXd oprob(outcomes);
+		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
+			int row = qx * quad.numSpecific + Sgroup;
+			ttCur.row(row).setZero();
+			double *where = quad.wherePrep.data() + qx * quad.maxDims;
+			for (int dx=0; dx < dims; dx++) {
+				ptheta[dx] = where[std::min(dx, quad.maxDims-1)];
+			}
+			librpf_model[id].prob(spec, iparam, ptheta.data(), oprob.data());
+			for (int cx=0; cx <= ttCurMax(Sgroup); cx++) {
+				for (int ox=0; ox < outcomes; ox++) {
+					ttCur(row, cx + ox) += ttPrev(row, cx) * oprob[ox];
+				}
+			}
+		}
+		ttCurMax(Sgroup) += outcomes - 1;
+		R_CheckUserInterrupt();
+	}
+
+	tt2ss(ttCurMax, ttCur, slCur);
+	ssProbCur.resize(numScores);
+	ssProbCur = slCur.colwise().sum();
+
+	tt2ss(ttPrevCurMax, ttPrev, slPrev);
+	ssProbPrev.resize(numScores);
+	ssProbPrev = slPrev.colwise().sum();
+}
+
+template <typename T1, typename T2>
+void otMix(ssEAP &myeap, int Sgroup, int ox, Eigen::ArrayBase<T1> &iProb, Eigen::ArrayBase<T2> &numer)
+{
+	ba81NormalQuad &quad = myeap.grp.quad;
+
+	if (quad.numSpecific == 0) {
+		numer = (myeap.slPrev.colwise() * iProb.col(ox)).colwise().sum();
+	} else {
+		Eigen::ArrayXXd ttPrev = myeap.ttPrev;
+		for (int qx = 0; qx < quad.totalQuadPoints; ++qx) {
+			ttPrev.row(qx*quad.numSpecific + Sgroup) *= iProb(qx, ox);
+		}
+		Eigen::ArrayXXd ssPrev;
+		myeap.tt2ss(myeap.ttPrevCurMax, ttPrev, ssPrev);
+		numer = ssPrev.colwise().sum();
+	}
+}
+
+SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
+		    SEXP Rmask, SEXP Rtwotier)
 {
 	omxManageProtectInsanity mpi;
 
@@ -115,7 +338,7 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, 
 	int qpts = Rf_asInteger(Rpts);
 	int interest = Rf_asInteger(Ritem) - 1;
 
-	ssEAP myeap(false);
+	ssEAP myeap(Rf_asLogical(Rtwotier));
 	myeap.setup(robj, qwidth, qpts, LOGICAL(Rmask));
 	myeap.setLastItem(interest);
 	myeap.tpbw1995();
@@ -124,7 +347,7 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, 
 
 	ifaGroup &grp = myeap.grp;
 	ba81NormalQuad &quad = myeap.grp.quad;
-	Eigen::MatrixXd iProb(quad.totalQuadPoints, outcomes);
+	Eigen::ArrayXXd iProb(quad.totalQuadPoints, outcomes);
 
 	{
 		const double *spec = grp.spec[interest];
@@ -132,7 +355,7 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, 
 		const int dims = spec[RPF_ISpecDims];
 		Eigen::VectorXd ptheta(dims);
 		double *iparam = grp.getItemParam(interest);
-		Eigen::VectorXd oprob(outcomes);
+		Eigen::ArrayXd oprob(outcomes);
 		for (int qx=0; qx < quad.totalQuadPoints; ++qx) {
 			double *where = quad.wherePrep.data() + qx * quad.maxDims;
 			for (int dx=0; dx < dims; dx++) {
@@ -145,47 +368,41 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, 
 		}
 	}
 
-	if (Rf_asLogical(Ralter)) {
-		Eigen::ArrayXXd &slCur = myeap.slCur;
-		Eigen::ArrayXXd &slPrev = myeap.slPrev;
+	int Sgroup = 0;
+	if (quad.numSpecific) Sgroup = grp.Sgroup[interest];
 
-		Eigen::VectorXd ssProb(1+myeap.maxScore);
-		ssProb = slCur.array().colwise().sum();
+	if (Rf_asLogical(Ralter)) {
+		// as documented in various publications
+		Eigen::ArrayXd &ssProb = myeap.ssProbCur;
 
 		SEXP Rexpected;
 		Rf_protect(Rexpected = Rf_allocMatrix(REALSXP, 1+myeap.maxScore, outcomes));
-		double *out = REAL(Rexpected);
-		memset(out, 0, sizeof(double) * (1+myeap.maxScore) * outcomes);
+		Eigen::Map< Eigen::ArrayXXd > out(REAL(Rexpected), 1+myeap.maxScore, outcomes);
+		out.setZero();
 
-		for (int startScore=0; startScore+outcomes <= 1+myeap.maxScore; ++startScore) {
-			Eigen::MatrixXd numerDen(quad.totalQuadPoints, outcomes);
-			numerDen = iProb.array().colwise() * slPrev.col(startScore).array();
-			Eigen::VectorXd numer(outcomes);
-			numer = numerDen.colwise().sum();
-			for (int ox=0; ox < outcomes; ++ox) {
-				out[ox * (1+myeap.maxScore) + (startScore+ox)] = numer(ox) / ssProb(startScore + ox);
+		for (int ox=0; ox < outcomes; ++ox) {
+			Eigen::ArrayXd numer;
+			otMix(myeap, Sgroup, ox, iProb, numer);
+			for (int startScore=0; startScore+outcomes <= 1+myeap.maxScore; ++startScore) {
+				out(startScore+ox, ox) = numer(startScore) / ssProb(startScore + ox);
 			}
 		}
 
 		return Rexpected;
 	} else {
-		Eigen::ArrayXXd &slPrev = myeap.slPrev;
-	
-		Eigen::VectorXd ssProb(1+myeap.maxScore);
-		ssProb = slPrev.array().colwise().sum();
+		// slightly more powerful for small number of items (IRTPRO/flexMIRT)
+		Eigen::ArrayXd &ssProb = myeap.ssProbPrev;
 
 		int prevMaxScore = myeap.maxScore - (outcomes-1);
 		SEXP Rexpected;
 		Rf_protect(Rexpected = Rf_allocMatrix(REALSXP, prevMaxScore + 1, outcomes));
-		double *out = REAL(Rexpected);
+		Eigen::Map< Eigen::ArrayXXd > out(REAL(Rexpected), prevMaxScore + 1, outcomes);
 
-		for (int startScore=0; startScore <= prevMaxScore; ++startScore) {
-			Eigen::MatrixXd numerDen(quad.totalQuadPoints, outcomes);
-			numerDen = iProb.array().colwise() * slPrev.col(startScore).array();
-			Eigen::VectorXd numer(outcomes);
-			numer = numerDen.colwise().sum();
-			for (int ox=0; ox < outcomes; ++ox) {
-				out[ox * (prevMaxScore+1) + startScore] = numer(ox) / ssProb(startScore);
+		for (int ox=0; ox < outcomes; ++ox) {
+			Eigen::ArrayXd numer;
+			otMix(myeap, Sgroup, ox, iProb, numer);
+			for (int startScore=0; startScore <= prevMaxScore; ++startScore) {
+				out(startScore, ox) = numer(startScore) / ssProb(startScore);
 			}
 		}
 
@@ -217,7 +434,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 
 	int curMax = myeap.maxScore;
 	int outRows = 1 + curMax;
-	int outCols = 1 + 2 * quad.maxAbilities + triangleLoc1(quad.maxAbilities);
+	int outCols = 1 + 2 * quad.primaryDims + triangleLoc1(quad.primaryDims);
 
 	SEXP dimnames;
 	Rf_protect(dimnames = Rf_allocVector(VECSXP, 2));
@@ -226,7 +443,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 	SEXP names;
 	Rf_protect(names = Rf_allocVector(STRSXP, outCols));
 	SET_STRING_ELT(names, 0, Rf_mkChar("p"));
-	for (int ax=0; ax < quad.maxAbilities; ++ax) {
+	for (int ax=0; ax < quad.primaryDims; ++ax) {
 		const int SMALLBUF = 10;
 		char buf[SMALLBUF];
 		if (grp.factorNames.size()) {
@@ -236,18 +453,23 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 			SET_STRING_ELT(names, 1+ax, Rf_mkChar(buf));
 		}
 		snprintf(buf, SMALLBUF, "se%d", 1+ax);
-		SET_STRING_ELT(names, 1+quad.maxAbilities+ax, Rf_mkChar(buf));
+		SET_STRING_ELT(names, 1+quad.primaryDims+ax, Rf_mkChar(buf));
 	}
-	for (int cx=0; cx < triangleLoc1(quad.maxAbilities); ++cx) {
+	for (int cx=0; cx < triangleLoc1(quad.primaryDims); ++cx) {
 		const int SMALLBUF = 10;
 		char buf[SMALLBUF];
 		snprintf(buf, SMALLBUF, "cov%d", 1+cx);
-		SET_STRING_ELT(names, 1+2*quad.maxAbilities+cx, Rf_mkChar(buf));
+		SET_STRING_ELT(names, 1+2*quad.primaryDims+cx, Rf_mkChar(buf));
 	}
 	SET_VECTOR_ELT(dimnames, 1, names);
 
-	Eigen::VectorXd ssProb(outRows);
-	ssProb = slCur.array().colwise().sum();
+	Eigen::ArrayXd &ssProb = myeap.ssProbCur;
+
+	ba81NormalQuad pquad;  //primary only
+	Eigen::Map<Eigen::MatrixXd> fullCov(grp.cov, grp.maxAbilities, grp.maxAbilities);
+	Eigen::MatrixXd priCov = fullCov.block(0, 0, quad.primaryDims, quad.primaryDims);
+	Eigen::VectorXd sVar;
+	pquad.setup(grp.qwidth, grp.qpoints, grp.mean, priCov, sVar);
 
 	SEXP Rout;
 	Rf_protect(Rout = Rf_allocMatrix(REALSXP, outRows, outCols));
@@ -255,21 +477,14 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 	double *out = REAL(Rout);
 	memcpy(out, ssProb.data(), sizeof(double) * outRows);
 	for (int cx=0; cx <= curMax; cx++) {
-		//Rprintf("--- sumscore=%d ---\n", cx);
-		std::vector<double> pad(quad.maxAbilities + triangleLoc1(quad.maxAbilities));
-		if (quad.numSpecific == 0) {
-			quad.EAP(&slCur.coeffRef(0, cx), 1/ssProb[cx], pad.data());
-		} else {
-			Eigen::MatrixXd weight(quad.numSpecific, quad.totalQuadPoints);
-			weight.array().rowwise() = slCur.array().col(cx).transpose();
-			quad.EAP(weight.data(), 1/ssProb[cx], pad.data());
-		}
-		for (int sx=0; sx < quad.maxAbilities; ++sx) {
+		std::vector<double> pad(quad.primaryDims + triangleLoc1(quad.primaryDims));
+		pquad.EAP(&slCur.coeffRef(0, cx), 1/ssProb[cx], pad.data());
+		for (int sx=0; sx < quad.primaryDims; ++sx) {
 			out[(1+sx) * outRows + cx] = pad[sx];
-			out[(1+quad.maxAbilities+sx) * outRows + cx] = sqrt(pad[quad.maxAbilities + triangleLoc0(sx)]);
+			out[(1+quad.primaryDims+sx) * outRows + cx] = sqrt(pad[quad.primaryDims + triangleLoc0(sx)]);
 		}
-		for (int sx=0; sx < triangleLoc1(quad.maxAbilities); ++sx) {
-			out[(1+2*quad.maxAbilities+sx) * outRows + cx] = pad[quad.maxAbilities + sx];
+		for (int sx=0; sx < triangleLoc1(quad.primaryDims); ++sx) {
+			out[(1+2*quad.primaryDims+sx) * outRows + cx] = pad[quad.primaryDims + sx];
 		}
 	}
 

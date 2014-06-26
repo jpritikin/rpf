@@ -64,7 +64,8 @@ SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observe
 SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig);
 SEXP gamma_cor(SEXP r_mat);
 SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug);
-SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter, SEXP Rmask);
+SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
+		    SEXP Rmask, SEXP Rtwotier);
 SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials);
 SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier);
 SEXP observedSumScore(SEXP Rgrp, SEXP Rmask);

@@ -104,6 +104,37 @@ test_that("fit w/ mcar", {
   expect_equal(stat, Estat, tolerance=.01)
 })
 
+test_that("2tier fit", {
+  set.seed(1)
+  require(rpf)
+  numItems <- 6
+  spec <- list()
+  spec[1:numItems] <- rpf.drm(factors=3)
+  param <- sapply(spec, rpf.rparam, version=1)
+  gsize <- numItems/3
+  for (gx in 0:2) {
+    if (gx != 1) {
+      param['a2', seq(gx * gsize+1, (gx+1)*gsize)] <- 0
+    }
+    if (gx != 2) {
+      param['a3', seq(gx * gsize+1, (gx+1)*gsize)] <- 0
+    }
+  }
+  grp <- list(spec=spec, param=param, mean=runif(3, -1, 1), cov=diag(runif(3,.5,2)))
+  grp$data <- rpf.sample(500, grp=grp)
+  colnames(grp$param) <- colnames(grp$data)
+
+  got <- SitemFit(grp, qwidth=2, qpoints=5L, .twotier=FALSE)
+  tt <- SitemFit(grp, qwidth=2, qpoints=5L, .twotier=TRUE)
+  expect_equal(sapply(got, function(x) x$statistic),
+               sapply(tt, function(x) x$statistic), .001)
+
+  got <- SitemFit(grp, qwidth=2, qpoints=5L, .twotier=FALSE, alt = TRUE)
+  tt <- SitemFit(grp, qwidth=2, qpoints=5L, .twotier=TRUE, alt=TRUE)
+  expect_equal(sapply(got, function(x) x$statistic),
+               sapply(tt, function(x) x$statistic), .001)
+})
+
 if (0) {
   library(mirt)
   dat <- expand.table(LSAT6)

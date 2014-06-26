@@ -105,14 +105,9 @@ test_that("2tier sumScoreEAP", {
     }
   }
   grp <- list(spec=spec, param=param, mean=runif(3, -1, 1), cov=diag(runif(3,.5,2)))
-  got <- sumScoreEAP(grp, qwidth=2, qpoints=3L) #TODO
-  
-  spec2 <- list()
-  spec2[1:6] <- rpf.drm(factors=2)
-  grp1 <- list(spec=spec2[1:4], param=param[c(1,2,4:6), 1:4],
-               mean=grp$mean[1:2], cov=grp$cov[1:2,1:2])
-  grp2 <- list(spec=spec2[4:5], param=param[c(1,3,4:6), 5:6],
-               mean=grp$mean[c(1,3)], cov=diag(diag(grp$cov)[c(1,3)]))
-  got1 <- ssEAP(grp1, qwidth=2, qpoints=3L, debug=TRUE)
-  got2 <- ssEAP(grp2, qwidth=2, qpoints=3L, debug=TRUE)
+  grp$data <- rpf.sample(500, grp=grp)
+  colnames(grp$param) <- colnames(grp$data)
+  got <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=FALSE)
+  tt <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=TRUE)
+  expect_equal(tt$tbl, got$tbl[,c(1:2,5,8)], .001)
 })

@@ -36,7 +36,7 @@ class ba81NormalQuad {
 			      const double *whereGram, double *latentDist);
 
  public:
-	int quadGridSize;
+	int quadGridSize;                     // rename to gridSize TODO
 	int maxDims;
 	int primaryDims;
 	int numSpecific;
