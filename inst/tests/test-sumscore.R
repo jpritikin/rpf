@@ -12,14 +12,14 @@ test_that("observedSumScore", {
   data <- rpf.sample(5, spec, param)
   colnames(param) <- colnames(data)
   grp <- list(spec=spec, param=param, data=data)
-  obs <- observedSumScore(grp, rep(TRUE, length(spec)))
+  obs <- observedSumScore(grp)
   expect_equal(obs$dist, c(1L, 1L, 0L, 1L, 1L, 0L, 1L))
   
   dperm <- sample.int(3)
   data <- data[,dperm]
   
   mask <- c(TRUE, FALSE, TRUE)
-  obs <- observedSumScore(grp, mask)
+  obs <- observedSumScore(grp, mask=mask)
   expect_equal(obs$dist, rep(1L, 5))
 })
 

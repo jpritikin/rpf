@@ -80,7 +80,7 @@ sumScoreEAP <- function(grp, ..., qwidth=6.0, qpoints=49L, distributionTest=NULL
 			tbl <- ssEAP(grp, qwidth, qpoints, mask)
 			result$omitted <- toOmit
 		}
-		oss <- observedSumScore(grp, mask)
+		oss <- observedSumScore(grp, mask=mask)
 		result$n <- oss$n
 		result$observed <- oss$dist
 		obs <- matrix(oss$dist, ncol=1)
@@ -120,7 +120,9 @@ print.summary.sumScoreEAP <- function(x,...) {
 ##' Compute the observed sum-score
 ##'
 ##' @param grp a list with spec, param, and data
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param mask a vector of logicals indicating which items to include
+##' @param summary whether to return a summary (default) or per-row scores
 ##' @examples
 ##' spec <- list()
 ##' spec[1:3] <- rpf.grm(outcomes=3)
@@ -129,7 +131,20 @@ print.summary.sumScoreEAP <- function(x,...) {
 ##' colnames(param) <- colnames(data)
 ##' grp <- list(spec=spec, param=param, data=data)
 ##' observedSumScore(grp, rep(TRUE, length(spec)))
-observedSumScore <- function(grp, mask) {
+observedSumScore <- function(grp, ..., mask=TRUE, summary=TRUE) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+	if (missing(mask)) {
+		mask <- rep(TRUE, ncol(grp$param))
+	}
+	if (!summary) {
+		cols <- colnames(grp$param)[mask]
+		dat <- grp$data[,cols]
+		ss <- apply(sapply(dat, unclass) - 1, 1, sum)
+		names(ss) <- rownames(dat)
+		return(ss)
+	}
 	got <- .Call(observedSumScore_wrapper, grp, mask)
 	class(got) <- "summary.observedSumScore"
 	got
