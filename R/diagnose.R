@@ -312,7 +312,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##'
 ##' Implements the Kang & Chen (2007) polytomous extension to
 ##' S statistic of Orlando & Thissen (2000). Rows with
-##' missing data are ignored.
+##' missing data are ignored, but see the \code{omit} option.
 ##'
 ##' This statistic is good at finding a small number of misfitting
 ##' items among a large number of well fitting items. However, be
@@ -323,13 +323,15 @@ collapseCells <- function(On, En, mincell = 1){
 ##' greatest number of responses missing relative to the item of
 ##' interest.
 ##' 
-##' Pearson is slightly more powerful than RMS is most cases I
+##' Pearson is slightly more powerful than RMS in most cases I
 ##' examined.
 ##'
-##' Setting \code{alt} to \code{TRUE} causes the tables to
-##' match published articles. However, the default setting of
-##' \code{FALSE} probably provides slightly more powerful for less
-##' than 10 items.
+##' Setting \code{alt} to \code{TRUE} causes the tables to match
+##' published articles. However, the default setting of \code{FALSE}
+##' probably provides slightly more power when there are less than 10
+##' items.
+##'
+##' The name of the test, "S", probably stands for sum-score.
 ##'
 ##' @param grp a list with spec, param, mean, cov, and data
 ##' @param item the item of interest
@@ -340,7 +342,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##' @param qwidth the positive width of the quadrature in Z units
 ##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
-##' @param omit number of items to omit
+##' @param omit number of items to omit when calculating the observed and expected sum-score tables
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
 ##' polytomous IRT models. ACT Research Report Series.
@@ -797,10 +799,14 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 
 ##' Multinomial fit test
 ##'
+##' The p-value is known to become poorly calibrated as the number of
+##' cells becomes large (e.g. more than 1000). For accurate p-values,
+##' you can conduct a Monte-Carlo simulation study (see examples).
+##'
 ##' Rows with missing data are ignored.
 ##' 
 ##' The full information test is described in Bartholomew & Tzamourani
-##' (1999, Section 3)
+##' (1999, Section 3).
 ##' 
 ##' @param grp a list with the spec, param, mean, and cov describing the group
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
@@ -810,6 +816,27 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' @references Bartholomew, D. J., & Tzamourani, P. (1999). The
 ##' goodness-of-fit of latent trait models in attitude
 ##' measurement. Sociological Methods and Research, 27, 525–546.
+##' @examples
+##' # Create an example IFA group
+##' grp <- list(spec=list())
+##' grp$spec[1:10] <- rpf.grm()
+##' grp$param <- sapply(grp$spec, rpf.rparam)
+##' colnames(grp$param) <- paste("i", 1:10, sep="")
+##' grp$mean <- 0
+##' grp$cov <- diag(1)
+##' grp$free <- grp$param != 0
+##' grp$data <- rpf.sample(1000, grp=grp)
+##' 
+##' # Monte-Carlo simulation study
+##' mcReps <- 100    # increase this for more accuracy
+##' stat <- rep(NA, mcReps)
+##' for (rx in 1:mcReps) {
+##'    t1 <- grp
+##'    t1$data <- rpf.sample(grp=grp)
+##'    stat[rx] <- multinomialFit(t1)$statistic
+##' }
+##' sum(multinomialFit(grp)$statistic > stat)/mcReps   # better p-value
+
 multinomialFit <- function(grp, ..., method="lr", log=TRUE, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
