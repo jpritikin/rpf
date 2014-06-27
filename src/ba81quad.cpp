@@ -92,7 +92,7 @@ void ba81NormalQuad::setup(double Qwidth, int Qpoints, double *means,
 		Qpoint.reserve(quadGridSize);
 		double qgs = quadGridSize-1;
 		for (int px=0; px < quadGridSize; ++px) {
-			Qpoint.push_back(Qwidth - px * 2 * Qwidth / qgs);
+			Qpoint.push_back(px * 2 * Qwidth / qgs - Qwidth);
 		}
 	}
 
@@ -128,8 +128,10 @@ void ba81NormalQuad::setup(double Qwidth, int Qpoints, double *means,
 	for (int qx=0; qx < totalPrimaryPoints; qx++) {
 		priOrder.push_back(qx);
 	}
-	sortAreaHelper priCmp(tmpPriQarea);
-	std::sort(priOrder.begin(), priOrder.end(), priCmp);
+	if (0) {
+		sortAreaHelper priCmp(tmpPriQarea);
+		std::sort(priOrder.begin(), priOrder.end(), priCmp);
+	}
 
 	priQarea.clear();
 	priQarea.reserve(totalPrimaryPoints);
@@ -529,17 +531,6 @@ void ifaGroup::sanityCheck()
 			Rf_error("Item %d has more factor loadings (%d) than there are factors (%d)",
 				 1+ix, loadings, maxAbilities);
 		}
-	}
-}
-
-double ifaGroup::area(int qx, int ix)
-{
-	if (numSpecific == 0) {
-		return quad.priQarea[qx];
-	} else {
-		int px = qx / quad.quadGridSize;
-		int sx = qx % quad.quadGridSize;
-		return quad.priQarea[px] * quad.speQarea[sx * quad.numSpecific + Sgroup[ix]];
 	}
 }
 

@@ -107,7 +107,6 @@ class ifaGroup {
 	void importSpec(SEXP slotValue);
 	void setLatentDistribution(int dims, double *mean, double *cov);
 	double *getItemParam(int ix) { return param + paramRows * ix; }
-	double area(int qx, int ix);
 	const int *dataColumn(int col) { return dataColumns[col]; };
 	void detectTwoTier();
 	void sanityCheck();
