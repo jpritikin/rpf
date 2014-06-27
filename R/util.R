@@ -82,6 +82,7 @@ sumScoreEAP <- function(grp, ..., qwidth=6.0, qpoints=49L, distributionTest=NULL
 		}
 		oss <- observedSumScore(grp, mask)
 		result$n <- oss$n
+		result$observed <- oss$dist
 		obs <- matrix(oss$dist, ncol=1)
 		size <- sum(obs)
 		expected <- matrix(size * tbl[,1], ncol=1)
