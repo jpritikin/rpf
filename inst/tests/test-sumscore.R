@@ -5,6 +5,7 @@ library(rpf)
 context("sumscore")
 
 test_that("observedSumScore", {
+  require(rpf)
   set.seed(1)
   spec <- list()
   spec[1:3] <- rpf.grm(outcomes=3)
@@ -62,7 +63,7 @@ test_that("tpbw1995-table2", {
   ssP <- c(0.325, 0.241, 0.183, 0.123, 0.069, 0.035, 0.016, 0.006, 0.002,  0)
   expect_equal(got[,'p'], ssP, tolerance=.01)
   ssEAP <- c(-0.885, -0.179, 0.332, 0.744, 1.115, 1.482, 1.843, 2.212, 2.622,  2.999)
-  expect_equal(got[,'f1'], ssEAP, tolerance=.01)
+  expect_equal(got[,'s1'], ssEAP, tolerance=.01)
   ssVar <- c(0.494, 0.378, 0.329, 0.299, 0.297, 0.296, 0.29, 0.296, 0.313,  0.328)
   expect_equal(got[,'se1'], sqrt(ssVar), tolerance=.01)
   expect_equal(got[,'cov1'], ssVar, tolerance=.01)
@@ -107,6 +108,7 @@ test_that("2tier sumScoreEAP", {
   grp <- list(spec=spec, param=param, mean=runif(3, -1, 1), cov=diag(runif(3,.5,2)))
   grp$data <- rpf.sample(500, grp=grp)
   colnames(grp$param) <- colnames(grp$data)
+  
   got <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=FALSE)
   tt <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=TRUE)
   expect_equal(tt$tbl, got$tbl[,c(1:2,5,8)], .001)

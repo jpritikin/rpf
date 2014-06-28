@@ -185,3 +185,10 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 	print(x$table)
 	cat(sprintf("  N = %d\n", x$n))
 }
+
+EAPscores <- function(grp, ..., naFail=TRUE) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+	.Call(eap_wrapper, grp, naFail)
+}

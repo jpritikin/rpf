@@ -64,6 +64,7 @@ void ba81NormalQuad::setup0()
 	maxDims = 1;
 	maxAbilities = 0;
 	totalQuadPoints = 1;
+	weightTableSize = 1;
 	Qpoint.clear();
 	Qpoint.reserve(1);
 	Qpoint.push_back(0);
@@ -106,9 +107,12 @@ void ba81NormalQuad::setup(double Qwidth, int Qpoints, double *means,
 	}
 
 	totalPrimaryPoints = totalQuadPoints;
+	weightTableSize = totalQuadPoints;
+
 	if (numSpecific) {
 		totalPrimaryPoints /= quadGridSize;
 		speQarea.resize(quadGridSize * numSpecific);
+		weightTableSize *= numSpecific;
 	}
 
 	std::vector<double> tmpPriQarea;
@@ -276,15 +280,25 @@ void ba81NormalQuad::EAP(double *thrDweight, double scalingFactor, double *score
 	}
 }
 
-ifaGroup::ifaGroup(bool _twotier) : Rdata(NULL),
-		qwidth(6.0), qpoints(49),
+ifaGroup::ifaGroup(int cores, bool _twotier) : Rdata(NULL),
+		numThreads(cores), qwidth(6.0), qpoints(49),
 		twotier(_twotier),
 		maxAbilities(0),
 		numSpecific(0),
 		mean(0),
 		cov(0),
-		dataRows(0), weightColumnName(0), rowWeight(0), outcomeProb(0)
+	    weightColumnName(0), rowWeight(0),
+					       minItemsPerScore(1),
+					       outcomeProb(0), excludedPatterns(-1)
 {}
+
+// The idea here is to avoid denormalized values if they are
+// enabled (5e-324 vs 2e-308).  It would be bad if results
+// changed depending on the denormalization setting.
+// Moreover, we don't lose too much even if denormalized
+// values are disabled. This mainly affects models with
+// more than a thousand items.
+const double ifaGroup::SmallestPatternLik = 1e16 * std::numeric_limits<double>::min();  //constexpr
 
 ifaGroup::~ifaGroup()
 {
@@ -334,6 +348,8 @@ void ifaGroup::import(SEXP Rlist)
 	int nrow=0, ncol=0; // cov size
 
 	int pmatRows=-1, pmatCols=-1;
+	int mips = 1;
+	int dataRows = 0;
 
 	for (int ax=0; ax < Rf_length(Rlist); ++ax) {
 		const char *key = R_CHAR(STRING_ELT(argNames, ax));
@@ -385,6 +401,7 @@ void ifaGroup::import(SEXP Rlist)
 			for (int nx=0; nx < nlen; ++nx) {
 				dataColNames.push_back(CHAR(STRING_ELT(names, nx)));
 			}
+			dataRowNames = Rf_getAttrib(Rdata, R_RowNamesSymbol);
 		} else if (strEQ(key, "weightColumn")) {
 			if (Rf_length(slotValue) != 1) {
 				Rf_error("You can only have one weightColumn");
@@ -394,11 +411,25 @@ void ifaGroup::import(SEXP Rlist)
 			qwidth = Rf_asReal(slotValue);
 		} else if (strEQ(key, "qpoints")) {
 			qpoints = Rf_asInteger(slotValue);
+		} else if (strEQ(key, "minItemsPerScore")) {
+			mips = Rf_asInteger(slotValue);
 		} else {
 			// ignore
 		}
 	}
 	if (mlen != nrow) Rf_error("Mean length %d does not match cov size %d", mlen, nrow);
+
+	setMinItemsPerScore(mips);
+
+	if (!factorNames.size()) {
+		factorNames.reserve(mlen);
+		const int SMALLBUF = 10;
+		char buf[SMALLBUF];
+		for (int sx=0; sx < mlen; ++sx) {
+			snprintf(buf, SMALLBUF, "s%d", sx+1);
+			factorNames.push_back(CHAR(Rf_mkChar(buf)));
+		}
+	}
 
 	if (numItems() != pmatCols) {
 		Rf_error("param implies %d items but spec is length %d",
@@ -516,6 +547,54 @@ void ifaGroup::detectTwoTier()
 	}
 }
 
+void ifaGroup::setMinItemsPerScore(int mips)
+{
+	if (numItems() && mips > numItems()) {
+		Rf_error("minItemsPerScore (=%d) cannot be larger than the number of items (=%d)",
+			 mips, numItems());
+	}
+	minItemsPerScore = mips;
+}
+
+void ifaGroup::buildRowSkip(bool naFail)
+{
+	if (maxAbilities == 0) return;
+
+	rowSkip.assign(rowMap.size(), false);
+
+	// Rows with no information about an ability will obtain the
+	// prior distribution as an ability estimate. This will
+	// throw off multigroup latent distribution estimates.
+	for (size_t rx=0; rx < rowMap.size(); rx++) {
+		std::vector<int> contribution(maxAbilities);
+		for (int ix=0; ix < numItems(); ix++) {
+			int pick = dataColumn(ix)[ rowMap[rx] ];
+			if (pick == NA_INTEGER) continue;
+			const double *ispec = spec[ix];
+			int dims = ispec[RPF_ISpecDims];
+			double *iparam = getItemParam(ix);
+			for (int dx=0; dx < dims; dx++) {
+				// assume factor loadings are the first item parameters
+				if (iparam[dx] == 0) continue;
+				contribution[dx] += 1;
+			}
+		}
+		for (int ax=0; ax < maxAbilities; ++ax) {
+			if (contribution[ax] < minItemsPerScore) {
+				if (naFail) {
+					int dest = rowMap[rx];
+					Rf_error("Data row %d has no information about ability %d", 1+dest, 1+ax);
+				}
+				// We could compute the other scores, but estimation of the
+				// latent distribution is in the hot code path. We can reconsider
+				// this choice when we try generating scores instead of the
+				// score distribution.
+				rowSkip[rx] = true;
+			}
+		}
+	}
+}
+
 void ifaGroup::sanityCheck()
 {
 	if (!mean) return;
@@ -540,7 +619,7 @@ void ifaGroup::ba81OutcomeProb(double *param, bool wantLog)
 	const int maxDims = quad.maxDims;
 	outcomeProb = Realloc(outcomeProb, totalOutcomes * quad.totalQuadPoints, double);
 
-#pragma omp parallel for num_threads(Global->numThreads)
+#pragma omp parallel for num_threads(numThreads)
 	for (int ix=0; ix < numItems(); ix++) {
 		double *qProb = outcomeProb + cumItemOutcomes[ix] * quad.totalQuadPoints;
 		const double *ispec = spec[ix];
@@ -640,8 +719,58 @@ void ifaGroup::cai2010EiEis(const int px, double *lxk, double *Eis, double *Ei)
 	}
 }
 
+void ifaGroup::cai2010part2(double *Qweight, double *Eis, double *Ei)
+{
+	const int totalPrimaryPoints = quad.totalPrimaryPoints;
+	const int specificPoints = quad.quadGridSize;
+
+	for (int qx=0, qloc = 0; qx < totalPrimaryPoints; qx++) {
+		for (int sgroup=0; sgroup < numSpecific; ++sgroup) {
+			Eis[qloc] = Ei[qx] / Eis[qloc];
+			++qloc;
+		}
+	}
+
+	for (int qloc=0, eisloc=0; eisloc < totalPrimaryPoints * numSpecific; eisloc += numSpecific) {
+		for (int sx=0; sx < specificPoints; sx++) {
+			for (int Sgroup=0; Sgroup < numSpecific; Sgroup++) {
+				Qweight[qloc] *= Eis[eisloc + Sgroup];
+				++qloc;
+			}
+		}
+	}
+}
+
 void ifaGroup::setGridFineness(double width, int points)
 {
 	if (std::isfinite(width)) qwidth = width;
 	if (points != NA_INTEGER) qpoints = points;
+}
+
+double BA81EngineBase::getPatLik(class ifaGroup *state, int px, double *lxk)
+{
+	const int pts = getPrimaryPoints(state);
+	Eigen::ArrayXd &patternLik = state->patternLik;
+	double patternLik1 = 0;
+
+	for (int qx=0; qx < pts; qx++) {
+		patternLik1 += lxk[qx];
+	}
+
+	// This uses the previous iteration's latent distribution.
+	// If we recompute patternLikelihood to get the current
+	// iteration's expected scores then it speeds up convergence.
+	// However, recomputing patternLikelihood and dependent
+	// math takes much longer than simply using the data
+	// we have available here. This is even more true for the
+	// two-tier model.
+	if (!ifaGroup::validPatternLik(patternLik1)) {
+#pragma omp atomic
+		state->excludedPatterns += 1;
+		patternLik[px] = 0;
+		return 0;
+	}
+
+	patternLik[px] = patternLik1;
+	return patternLik1;
 }

@@ -6,6 +6,8 @@ diagnose.o: Makevars.in diagnose.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
 dmvnorm.o: Makevars.in dmvnorm.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
+eap.o: Makevars.in eap.cpp rpf.h   \
+ ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
 glue.o: Makevars.in glue.cpp rpf.h   \
  ../inst/include/libifa-rpf.h dmvnorm.h ba81quad.h
 libifa-rpf.o: Makevars.in libifa-rpf.cpp ../inst/include/libifa-rpf.h   \

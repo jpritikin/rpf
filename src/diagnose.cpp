@@ -29,7 +29,7 @@ public:
 	Eigen::ArrayXXd slPrev;
 	Eigen::ArrayXd ssProbPrev;
 	
-	ssEAP(bool twotier) : grp(twotier) {}
+	ssEAP(bool twotier) : grp(1, twotier) {}
 	void setup(SEXP grp, double qwidth, int qpts, int *_mask);
 	void setLastItem(int which);
 	void tpbw1995Vanilla();
@@ -446,12 +446,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 	for (int ax=0; ax < quad.primaryDims; ++ax) {
 		const int SMALLBUF = 10;
 		char buf[SMALLBUF];
-		if (grp.factorNames.size()) {
-			SET_STRING_ELT(names, 1+ax, Rf_mkChar(grp.factorNames[ax]));
-		} else {
-			snprintf(buf, SMALLBUF, "f%d", 1+ax);
-			SET_STRING_ELT(names, 1+ax, Rf_mkChar(buf));
-		}
+		SET_STRING_ELT(names, 1+ax, Rf_mkChar(grp.factorNames[ax]));
 		snprintf(buf, SMALLBUF, "se%d", 1+ax);
 		SET_STRING_ELT(names, 1+quad.primaryDims+ax, Rf_mkChar(buf));
 	}
@@ -497,7 +492,7 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwot
 
 	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
 
-	ifaGroup grp(Rf_asLogical(Rtwotier));
+	ifaGroup grp(1, Rf_asLogical(Rtwotier));
 	grp.setGridFineness(Rf_asReal(Rwidth), Rf_asInteger(Rpts));
 	grp.import(robj);
 	
@@ -725,9 +720,9 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 {
 	omxManageProtectInsanity mpi;
 
-	ifaGroup grp(false);
+	ifaGroup grp(1, false);
 	grp.import(Rgrp);
-	if (grp.dataRows == 0) Rf_error("observedSumScore requires data");
+	if (grp.getNumUnique() == 0) Rf_error("observedSumScore requires data");
 
 	if (Rf_length(Rmask) != int(grp.spec.size())) {
 		Rf_error("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));
@@ -742,7 +737,7 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 	distOut.setZero();
 
 	int rowsIncluded = 0;
-	for (int rx=0; rx < grp.dataRows; ++rx) {
+	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		int ss;
 		if (computeObservedSumScore(grp, itemMask, rx, &ss)) continue;
 		distOut[ss] += 1;
@@ -759,9 +754,9 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 {
 	omxManageProtectInsanity mpi;
 
-	ifaGroup grp(false);
+	ifaGroup grp(1, false);
 	grp.import(Rgrp);
-	if (grp.dataRows == 0) Rf_error("itemOutcomeBySumScore requires data");
+	if (grp.getNumUnique() == 0) Rf_error("itemOutcomeBySumScore requires data");
 
 	if (Rf_length(Rmask) != int(grp.spec.size())) {
 		Rf_error("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));
@@ -786,7 +781,7 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 	const int *iresp = grp.dataColumn(interest);
 
 	int rowsIncluded = 0;
-	for (int rx=0; rx < grp.dataRows; ++rx) {
+	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		int pick = iresp[rx];
 		if (pick == NA_INTEGER) continue;
 		int ss;

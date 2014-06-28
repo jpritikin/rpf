@@ -14,11 +14,11 @@ struct ch2012 {
 };
 
 ch2012::ch2012(bool twotier, SEXP Rgrp)
-	: grp(twotier)
+	: grp(1, twotier)
 {
 	grp.import(Rgrp);
-	rowMask.reserve(grp.dataRows);
-	for (int rx=0; rx < grp.dataRows; ++rx) {
+	rowMask.reserve(grp.getNumUnique());
+	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		bool missing = false;
 		for (int cx=0; cx < (int) grp.dataColumns.size(); ++cx) {
 			if (grp.dataColumns[cx][rx] == NA_INTEGER) {
@@ -73,7 +73,7 @@ void ch2012::run(const char *method, double *statOut)
 	grp.ba81OutcomeProb(grp.param, false);
 
 	double weightSum = 0;
-	for (int rx=0; rx < grp.dataRows; ++rx) {
+	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		if (!rowMask[rx]) continue;
 		weightSum += grp.rowWeight[rx];
 	}
@@ -81,7 +81,7 @@ void ch2012::run(const char *method, double *statOut)
 	stat = 0;
 	if (grp.numSpecific == 0) {
 		Eigen::ArrayXd Qweight(quad.totalQuadPoints);
-		for (int px=0; px < grp.dataRows; ++px) {
+		for (int px=0; px < grp.getNumUnique(); ++px) {
 			if (!rowMask[px]) continue;
 			grp.ba81LikelihoodSlow2(px, Qweight.data());
 			accumulate(grp.rowWeight[px], Qweight.sum() * weightSum);
@@ -90,7 +90,7 @@ void ch2012::run(const char *method, double *statOut)
 		Eigen::ArrayXd Qweight(quad.totalQuadPoints * grp.numSpecific);
 		Eigen::ArrayXd Ei(quad.totalPrimaryPoints);
 		Eigen::ArrayXd Eis(quad.totalPrimaryPoints * grp.numSpecific);
-		for (int px=0; px < grp.dataRows; ++px) {
+		for (int px=0; px < grp.getNumUnique(); ++px) {
 			if (!rowMask[px]) continue;
 			grp.cai2010EiEis(px, Qweight.data(), Eis.data(), Ei.data());
 			accumulate(grp.rowWeight[px], Ei.sum() * weightSum);
