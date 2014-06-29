@@ -186,9 +186,15 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 	cat(sprintf("  N = %d\n", x$n))
 }
 
-EAPscores <- function(grp, ..., naFail=TRUE) {
+EAPscores <- function(grp, ..., naAction="fail") {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
-	.Call(eap_wrapper, grp, naFail)
+
+	validAction <- c('pass', 'fail')
+	if (is.na(match(naAction, validAction))) {
+		stop(paste("naAction must be one of", paste(validAction, collapse=", ")))
+	}
+
+	.Call(eap_wrapper, grp, naAction == "fail")
 }

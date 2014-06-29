@@ -64,6 +64,7 @@ void ba81NormalQuad::setup0()
 	maxDims = 1;
 	maxAbilities = 0;
 	totalQuadPoints = 1;
+	totalPrimaryPoints = 1;
 	weightTableSize = 1;
 	Qpoint.clear();
 	Qpoint.reserve(1);
@@ -323,9 +324,13 @@ void ifaGroup::importSpec(SEXP slotValue)
 
 	paramRows = 0;
 	totalOutcomes = 0;
+	itemMaxDims = 0;
 	for (int cx = 0; cx < numItems(); cx++) {
 		const double *ispec = spec[cx];
 		int id = ispec[RPF_ISpecID];
+		int dims = ispec[RPF_ISpecDims];
+		if (itemMaxDims < dims)
+			itemMaxDims = dims;
 		int no = ispec[RPF_ISpecOutcomes];
 		itemOutcomes.push_back(no);
 		cumItemOutcomes.push_back(totalOutcomes);
@@ -337,10 +342,37 @@ void ifaGroup::importSpec(SEXP slotValue)
 	}
 }
 
+void ifaGroup::verifyFactorNames(SEXP mat, const char *matName)
+{
+	if (!mat) return;
+
+	static const char *dimname[] = { "row", "col" };
+
+	SEXP dimnames;
+	Rf_protect(dimnames = Rf_getAttrib(mat, R_DimNamesSymbol));
+	if (!Rf_isNull(dimnames) && Rf_length(dimnames) == 2) {
+		for (int dx=0; dx < 2; ++dx) {
+			SEXP names;
+			Rf_protect(names = VECTOR_ELT(dimnames, dx));
+			if (!Rf_length(names)) continue;
+			int nlen = std::min((int) factorNames.size(), Rf_length(names));
+			for (int nx=0; nx < nlen; ++nx) {
+				const char *name = CHAR(STRING_ELT(names, nx));
+				if (strEQ(factorNames[nx], name)) continue;
+				Rf_error("%s %snames[%d] is '%s', does not match factor name '%s'",
+					 matName, dimname[dx], 1+nx, name, factorNames[nx]);
+			}
+		}
+	}
+}
+
 void ifaGroup::import(SEXP Rlist)
 {
 	SEXP argNames;
 	Rf_protect(argNames = Rf_getAttrib(Rlist, R_NamesSymbol));
+	if (Rf_length(Rlist) != Rf_length(argNames)) {
+		Rf_error("All list elements must be named");
+	}
 
 	std::vector<const char *> dataColNames;
 
@@ -350,6 +382,7 @@ void ifaGroup::import(SEXP Rlist)
 	int pmatRows=-1, pmatCols=-1;
 	int mips = 1;
 	int dataRows = 0;
+	SEXP Rmean=0, Rcov=0;
 
 	for (int ax=0; ax < Rf_length(Rlist); ++ax) {
 		const char *key = R_CHAR(STRING_ELT(argNames, ax));
@@ -357,27 +390,9 @@ void ifaGroup::import(SEXP Rlist)
 		if (strEQ(key, "spec")) {
 			importSpec(slotValue);
 		} else if (strEQ(key, "param")) {
+			if (!Rf_isReal(slotValue)) Rf_error("'param' must be a numeric matrix of item parameters");
 			param = REAL(slotValue);
 			getMatrixDims(slotValue, &pmatRows, &pmatCols);
-
-			SEXP dimnames;
-			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
-			if (!Rf_isNull(dimnames) && Rf_length(dimnames) == 2) {
-				SEXP names;
-				Rf_protect(names = VECTOR_ELT(dimnames, 1));
-				int nlen = Rf_length(names);
-				itemNames.resize(nlen);
-				for (int nx=0; nx < nlen; ++nx) {
-					itemNames[nx] = CHAR(STRING_ELT(names, nx));
-				}
-			}
-		} else if (strEQ(key, "mean")) {
-			mlen = Rf_length(slotValue);
-			mean = REAL(slotValue);
-		} else if (strEQ(key, "cov")) {
-			getMatrixDims(slotValue, &nrow, &ncol);
-			if (nrow != ncol) Rf_error("cov must be a square matrix (not %dx%d)", nrow, ncol);
-			cov = REAL(slotValue);
 
 			SEXP dimnames;
 			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
@@ -389,7 +404,24 @@ void ifaGroup::import(SEXP Rlist)
 				for (int nx=0; nx < nlen; ++nx) {
 					factorNames[nx] = CHAR(STRING_ELT(names, nx));
 				}
+				Rf_protect(names = VECTOR_ELT(dimnames, 1));
+				nlen = Rf_length(names);
+				itemNames.resize(nlen);
+				for (int nx=0; nx < nlen; ++nx) {
+					itemNames[nx] = CHAR(STRING_ELT(names, nx));
+				}
 			}
+		} else if (strEQ(key, "mean")) {
+			Rmean = slotValue;
+			if (!Rf_isReal(slotValue)) Rf_error("'mean' must be a numeric vector or matrix");
+			mlen = Rf_length(slotValue);
+			mean = REAL(slotValue);
+		} else if (strEQ(key, "cov")) {
+			Rcov = slotValue;
+			if (!Rf_isReal(slotValue)) Rf_error("'cov' must be a numeric matrix");
+			getMatrixDims(slotValue, &nrow, &ncol);
+			if (nrow != ncol) Rf_error("cov must be a square matrix (not %dx%d)", nrow, ncol);
+			cov = REAL(slotValue);
 		} else if (strEQ(key, "data")) {
 			Rdata = slotValue;
 			dataRows = Rf_length(VECTOR_ELT(Rdata, 0));
@@ -419,6 +451,12 @@ void ifaGroup::import(SEXP Rlist)
 	}
 	if (mlen != nrow) Rf_error("Mean length %d does not match cov size %d", mlen, nrow);
 
+	if (itemMaxDims < (int) factorNames.size())
+		factorNames.resize(itemMaxDims);
+
+	verifyFactorNames(Rmean, "mean");
+	verifyFactorNames(Rcov, "cov");
+
 	setMinItemsPerScore(mips);
 
 	if (!factorNames.size()) {
@@ -432,12 +470,12 @@ void ifaGroup::import(SEXP Rlist)
 	}
 
 	if (numItems() != pmatCols) {
-		Rf_error("param implies %d items but spec is length %d",
+		Rf_error("item matrix implies %d items but spec is length %d",
 			 pmatCols, numItems());
 	}
 
 	if (Rdata) {
-		if (itemNames.size() == 0) Rf_error("Item parameter matrix must have colnames");
+		if (itemNames.size() == 0) Rf_error("Item matrix must have colnames");
 		for (int ix=0; ix < numItems(); ++ix) {
 			bool found=false;
 			for (int dc=0; dc < int(dataColNames.size()); ++dc) {
@@ -554,45 +592,6 @@ void ifaGroup::setMinItemsPerScore(int mips)
 			 mips, numItems());
 	}
 	minItemsPerScore = mips;
-}
-
-void ifaGroup::buildRowSkip(bool naFail)
-{
-	if (maxAbilities == 0) return;
-
-	rowSkip.assign(rowMap.size(), false);
-
-	// Rows with no information about an ability will obtain the
-	// prior distribution as an ability estimate. This will
-	// throw off multigroup latent distribution estimates.
-	for (size_t rx=0; rx < rowMap.size(); rx++) {
-		std::vector<int> contribution(maxAbilities);
-		for (int ix=0; ix < numItems(); ix++) {
-			int pick = dataColumn(ix)[ rowMap[rx] ];
-			if (pick == NA_INTEGER) continue;
-			const double *ispec = spec[ix];
-			int dims = ispec[RPF_ISpecDims];
-			double *iparam = getItemParam(ix);
-			for (int dx=0; dx < dims; dx++) {
-				// assume factor loadings are the first item parameters
-				if (iparam[dx] == 0) continue;
-				contribution[dx] += 1;
-			}
-		}
-		for (int ax=0; ax < maxAbilities; ++ax) {
-			if (contribution[ax] < minItemsPerScore) {
-				if (naFail) {
-					int dest = rowMap[rx];
-					Rf_error("Data row %d has no information about ability %d", 1+dest, 1+ax);
-				}
-				// We could compute the other scores, but estimation of the
-				// latent distribution is in the hot code path. We can reconsider
-				// this choice when we try generating scores instead of the
-				// score distribution.
-				rowSkip[rx] = true;
-			}
-		}
-	}
 }
 
 void ifaGroup::sanityCheck()

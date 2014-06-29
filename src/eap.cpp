@@ -1,6 +1,7 @@
 #include "rpf.h"
 
 struct eap {
+	bool naFail;
 	std::vector<double *> scoresOut;
 };
 
@@ -65,13 +66,22 @@ void BA81LatentScores<T>::end(class ifaGroup *state, T extraData)
 	}
 }
 
+static void naAction(eap *state, int rx, int ax)
+{
+	if (!state->naFail) return;
+	Rf_error("Data row %d has no information about ability %d", 1+rx, 1+ax);
+}
+
 SEXP eap_wrapper(SEXP Rgrp, SEXP Rnafail)
 {
 	omxManageProtectInsanity mpi;
 
+	eap eapContext;
+	eapContext.naFail = Rf_asLogical(Rnafail);
+
 	ifaGroup grp(GlobalNumberOfCores, true);
 	grp.import(Rgrp);
-	grp.buildRowSkip(Rf_asLogical(Rnafail));
+	grp.buildRowSkip(&eapContext, naAction);
 	grp.ba81OutcomeProb(grp.param, false);
 
 	// TODO Wainer & Thissen. (1987). Estimating ability with the wrong
@@ -90,10 +100,9 @@ SEXP eap_wrapper(SEXP Rgrp, SEXP Rnafail)
 	*/
 
 	int maxAbilities = grp.quad.maxAbilities;
+	if (maxAbilities == 0) Rf_error("At least 1 factor is required");
 	int rows = grp.getNumUnique();  // allow indexvector for compressed tables TODO
 	int cols = 2 * maxAbilities + triangleLoc1(maxAbilities);
-
-	eap eapContext;
 
 	SEXP Rscores;
 	Rf_protect(Rscores = Rf_allocVector(VECSXP, cols));
