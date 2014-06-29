@@ -684,6 +684,11 @@ SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
   ManhattenCollapse mcollapse(rows, cols, observed, expected);
   int collapsed = mcollapse.run();
 
+  SEXP dimnames;
+  Rf_protect(dimnames = Rf_getAttrib(r_observed_orig, R_DimNamesSymbol));
+  Rf_setAttrib(r_observed, R_DimNamesSymbol, dimnames);
+  Rf_setAttrib(r_expected, R_DimNamesSymbol, dimnames);
+
   MxRList out;
   out.add("O", r_observed);
   out.add("E", r_expected);

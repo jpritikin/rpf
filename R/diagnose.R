@@ -483,17 +483,17 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
     if (ncol(param) != length(spec)) stop("Dim mismatch between param and spec")
     if (is.null(colnames(param))) stop("grp$param must have column names")
 
-    got = list()
-  for (interest in 1:length(spec)) {
-      free <- 0
-      if (!is.null(grp$free)) free <- sum(grp$free[,interest])
-      itemname <- colnames(param)[interest]
-      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints,
-			  alt=alt, omit=omit, .twotier=.twotier)
-      got[[itemname]] <- ot.out
-  }
-    class(got) <- "summary.SitemFit"
-    got
+	got <- mclapply(1:length(spec), function(interest) {
+		free <- 0
+		if (!is.null(grp$free)) free <- sum(grp$free[,interest])
+		itemname <- colnames(param)[interest]
+		ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints,
+				    alt=alt, omit=omit, .twotier=.twotier)
+		ot.out
+	})
+	names(got) <- colnames(param)
+	class(got) <- "summary.SitemFit"
+	got
 }
 
 print.summary.SitemFit <- function(x,...) {
@@ -636,9 +636,8 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' @param inames a subset of items to examine
 ##' @param qwidth quadrature width
 ##' @param qpoints number of equally spaced quadrature points
-##' @param method method to use to calculate P values. The default
-##' ("rms") uses the root mean square statistic (see \code{\link{ptw2011.gof.test}}).
-##' To obtain the traditional Pearson X^2 statistic, use method="pearson".
+##' @param method method to use to calculate P values. The default is the
+##' Pearson X^2 statistic. Use "lr" for the similar likelihood ratio statistic.
 ##' @return a list with raw, pval and detail. The pval matrix is a
 ##' lower triangular matrix of log P values with the sign
 ##' determined by relative association between the observed and
@@ -664,7 +663,7 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 	if (missing(qwidth) && !is.null(grp$qwidth)) { qwidth <- grp$qwidth }
 	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
 
-  if (method != "rms" && method != "pearson" && method != "lr") stop(paste("Unknown method", method))
+  if (method != "pearson" && method != "lr") stop(paste("Unknown method", method))
   if (missing(inames)) {
     inames <- colnames(grp$param)
   }
@@ -680,91 +679,105 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
       }
   }
 
-  if (!is.data.frame(data)) {
-      data <- as.data.frame(data)  #safe? TODO
-  }
+	if (!is.data.frame(data)) {
+		data <- as.data.frame(data)  #safe? TODO
+	}
 	dataMap <- match(colnames(grp$param), colnames(data))
 
-  # assume param and data in the same order? TODO
-  items <- match(inames, colnames(grp$param))
-
-  result <- list()
-  gamma <- matrix(NA, length(items), length(items))
-  dimnames(gamma) <- list(inames, inames)
-  raw <- matrix(NA, length(items), length(items))
-  dimnames(raw) <- list(inames, inames)
-  std <- matrix(NA, length(items), length(items))
-  dimnames(std) <- list(inames, inames)
-  pval <- matrix(NA, length(items), length(items))
-  dimnames(pval) <- list(inames, inames)
+	items <- match(inames, colnames(grp$param))
 
 	# If we move this whole loop into C then we can avoid
-	# set up of the quadrature
-  for (iter1 in 2:length(items)) {
-    for (iter2 in 1:(iter1-1)) {
-      i1 <- items[iter1]
-      i2 <- items[iter2]
-      observed <- table(data[,dataMap[c(i1,i2)]])
-      N <- sum(observed)
-      s1 <- spec[[i1]]
-      s2 <- spec[[i2]]
+	# repeated set up of the quadrature
+	pairs <- list()
+	for (iter1 in 2:length(items)) {
+		for (iter2 in 1:(iter1-1)) {
+			pairs[[ 1+length(pairs) ]] <- c(iter1, iter2)
+		}
+	}
+	detail <- mclapply(pairs, function(pair) {
+		iter1 <- pair[1]
+		iter2 <- pair[2]
+		i1 <- items[iter1]
+		i2 <- items[iter2]
+		observed <- table(data[,dataMap[c(i1,i2)]])
+		N <- sum(observed)
+		s1 <- spec[[i1]]
+		s2 <- spec[[i2]]
+		info <- list()
 
-      expected <- N * pairwiseExpected(grp, c(i1, i2), qwidth, qpoints, .twotier)
-      if (any(dim(observed) != dim(expected))) {
-	      if (dim(observed)[1] != dim(expected)[1]) {
-		      bad <- i1
-		      margin <- 1
-	      } else {
-		      bad <- i2
-		      margin <- 2
-	      }
-	      Eoutcomes <- dim(expected)[margin]
-	      lev <- dimnames(observed)[[margin]]
-	      stop(paste(colnames(grp$param)[bad], " has ", Eoutcomes,
-			 " outcomes in the model but the data has ", length(lev), " (",
-			 paste(lev, collapse=", "),")", sep=""))
-      }
-      dimnames(expected) <- dimnames(observed)
+		expected <- N * pairwiseExpected(grp, c(i1, i2), qwidth, qpoints, .twotier)
+		if (any(dim(observed) != dim(expected))) {
+			if (dim(observed)[1] != dim(expected)[1]) {
+				bad <- i1
+				margin <- 1
+			} else {
+				bad <- i2
+				margin <- 2
+			}
+			Eoutcomes <- dim(expected)[margin]
+			lev <- dimnames(observed)[[margin]]
+			info$error <- paste(colnames(grp$param)[bad], " has ", Eoutcomes,
+					    " outcomes in the model but the data has ", length(lev), " (",
+					    paste(lev, collapse=", "),")", sep="")
+			return(info)
+		}
+		dimnames(expected) <- dimnames(observed)
 
-      s <- ordinal.gamma(observed) - ordinal.gamma(expected)
-      if (!is.finite(s) || is.na(s) || s==0) s <- 1
-      info <- list(orig.observed=observed, orig.expected=expected, sign=sign(s), gamma=s)
-      gamma[iter1, iter2] <- s
+		s <- ordinal.gamma(observed) - ordinal.gamma(expected)
+		if (!is.finite(s) || is.na(s) || s==0) s <- 1
+		info <- c(info, list(orig.observed=observed, orig.expected=expected, sign=sign(s), gamma=s))
 
-      if (method == "rms") {
-	      size <- sum(observed)
-	      raw[iter1, iter2] <- ms(observed/size, expected/size, 1)
-	      tmp <- ptw2011.gof.test(observed, expected)
-	      tmp <- 1 / (1+exp(-(logit(tmp) - 2.8)))  # not sure about this! TODO
-	      pval[iter1, iter2] <- sign(s) * -log(tmp)
-      } else if (method == "pearson") {
-	      kc <- .Call(collapse_wrapper, observed, expected)
-	      observed <- kc$O
-	      expected <- kc$E
-	      mask <- !is.na(expected)
-          x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-          df <- (s1@outcomes-1) * (s2@outcomes-1) - kc$collapsed
-          info <- c(info, list(x2=x2, df=df, observed=observed, expected=expected))
+		if (method == "pearson") {
+			kc <- .Call(collapse_wrapper, observed, expected)
+			observed <- kc$O
+			expected <- kc$E
+			mask <- !is.na(expected)
+			x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+			df <- (s1@outcomes-1) * (s2@outcomes-1) - kc$collapsed
+			if (df < 1L) df <- 1L
+			info <- c(info, list(statistic=x2, df=df, observed=observed, expected=expected))
+		} else if (method == "lr") {
+			mask <- observed > 0
+			g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
+			df <- (s1@outcomes-1) * (s2@outcomes-1)
+			info <- c(info, statistic=g2, df=df)
+		}
+		info
+	})
 
-          raw[iter1, iter2] <- sign(s) * x2
-          std[iter1, iter2] <- sign(s) * abs((x2 - df)/sqrt(2*df))
-          pval[iter1, iter2] <- sign(s) * -pchisq(x2, df, lower.tail=FALSE, log.p=TRUE)
-      } else if (method == "lr") {
-          mask <- observed > 0
-          g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
-          df <- (s1@outcomes-1) * (s2@outcomes-1)
-          info <- c(info, g2=g2, df=df)
+	lapply(detail, function(d1) {
+		if (!is.null(d1$error)) stop(d1$error)
+	})
 
-          raw[iter1, iter2] <- sign(s) * g2
-          pval[iter1, iter2] <- sign(s) * -pchisq(g2, df, lower.tail=FALSE, log.p=TRUE)
-      }
+	gamma <- matrix(NA, length(items), length(items))
+	dimnames(gamma) <- list(inames, inames)
+	raw <- matrix(NA, length(items), length(items))
+	dimnames(raw) <- list(inames, inames)
+	std <- matrix(NA, length(items), length(items))
+	dimnames(std) <- list(inames, inames)
+	pval <- matrix(NA, length(items), length(items))
+	dimnames(pval) <- list(inames, inames)
 
-      result[[paste(inames[iter1], inames[iter2], sep=":")]] <- info
-    }
-  }
-  retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=result, method=method)
-  class(retobj) <- "summary.ChenThissen1997"
-  retobj
+	for (px in 1:length(pairs)) {
+		iter1 <- pairs[[px]][1]
+		iter2 <- pairs[[px]][2]
+		d1 <- detail[[px]]
+		gamma[iter1, iter2] <- d1$gamma
+		s <- d1$sign
+		stat <- d1$statistic
+		df <- d1$df
+		raw[iter1, iter2] <- stat
+		std[iter1, iter2] <- s * abs((stat - df)/sqrt(2*df))
+		pval[iter1, iter2] <- s * -pchisq(stat, df, lower.tail=FALSE, log.p=TRUE)
+	}
+
+	names(detail) <- sapply(pairs, function(pair) {
+		paste(inames[pair[1]], inames[pair[2]], sep=":")
+	})
+
+	retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=detail, method=method)
+	class(retobj) <- "summary.ChenThissen1997"
+	retobj
 }
 
 # deprecated name
