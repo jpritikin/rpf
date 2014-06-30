@@ -18,6 +18,7 @@ Description: The purpose of this package is to factor out logic and math common
 LazyData: yes
 LazyDataCompression: bzip2
 License: GPL (>= 3)
+LinkingTo: RcppEigen
 Suggests:
     plink,
     testthat,
