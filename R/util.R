@@ -1,13 +1,3 @@
-##' Internal sum-score EAP engine
-##'
-##' Do not call this directly. For developers only
-##' 
-##' @param grp grp
-##' @param qwidth qwidth
-##' @param qpoints qpoints
-##' @param mask mask
-##' @param twotier twotier
-##' @param debug debug
 ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 	if (missing(mask)) {
 		mask <- rep(TRUE, ncol(grp$param))
