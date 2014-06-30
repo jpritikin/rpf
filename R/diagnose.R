@@ -67,7 +67,7 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##'
 ##' Note: These statistics are only appropriate if all discrimination
 ##' parameters are fixed equal and items are conditionally independent
-##' (see \code{\link{chen.thissen.1997}}).  A best effort is made to
+##' (see \code{\link{ChenThissen1997}}).  A best effort is made to
 ##' cope with missing data.
 ##'
 ##' Exact distributional properties of these statistics are unknown
@@ -215,6 +215,8 @@ rpf.mean.info1 <- function(spec, iparam, grain=.1) {
 ##' PCM. Since the information curve may not be unimodal, this
 ##' function integrates across the latent space.
 ##' 
+##' WARNING: This function is experimental and may disappear.
+##' 
 ##' @param spec list of item specs
 ##' @param param list or matrix of item parameters
 ##' @param grain the step size for numerical integration (optional)
@@ -343,6 +345,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
 ##' @param omit number of items to omit when calculating the observed and expected sum-score tables
+##' @param .twotier whether to enable the two-tier optimization
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
 ##' polytomous IRT models. ACT Research Report Series.
@@ -456,6 +459,7 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
 ##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
 ##' @param omit number of items to omit
+##' @param .twotier whether to enable the two-tier optimization
 ##' @return
 ##' a list of output from \code{\link{SitemFit1}}
 ##' @examples
@@ -638,6 +642,7 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' @param qpoints number of equally spaced quadrature points
 ##' @param method method to use to calculate P values. The default is the
 ##' Pearson X^2 statistic. Use "lr" for the similar likelihood ratio statistic.
+##' @param .twotier whether to enable the two-tier optimization
 ##' @return a list with raw, pval and detail. The pval matrix is a
 ##' lower triangular matrix of log P values with the sign
 ##' determined by relative association between the observed and
@@ -828,7 +833,7 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' @param .twotier whether to use the two-tier optimization (default TRUE)
 ##' @references Bartholomew, D. J., & Tzamourani, P. (1999). The
 ##' goodness-of-fit of latent trait models in attitude
-##' measurement. Sociological Methods and Research, 27, 525–546.
+##' measurement. Sociological Methods and Research, 27, 525-546.
 ##' @examples
 ##' # Create an example IFA group
 ##' grp <- list(spec=list())
@@ -841,7 +846,7 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' grp$data <- rpf.sample(1000, grp=grp)
 ##' 
 ##' # Monte-Carlo simulation study
-##' mcReps <- 100    # increase this for more accuracy
+##' mcReps <- 3    # increase this to 10,000 or so
 ##' stat <- rep(NA, mcReps)
 ##' for (rx in 1:mcReps) {
 ##'    t1 <- grp

@@ -189,7 +189,7 @@ setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
             }
           })
 
-##' Item derivatives with respect to ability
+##' Item derivatives with respect to the location in the latent space
 ##'
 ##' Evaluate the partial derivatives of the response probability with
 ##' respect to ability.
@@ -539,7 +539,7 @@ setClass("rpf.mdim.nrm", contains='rpf.mdim')
 ##' @aliases rpf.mdim.mcm-class
 setClass("rpf.mdim.mcm", contains='rpf.mdim')
 
-##' Convert an IRT item model name to an ID
+##' Convert an rpf item model name to an ID
 ##'
 ##' This is an internal function and should not be used.
 ##'

@@ -1,6 +1,9 @@
 ##' Order a data.frame by missingness and all columns
 ##'
 ##' Completely order all rows in a data.frame.
+##' 
+##' @param observed a data.frame holding ordered factors in every column
+##' @return the sorted order of the rows
 orderCompletely <- function(observed) {
 	observedNames <- colnames(observed)
 	nacount <- sapply(observedNames, function(x) { sum(is.na(observed[,x])) })
@@ -15,7 +18,9 @@ orderCompletely <- function(observed) {
 ##'
 ##' Like \code{tabulate} but entire rows are the unit of tabulation.
 ##' The data.frame is not sorted, but must be sorted already.
-##' @seealso \link{\code{orderCompletely}}
+##'
+##' @param observed a sorted data.frame holding ordered factors in every column
+##' @seealso \code{\link{orderCompletely}}
 tabulateRows <- function(observed) {
 	selectMissing <- rep(0L, nrow(observed))
 	selectDefvars <- rep(0L, nrow(observed))
@@ -42,7 +47,6 @@ tabulateRows <- function(observed) {
 #' @param freqName Column name containing the frequencies
 #' @return Returns a data frame with all the response patterns
 #' @author Based on code by Phil Chalmers \email{rphilip.chalmers@@gmail.com}
-#' @keywords data
 expandDataFrame <- function(tabdata, freqName=NULL) {
 	if (is.null(colnames(tabdata))) stop("colnames are required")
 
@@ -75,7 +79,6 @@ expandDataFrame <- function(tabdata, freqName=NULL) {
 #' @param tabdata An object of class \code{data.frame}
 #' @param freqColName Column name to contain the frequencies
 #' @return Returns a compressed data frame
-#' @keywords data
 compressDataFrame <- function(tabdata, freqColName="freq") {
 	if (!is.na(match(freqColName, colnames(tabdata)))) {
 		stop(paste("Frequency column", freqColName, "already appears as a column:",

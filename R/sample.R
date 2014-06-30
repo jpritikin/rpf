@@ -1,7 +1,7 @@
 ##' Randomly sample response patterns given a list of items
 ##'
 ##' Returns a random sample of response patterns given a list of item
-##' models and parameters. If \code{grp} is given then items, params,
+##' models and parameters. If \code{grp} is given then theta, items, params,
 ##' mean, and cov can be omitted.
 ##'
 ##' @name rpf.sample

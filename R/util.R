@@ -16,7 +16,7 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 ##' only reported for primary factors. It is possible to compute EAP
 ##' scores for specific factors, but it is not clear why this would be
 ##' useful because they are conditional on the specific factor sum
-##' scores. Moveover, the algorithm to compute them has not been
+##' scores. Moveover, the algorithm to compute them efficiently has not been
 ##' published yet (as of Jun 2014).
 ##'
 ##' @param grp a list with spec, param, mean, and cov
@@ -120,8 +120,8 @@ print.summary.sumScoreEAP <- function(x,...) {
 ##' data <- rpf.sample(5, spec, param)
 ##' colnames(param) <- colnames(data)
 ##' grp <- list(spec=spec, param=param, data=data)
-##' observedSumScore(grp, rep(TRUE, length(spec)))
-observedSumScore <- function(grp, ..., mask=TRUE, summary=TRUE) {
+##' observedSumScore(grp)
+observedSumScore <- function(grp, ..., mask, summary=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -176,6 +176,21 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 	cat(sprintf("  N = %d\n", x$n))
 }
 
+##' Compute EAP scores
+##'
+##' @param grp a list with spec, param, and data
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @param naAction action for rows with fewer than
+##' \code{minItemsPerScore}. Defaults to 'fail'. If 'pass', will fill
+##' with NAs.
+##' @examples
+##' spec <- list()
+##' spec[1:3] <- rpf.grm(outcomes=3)
+##' param <- sapply(spec, rpf.rparam)
+##' data <- rpf.sample(5, spec, param)
+##' colnames(param) <- colnames(data)
+##' grp <- list(spec=spec, param=param, data=data, minItemsPerScore=1L)
+##' EAPscores(grp)
 EAPscores <- function(grp, ..., naAction="fail") {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))

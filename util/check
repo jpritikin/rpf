@@ -12,10 +12,7 @@ fi
 ./util/build
 cd staging
 
-cran=
-if [ "${1-x}" = cran ]; then
-  cran=--as-cran
-fi
+cran=--as-cran
 
 pkg=rpf
 
