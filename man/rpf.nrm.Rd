@@ -23,7 +23,7 @@ This function instantiates a nominal response model.
 \details{
 The transformation matrices T.a and T.c are chosen by the analyst
 and not estimated.  The T matrices must be invertible square
-matrices of dimension outcomes-1. As a shortcut, either T matrix
+matrices of size outcomes-1. As a shortcut, either T matrix
 can be specified as "trend" for a Fourier basis or as "id" for an
 identity basis. The response probability function is
 

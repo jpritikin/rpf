@@ -4,7 +4,7 @@
 \title{Compute the S fit statistic for 1 item}
 \usage{
 SitemFit1(grp, item, free = 0, ..., method = "pearson", log = TRUE,
-  qwidth = 6, qpoints = 49L, alt = FALSE, omit = 0L)
+  qwidth = 6, qpoints = 49L, alt = FALSE, omit = 0L, .twotier = TRUE)
 }
 \arguments{
 \item{grp}{a list with spec, param, mean, cov, and data}
@@ -25,12 +25,14 @@ SitemFit1(grp, item, free = 0, ..., method = "pearson", log = TRUE,
 
 \item{alt}{whether to include the item of interest in the denominator}
 
-\item{omit}{number of items to omit}
+\item{omit}{number of items to omit when calculating the observed and expected sum-score tables}
+
+\item{.twotier}{whether to enable the two-tier optimization}
 }
 \description{
 Implements the Kang & Chen (2007) polytomous extension to
 S statistic of Orlando & Thissen (2000). Rows with
-missing data are ignored.
+missing data are ignored, but see the \code{omit} option.
 }
 \details{
 This statistic is good at finding a small number of misfitting
@@ -42,13 +44,15 @@ missing. Therefore, you can optionally omit items with the
 greatest number of responses missing relative to the item of
 interest.
 
-Pearson is slightly more powerful than RMS is most cases I
+Pearson is slightly more powerful than RMS in most cases I
 examined.
 
-Setting \code{alt} to \code{TRUE} causes the tables to
-match published articles. However, the default setting of
-\code{FALSE} probably provides slightly more powerful for less
-than 10 items.
+Setting \code{alt} to \code{TRUE} causes the tables to match
+published articles. However, the default setting of \code{FALSE}
+probably provides slightly more power when there are less than 10
+items.
+
+The name of the test, "S", probably stands for sum-score.
 }
 \references{
 Kang, T. and Chen, T. T. (2007). An investigation of

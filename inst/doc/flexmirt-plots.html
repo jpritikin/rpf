@@ -60,6 +60,7 @@ body, td {
 body {
   max-width: 800px;
   margin: auto;
+  padding: 1em;
   line-height: 20px;
 }
 
@@ -67,28 +68,28 @@ tt, code, pre {
    font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
 }
 
-h1 { 
-   font-size:2.2em; 
+h1 {
+   font-size:2.2em;
 }
 
-h2 { 
-   font-size:1.8em; 
+h2 {
+   font-size:1.8em;
 }
 
-h3 { 
-   font-size:1.4em; 
+h3 {
+   font-size:1.4em;
 }
 
-h4 { 
-   font-size:1.0em; 
+h4 {
+   font-size:1.0em;
 }
 
-h5 { 
-   font-size:0.9em; 
+h5 {
+   font-size:0.9em;
 }
 
-h6 { 
-   font-size:0.8em; 
+h6 {
+   font-size:0.8em;
 }
 
 a:visited {
@@ -132,54 +133,54 @@ hr {
 }
 
 @media print {
-   * { 
-      background: transparent !important; 
-      color: black !important; 
-      filter:none !important; 
-      -ms-filter: none !important; 
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
    }
 
-   body { 
-      font-size:12pt; 
-      max-width:100%; 
-   }
-       
-   a, a:visited { 
-      text-decoration: underline; 
+   body {
+      font-size:12pt;
+      max-width:100%;
    }
 
-   hr { 
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
       visibility: hidden;
       page-break-before: always;
    }
 
-   pre, blockquote { 
-      padding-right: 1em; 
-      page-break-inside: avoid; 
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
    }
 
-   tr, img { 
-      page-break-inside: avoid; 
+   tr, img {
+      page-break-inside: avoid;
    }
 
-   img { 
-      max-width: 100% !important; 
+   img {
+      max-width: 100% !important;
    }
 
-   @page :left { 
-      margin: 15mm 20mm 15mm 10mm; 
-   }
-     
-   @page :right { 
-      margin: 15mm 10mm 15mm 20mm; 
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
    }
 
-   p, h2, h3 { 
-      orphans: 3; widows: 3; 
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
    }
 
-   h2, h3 { 
-      page-break-after: avoid; 
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
    }
 }
 </style>
@@ -207,14 +208,9 @@ template to your project.</p>
 (or flexMIRT with flexmirt.read), but here are some inline
 parameters for demonstration purposes.</p>
 
-<pre><code class="r">small &lt;- structure(list(param = structure(c(1, 1, 0, 0, -0.5789195, -2.412259, 
-    -1.3471789, 1, 1, 0, 0, 1.0983234, -2.0991327, -2.9482965, 1, 1, 0, 0, 0.4078264, 
-    -0.9824549, -1.5905594, 1, 1, 0, 0, -1.0650001, -0.2100243, -3.2034577), 
-    .Dim = c(7L, 4L), .Dimnames = list(NULL, c(&quot;X2&quot;, &quot;X6&quot;, &quot;X7&quot;, &quot;X10&quot;))), mean = 0, 
-    cov = structure(9.8238066, .Dim = c(1L, 1L))), .Names = c(&quot;param&quot;, &quot;mean&quot;, 
-    &quot;cov&quot;))
+<pre><code class="r">small &lt;- structure(list(param = structure(c(1, 1, 0, 0, -0.5789195, -2.412259,  -1.3471789, 1, 1, 0, 0, 1.0983234, -2.0991327, -2.9482965, 1,  1, 0, 0, 0.4078264, -0.9824549, -1.5905594, 1, 1, 0, 0, -1.0650001,  -0.2100243, -3.2034577), .Dim = c(7L, 4L), .Dimnames = list(NULL,      c(&quot;X2&quot;, &quot;X6&quot;, &quot;X7&quot;, &quot;X10&quot;))), mean = 0, cov = structure(9.8238066, .Dim = c(1L,  1L))), .Names = c(&quot;param&quot;, &quot;mean&quot;, &quot;cov&quot;))
 small$spec &lt;- list()
-small$spec[1:4] &lt;- rpf.nrm(outcomes = 4, T.c = lower.tri(diag(3), TRUE) * -1)
+small$spec[1:4] &lt;- rpf.nrm(outcomes=4, T.c= lower.tri(diag(3),TRUE) * -1)
 </code></pre>
 
 <h2>Item characteristic curve plots</h2>

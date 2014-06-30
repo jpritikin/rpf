@@ -18,4 +18,7 @@ not offer easily interpretable parameters such as the Generalized
 PCM. Since the information curve may not be unimodal, this
 function integrates across the latent space.
 }
+\details{
+WARNING: This function is experimental and may disappear.
+}
 

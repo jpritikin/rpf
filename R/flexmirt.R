@@ -165,10 +165,12 @@ read.flexmirt <- function(fname) {
   groups
 }
 
-serialize.T <- function(spec, T) {
+serialize.T <- function(spec, Tmat, T) {
   if (all(abs(T - Tnom.trend(spec@outcomes)) < 1e-4)) {
     c(0)
-  } else if (all(abs(T - Tnom.id(spec@outcomes)) < 1e-4)) {
+  } else if (Tmat == 'a' && all(abs(T - Tnom.ida(spec@outcomes)) < 1e-4)) {
+    c(1)
+  } else if (Tmat == 'c' && all(abs(T - Tnom.idc(spec@outcomes)) < 1e-4)) {
     c(1)
   } else {
     c(2, rep(0, dim(T)[1]), t(T))
@@ -181,7 +183,7 @@ serialize.T <- function(spec, T) {
 ##' them. Use \code{\link{read.flexmirt}} to see what shape the groups
 ##' parameter of this function should take.
 ##'
-##' NOTE: Support for the graded response model is not complete.
+##' NOTE: Support for the graded response model may not be complete.
 ##'
 ##' @param groups a list of groups each with items and latent parameters
 ##' @param file the destination file name
@@ -229,8 +231,8 @@ write.flexmirt <- function(groups, file=NULL, fileEncoding="") {
         cat(c(1, name, gx, nfact, 2, spec@outcomes, iparam[(nfact+1):length(iparam)],
                   iparam[1:nfact]), sep="\t", file=file, fill=TRUE)
       } else if (class(spec) == "rpf.mdim.nrm") {
-        T.a <- serialize.T(spec, getT(spec, 0))
-        T.c <- serialize.T(spec, getT(spec, 1))
+        T.a <- serialize.T(spec, 'a', getT(spec, 0))
+        T.c <- serialize.T(spec, 'c', getT(spec, 1))
         cat(paste(c(1, name, gx, nfact, 3, spec@outcomes, T.a,
                     iparam[(spec@factors+1):(spec@outcomes + spec@factors - 1)],
                     iparam[1:spec@factors],

@@ -405,6 +405,27 @@ rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
   return ret;
 }
 
+static SEXP has_openmp()
+{
+#if defined(_OPENMP)
+	bool opm = true;
+#else
+	bool opm = false;
+#endif
+	return Rf_ScalarLogical(opm);
+}
+
+int GlobalNumberOfCores = 1;
+
+static SEXP setNumberOfCores(SEXP num)
+{
+	omxManageProtectInsanity mpi;
+#if defined(_OPENMP)
+	GlobalNumberOfCores = Rf_asInteger(num);
+#endif
+	return num;
+}
+
 static R_CallMethodDef flist[] = {
   {"get_model_names", (DL_FUNC) get_model_names, 1},
   {"rpf_numSpec_wrapper", (DL_FUNC) rpf_numSpec_wrapper, 1},
@@ -418,11 +439,16 @@ static R_CallMethodDef flist[] = {
   {"collapse_wrapper", (DL_FUNC) collapse_wrapper, 2},
   {"ordinal_gamma_wrapper", (DL_FUNC) gamma_cor, 1},
   {"ssEAP_wrapper", (DL_FUNC) sumscoreEAP, 6},
-  {"ot2000_wrapper", (DL_FUNC) ot2000_wrapper, 6},
+  {"ot2000_wrapper", (DL_FUNC) ot2000_wrapper, 7},
   {"crosstabTest_wrapper", (DL_FUNC) crosstabTest, 3},
-  {"pairwiseExpected_wrapper", (DL_FUNC) pairwiseExpected, 4},
+  {"pairwiseExpected_wrapper", (DL_FUNC) pairwiseExpected, 5},
   {"observedSumScore_wrapper", (DL_FUNC) observedSumScore, 2},
   {"itemOutcomeBySumScore_wrapper", (DL_FUNC) itemOutcomeBySumScore, 3},
+  {"findIdenticalRowsData", (DL_FUNC) findIdenticalRowsData, 5},
+  {"CaiHansen2012_wrapper", (DL_FUNC) CaiHansen2012, 3},
+  {"eap_wrapper", (DL_FUNC) eap_wrapper, 2},
+  {"hasOpenMP_wrapper", (DL_FUNC) has_openmp, 0},
+  {"setNumberOfCores", (DL_FUNC) setNumberOfCores, 1},
   {NULL, NULL, 0}
 };
 

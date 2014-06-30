@@ -4,7 +4,7 @@
 \title{Compute the S fit statistic for a set of items}
 \usage{
 SitemFit(grp, ..., method = "pearson", log = TRUE, qwidth = 6,
-  qpoints = 49L, alt = FALSE, omit = 0L)
+  qpoints = 49L, alt = FALSE, omit = 0L, .twotier = TRUE)
 }
 \arguments{
 \item{grp}{a list with spec, param, mean, cov, data, and the free variable pattern}
@@ -22,6 +22,8 @@ SitemFit(grp, ..., method = "pearson", log = TRUE, qwidth = 6,
 \item{alt}{whether to include the item of interest in the denominator}
 
 \item{omit}{number of items to omit}
+
+\item{.twotier}{whether to enable the two-tier optimization}
 }
 \value{
 a list of output from \code{\link{SitemFit1}}
@@ -29,9 +31,6 @@ a list of output from \code{\link{SitemFit1}}
 \description{
 Runs \code{\link{SitemFit1}} for every item and accumulates
 the results.
-}
-\details{
-TODO: Optimize for two-tier covariance structure
 }
 \examples{
 grp <- list(spec=list())

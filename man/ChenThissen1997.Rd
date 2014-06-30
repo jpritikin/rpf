@@ -5,7 +5,7 @@
 \title{Computes local dependence indices for all pairs of items}
 \usage{
 ChenThissen1997(grp, ..., data = NULL, inames = NULL, qwidth = 6,
-  qpoints = 49, method = "pearson")
+  qpoints = 49, method = "pearson", .twotier = TRUE)
 }
 \arguments{
 \item{grp}{a list with the spec, param, mean, and cov describing the group}
@@ -20,9 +20,10 @@ ChenThissen1997(grp, ..., data = NULL, inames = NULL, qwidth = 6,
 
 \item{qpoints}{number of equally spaced quadrature points}
 
-\item{method}{method to use to calculate P values. The default
-("rms") uses the root mean square statistic (see \code{\link{ptw2011.gof.test}}).
-To obtain the traditional Pearson X^2 statistic, use method="pearson".}
+\item{method}{method to use to calculate P values. The default is the
+Pearson X^2 statistic. Use "lr" for the similar likelihood ratio statistic.}
+
+\item{.twotier}{whether to enable the two-tier optimization}
 }
 \value{
 a list with raw, pval and detail. The pval matrix is a

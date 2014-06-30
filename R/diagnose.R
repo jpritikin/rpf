@@ -67,7 +67,7 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##'
 ##' Note: These statistics are only appropriate if all discrimination
 ##' parameters are fixed equal and items are conditionally independent
-##' (see \code{\link{chen.thissen.1997}}).  A best effort is made to
+##' (see \code{\link{ChenThissen1997}}).  A best effort is made to
 ##' cope with missing data.
 ##'
 ##' Exact distributional properties of these statistics are unknown
@@ -215,6 +215,8 @@ rpf.mean.info1 <- function(spec, iparam, grain=.1) {
 ##' PCM. Since the information curve may not be unimodal, this
 ##' function integrates across the latent space.
 ##' 
+##' WARNING: This function is experimental and may disappear.
+##' 
 ##' @param spec list of item specs
 ##' @param param list or matrix of item parameters
 ##' @param grain the step size for numerical integration (optional)
@@ -312,7 +314,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##'
 ##' Implements the Kang & Chen (2007) polytomous extension to
 ##' S statistic of Orlando & Thissen (2000). Rows with
-##' missing data are ignored.
+##' missing data are ignored, but see the \code{omit} option.
 ##'
 ##' This statistic is good at finding a small number of misfitting
 ##' items among a large number of well fitting items. However, be
@@ -323,13 +325,15 @@ collapseCells <- function(On, En, mincell = 1){
 ##' greatest number of responses missing relative to the item of
 ##' interest.
 ##' 
-##' Pearson is slightly more powerful than RMS is most cases I
+##' Pearson is slightly more powerful than RMS in most cases I
 ##' examined.
 ##'
-##' Setting \code{alt} to \code{TRUE} causes the tables to
-##' match published articles. However, the default setting of
-##' \code{FALSE} probably provides slightly more powerful for less
-##' than 10 items.
+##' Setting \code{alt} to \code{TRUE} causes the tables to match
+##' published articles. However, the default setting of \code{FALSE}
+##' probably provides slightly more power when there are less than 10
+##' items.
+##'
+##' The name of the test, "S", probably stands for sum-score.
 ##'
 ##' @param grp a list with spec, param, mean, cov, and data
 ##' @param item the item of interest
@@ -340,7 +344,8 @@ collapseCells <- function(On, En, mincell = 1){
 ##' @param qwidth the positive width of the quadrature in Z units
 ##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
-##' @param omit number of items to omit
+##' @param omit number of items to omit when calculating the observed and expected sum-score tables
+##' @param .twotier whether to enable the two-tier optimization
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
 ##' polytomous IRT models. ACT Research Report Series.
@@ -348,7 +353,8 @@ collapseCells <- function(On, En, mincell = 1){
 ##' Orlando, M. and Thissen, D. (2000). Likelihood-Based
 ##' Item-Fit Indices for Dichotomous Item Response Theory Models.
 ##' \emph{Applied Psychological Measurement, 24}(1), 50-64.
-SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L, alt=FALSE, omit=0L) {
+SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L,
+		      alt=FALSE, omit=0L, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -386,7 +392,7 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
     stop(paste("param matrix must have", max.param ,"rows"))
   }
 
-    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpoints, alt, mask)
+    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpoints, alt, mask, .twotier)
     if (nrow(Eproportion) != nrow(observed)) {
 	    print(Eproportion)
 	    stop(paste("Expecting", nrow(observed), "rows in expected matrix"))
@@ -434,18 +440,16 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 	out
 }
 
-ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
+ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
 	if (missing(width)) width <- 6
 	if (missing(pts)) pts <- 49L
-	.Call(ot2000_wrapper, grp, item, width, pts, alt, mask)
+	.Call(ot2000_wrapper, grp, item, width, pts, alt, mask, .twotier)
 }
 
 ##' Compute the S fit statistic for a set of items
 ##'
 ##' Runs \code{\link{SitemFit1}} for every item and accumulates
 ##' the results.
-##'
-##' TODO: Optimize for two-tier covariance structure
 ##'
 ##' @param grp a list with spec, param, mean, cov, data, and the free variable pattern
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
@@ -455,6 +459,7 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
 ##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
 ##' @param omit number of items to omit
+##' @param .twotier whether to enable the two-tier optimization
 ##' @return
 ##' a list of output from \code{\link{SitemFit1}}
 ##' @examples
@@ -467,7 +472,8 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask) {
 ##' grp$free <- grp$param != 0
 ##' grp$data <- rpf.sample(500, grp=grp)
 ##' SitemFit(grp)
-SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L, alt=FALSE, omit=0L) {
+SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L,
+		     alt=FALSE, omit=0L, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -481,16 +487,17 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
     if (ncol(param) != length(spec)) stop("Dim mismatch between param and spec")
     if (is.null(colnames(param))) stop("grp$param must have column names")
 
-    got = list()
-  for (interest in 1:length(spec)) {
-      free <- 0
-      if (!is.null(grp$free)) free <- sum(grp$free[,interest])
-      itemname <- colnames(param)[interest]
-      ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints, alt=alt, omit=omit)
-      got[[itemname]] <- ot.out
-  }
-    class(got) <- "summary.SitemFit"
-    got
+	got <- mclapply(1:length(spec), function(interest) {
+		free <- 0
+		if (!is.null(grp$free)) free <- sum(grp$free[,interest])
+		itemname <- colnames(param)[interest]
+		ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints,
+				    alt=alt, omit=omit, .twotier=.twotier)
+		ot.out
+	})
+	names(got) <- colnames(param)
+	class(got) <- "summary.SitemFit"
+	got
 }
 
 print.summary.SitemFit <- function(x,...) {
@@ -633,9 +640,9 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' @param inames a subset of items to examine
 ##' @param qwidth quadrature width
 ##' @param qpoints number of equally spaced quadrature points
-##' @param method method to use to calculate P values. The default
-##' ("rms") uses the root mean square statistic (see \code{\link{ptw2011.gof.test}}).
-##' To obtain the traditional Pearson X^2 statistic, use method="pearson".
+##' @param method method to use to calculate P values. The default is the
+##' Pearson X^2 statistic. Use "lr" for the similar likelihood ratio statistic.
+##' @param .twotier whether to enable the two-tier optimization
 ##' @return a list with raw, pval and detail. The pval matrix is a
 ##' lower triangular matrix of log P values with the sign
 ##' determined by relative association between the observed and
@@ -648,7 +655,7 @@ ptw2011.gof.test <- function(observed, expected) {
 ##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 ##' adaptive testing: A case for testlets.  \emph{Journal of
 ##' Educational measurement, 24}(3), 185--201.
-ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson") {
+ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson", .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -661,7 +668,7 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 	if (missing(qwidth) && !is.null(grp$qwidth)) { qwidth <- grp$qwidth }
 	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
 
-  if (method != "rms" && method != "pearson" && method != "lr") stop(paste("Unknown method", method))
+  if (method != "pearson" && method != "lr") stop(paste("Unknown method", method))
   if (missing(inames)) {
     inames <- colnames(grp$param)
   }
@@ -677,74 +684,105 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
       }
   }
 
-  if (!is.data.frame(data)) {
-      data <- as.data.frame(data)  #safe? TODO
-  }
+	if (!is.data.frame(data)) {
+		data <- as.data.frame(data)  #safe? TODO
+	}
+	dataMap <- match(colnames(grp$param), colnames(data))
 
-  # assume param and data in the same order? TODO
-  items <- match(inames, colnames(grp$param))
+	items <- match(inames, colnames(grp$param))
 
-  result <- list()
-  gamma <- matrix(NA, length(items), length(items))
-  dimnames(gamma) <- list(inames, inames)
-  raw <- matrix(NA, length(items), length(items))
-  dimnames(raw) <- list(inames, inames)
-  std <- matrix(NA, length(items), length(items))
-  dimnames(std) <- list(inames, inames)
-  pval <- matrix(NA, length(items), length(items))
-  dimnames(pval) <- list(inames, inames)
+	# If we move this whole loop into C then we can avoid
+	# repeated set up of the quadrature
+	pairs <- list()
+	for (iter1 in 2:length(items)) {
+		for (iter2 in 1:(iter1-1)) {
+			pairs[[ 1+length(pairs) ]] <- c(iter1, iter2)
+		}
+	}
+	detail <- mclapply(pairs, function(pair) {
+		iter1 <- pair[1]
+		iter2 <- pair[2]
+		i1 <- items[iter1]
+		i2 <- items[iter2]
+		observed <- table(data[,dataMap[c(i1,i2)]])
+		N <- sum(observed)
+		s1 <- spec[[i1]]
+		s2 <- spec[[i2]]
+		info <- list()
 
-  for (iter1 in 2:length(items)) {
-    for (iter2 in 1:(iter1-1)) {
-      i1 <- items[iter1]
-      i2 <- items[iter2]
-      observed <- table(data[,c(i1,i2)])
-      N <- sum(observed)
-      s1 <- spec[[i1]]
-      s2 <- spec[[i2]]
+		expected <- N * pairwiseExpected(grp, c(i1, i2), qwidth, qpoints, .twotier)
+		if (any(dim(observed) != dim(expected))) {
+			if (dim(observed)[1] != dim(expected)[1]) {
+				bad <- i1
+				margin <- 1
+			} else {
+				bad <- i2
+				margin <- 2
+			}
+			Eoutcomes <- dim(expected)[margin]
+			lev <- dimnames(observed)[[margin]]
+			info$error <- paste(colnames(grp$param)[bad], " has ", Eoutcomes,
+					    " outcomes in the model but the data has ", length(lev), " (",
+					    paste(lev, collapse=", "),")", sep="")
+			return(info)
+		}
+		dimnames(expected) <- dimnames(observed)
 
-      expected <- N * pairwiseExpected(grp, c(iter1, iter2), qwidth, qpoints)
-      dimnames(expected) <- dimnames(observed)
+		s <- ordinal.gamma(observed) - ordinal.gamma(expected)
+		if (!is.finite(s) || is.na(s) || s==0) s <- 1
+		info <- c(info, list(orig.observed=observed, orig.expected=expected, sign=sign(s), gamma=s))
 
-      s <- ordinal.gamma(observed) - ordinal.gamma(expected)
-      if (!is.finite(s) || is.na(s) || s==0) s <- 1
-      info <- list(orig.observed=observed, orig.expected=expected, sign=sign(s), gamma=s)
-      gamma[iter1, iter2] <- s
+		if (method == "pearson") {
+			kc <- .Call(collapse_wrapper, observed, expected)
+			observed <- kc$O
+			expected <- kc$E
+			mask <- !is.na(expected)
+			x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+			df <- (s1@outcomes-1) * (s2@outcomes-1) - kc$collapsed
+			if (df < 1L) df <- 1L
+			info <- c(info, list(statistic=x2, df=df, observed=observed, expected=expected))
+		} else if (method == "lr") {
+			mask <- observed > 0
+			g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
+			df <- (s1@outcomes-1) * (s2@outcomes-1)
+			info <- c(info, statistic=g2, df=df)
+		}
+		info
+	})
 
-      if (method == "rms") {
-	      size <- sum(observed)
-	      raw[iter1, iter2] <- ms(observed/size, expected/size, 1)
-	      tmp <- ptw2011.gof.test(observed, expected)
-	      tmp <- 1 / (1+exp(-(logit(tmp) - 2.8)))  # not sure about this! TODO
-	      pval[iter1, iter2] <- sign(s) * -log(tmp)
-      } else if (method == "pearson") {
-	      kc <- .Call(collapse_wrapper, observed, expected)
-	      observed <- kc$O
-	      expected <- kc$E
-	      mask <- !is.na(expected)
-          x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-          df <- (s1@outcomes-1) * (s2@outcomes-1) - kc$collapsed
-          info <- c(info, list(x2=x2, df=df, observed=observed, expected=expected))
+	lapply(detail, function(d1) {
+		if (!is.null(d1$error)) stop(d1$error)
+	})
 
-          raw[iter1, iter2] <- sign(s) * x2
-          std[iter1, iter2] <- sign(s) * abs((x2 - df)/sqrt(2*df))
-          pval[iter1, iter2] <- sign(s) * -pchisq(x2, df, lower.tail=FALSE, log.p=TRUE)
-      } else if (method == "lr") {
-          mask <- observed > 0
-          g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
-          df <- (s1@outcomes-1) * (s2@outcomes-1)
-          info <- c(info, g2=g2, df=df)
+	gamma <- matrix(NA, length(items), length(items))
+	dimnames(gamma) <- list(inames, inames)
+	raw <- matrix(NA, length(items), length(items))
+	dimnames(raw) <- list(inames, inames)
+	std <- matrix(NA, length(items), length(items))
+	dimnames(std) <- list(inames, inames)
+	pval <- matrix(NA, length(items), length(items))
+	dimnames(pval) <- list(inames, inames)
 
-          raw[iter1, iter2] <- sign(s) * g2
-          pval[iter1, iter2] <- sign(s) * -pchisq(g2, df, lower.tail=FALSE, log.p=TRUE)
-      }
+	for (px in 1:length(pairs)) {
+		iter1 <- pairs[[px]][1]
+		iter2 <- pairs[[px]][2]
+		d1 <- detail[[px]]
+		gamma[iter1, iter2] <- d1$gamma
+		s <- d1$sign
+		stat <- d1$statistic
+		df <- d1$df
+		raw[iter1, iter2] <- stat
+		std[iter1, iter2] <- s * abs((stat - df)/sqrt(2*df))
+		pval[iter1, iter2] <- s * -pchisq(stat, df, lower.tail=FALSE, log.p=TRUE)
+	}
 
-      result[[paste(inames[iter1], inames[iter2], sep=":")]] <- info
-    }
-  }
-  retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=result, method=method)
-  class(retobj) <- "summary.ChenThissen1997"
-  retobj
+	names(detail) <- sapply(pairs, function(pair) {
+		paste(inames[pair[1]], inames[pair[2]], sep=":")
+	})
+
+	retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=detail, method=method)
+	class(retobj) <- "summary.ChenThissen1997"
+	retobj
 }
 
 # deprecated name
@@ -769,6 +807,87 @@ crosstabTest <- function(ob, ex, trials) {
 	.Call(crosstabTest_wrapper, ob, ex, trials)
 }
 
-pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L) {
-	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L)
+pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, .twotier) {
+	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L, .twotier)
+}
+
+CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
+	.Call(CaiHansen2012_wrapper, grp, method, .twotier)
+}
+
+##' Multinomial fit test
+##'
+##' The p-value is known to become poorly calibrated as the number of
+##' cells becomes large (e.g. more than 1000). For accurate p-values,
+##' you can conduct a Monte-Carlo simulation study (see examples).
+##'
+##' Rows with missing data are ignored.
+##' 
+##' The full information test is described in Bartholomew & Tzamourani
+##' (1999, Section 3).
+##' 
+##' @param grp a list with the spec, param, mean, and cov describing the group
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @param method lr (default) or pearson
+##' @param log whether to report p-value in log units
+##' @param .twotier whether to use the two-tier optimization (default TRUE)
+##' @references Bartholomew, D. J., & Tzamourani, P. (1999). The
+##' goodness-of-fit of latent trait models in attitude
+##' measurement. Sociological Methods and Research, 27, 525-546.
+##' @examples
+##' # Create an example IFA group
+##' grp <- list(spec=list())
+##' grp$spec[1:10] <- rpf.grm()
+##' grp$param <- sapply(grp$spec, rpf.rparam)
+##' colnames(grp$param) <- paste("i", 1:10, sep="")
+##' grp$mean <- 0
+##' grp$cov <- diag(1)
+##' grp$free <- grp$param != 0
+##' grp$data <- rpf.sample(1000, grp=grp)
+##' 
+##' # Monte-Carlo simulation study
+##' mcReps <- 3    # increase this to 10,000 or so
+##' stat <- rep(NA, mcReps)
+##' for (rx in 1:mcReps) {
+##'    t1 <- grp
+##'    t1$data <- rpf.sample(grp=grp)
+##'    stat[rx] <- multinomialFit(t1)$statistic
+##' }
+##' sum(multinomialFit(grp)$statistic > stat)/mcReps   # better p-value
+
+multinomialFit <- function(grp, ..., method="lr", log=TRUE, .twotier=TRUE) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+	if (is.null(grp$weightColumn)) {
+		wc <- "freq"
+		grp$data <- compressDataFrame(grp$data, wc)
+		grp$weightColumn <- wc
+	}
+	sumFree <- 0
+	if (is.null(grp$free)) {
+		warning("Free parameters should be indicated in free matrix")
+	} else {
+		sumFree <- sum(grp$free)
+	}
+	stat <- CaiHansen2012(grp, method, .twotier)
+	bins <- prod(sapply(grp$spec, function(s) s$outcomes))
+	out <- list(statistic=stat,
+		    df=bins - sumFree - 1)
+	out$pval <- pchisq(stat, out$df, lower.tail=FALSE, log.p=log)
+	out$log <- log
+	out$method <- method
+	class(out) <- "summary.multinomialFit"
+	out
+}
+
+print.summary.multinomialFit <- function(x,...) {
+	cat("Full information multinomial fit test\n")
+	part1 <- paste(x$method, "(", x$df, ") = ", round(x$statistic, 2), sep="")
+	if (x$log) {
+		part2 <- paste("log(p) = ", round(x$pval,2), sep="")
+	} else {
+		part2 <- paste("p = ", round(x$pval,4), sep="")
+	}
+	cat(paste("  ", part1, ", ", part2, "\n", sep=""))
 }

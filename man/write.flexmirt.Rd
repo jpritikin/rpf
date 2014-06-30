@@ -18,6 +18,6 @@ them. Use \code{\link{read.flexmirt}} to see what shape the groups
 parameter of this function should take.
 }
 \details{
-NOTE: Support for the graded response model is not complete.
+NOTE: Support for the graded response model may not be complete.
 }
 

@@ -4,7 +4,7 @@
 \title{Compute the sum-score EAP table}
 \usage{
 sumScoreEAP(grp, ..., qwidth = 6, qpoints = 49L, distributionTest = NULL,
-  omit = 0L)
+  omit = 0L, .twotier = TRUE)
 }
 \arguments{
 \item{grp}{a list with spec, param, mean, and cov}
@@ -18,15 +18,22 @@ sumScoreEAP(grp, ..., qwidth = 6, qpoints = 49L, distributionTest = NULL,
 \item{distributionTest}{whether to perform the latent distribution test}
 
 \item{omit}{number of items to omit from the latent distribution test}
+
+\item{.twotier}{whether to enable the two-tier optimization}
 }
 \description{
-TODO: Optimize for two-tier covariance structure
-}
-\details{
 Observed tables cannot be computed when data is
 missing. Therefore, you can optionally omit items with the
 greatest number of responses missing when conducting the
 distribution test.
+}
+\details{
+When two-tier covariance structure is detected, EAP scores are
+only reported for primary factors. It is possible to compute EAP
+scores for specific factors, but it is not clear why this would be
+useful because they are conditional on the specific factor sum
+scores. Moveover, the algorithm to compute them efficiently has not been
+published yet (as of Jun 2014).
 }
 \examples{
 # see Thissen, Pommerich, Billeaud, & Williams (1995, Table 2)

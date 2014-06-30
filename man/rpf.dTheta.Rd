@@ -4,7 +4,7 @@
 \alias{rpf.dTheta,rpf.base,numeric,matrix,numeric-method}
 \alias{rpf.dTheta,rpf.base,numeric,numeric,numeric-method}
 \alias{rpf_dTheta_wrapper}
-\title{Item derivatives with respect to ability}
+\title{Item derivatives with respect to the location in the latent space}
 \usage{
 rpf.dTheta(m, param, where, dir)
 }

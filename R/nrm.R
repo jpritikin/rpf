@@ -13,17 +13,28 @@ Tnom.trend <- function(nc) {
 }
 
 # Copied from flexmirt.R
-Tnom.id <- function(nc) {
+Tnom.ida <- function(nc) {
   T <- matrix(0,nc,nc-1)
   T[nc,1] <- nc-1
   T[2:(nc-1),2:(nc-1)] <- diag(nc-2)
   return(T[-1,])
 }
 
-build.T <- function(outcomes, got) {
+# Copied from flexmirt.R
+Tnom.idc <- function(nc) {
+  T <- matrix(0,nc,nc-1)
+  T[2:nc,] <- diag(nc-1)
+  return(T[-1,])
+}
+
+build.T <- function(outcomes, got, type) {
   if (!is.matrix(got)) {
     if (got == "id") {
-      got <- Tnom.id(outcomes)
+	    if (type == 'a') {
+		    got <- Tnom.ida(outcomes)
+	    } else {
+		    got <- Tnom.idc(outcomes)
+	    }
     } else if (got == "trend") {
       got <- Tnom.trend(outcomes)
     } else if (got == "random") {
@@ -55,7 +66,7 @@ build.T <- function(outcomes, got) {
 ##'
 ##' The transformation matrices T.a and T.c are chosen by the analyst
 ##' and not estimated.  The T matrices must be invertible square
-##' matrices of dimension outcomes-1. As a shortcut, either T matrix
+##' matrices of size outcomes-1. As a shortcut, either T matrix
 ##' can be specified as "trend" for a Fourier basis or as "id" for an
 ##' identity basis. The response probability function is
 ##'
@@ -82,8 +93,8 @@ build.T <- function(outcomes, got) {
 ##' gpcm <- function(outcomes) rpf.nrm(outcomes, T.c=lower.tri(diag(outcomes-1),TRUE) * -1)
 rpf.nrm <- function(outcomes=3, factors=1, T.a="trend", T.c="trend") {
   if (outcomes < 3) stop("Minimum number of outcomes is 3")
-  T.a <- build.T(outcomes, T.a)
-  T.c <- build.T(outcomes, T.c)
+  T.a <- build.T(outcomes, T.a, 'a')
+  T.c <- build.T(outcomes, T.c, 'c')
   id <- rpf.id_of("nominal")
   m <- new("rpf.mdim.nrm",
            outcomes=outcomes,

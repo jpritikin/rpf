@@ -28,7 +28,7 @@ function is
 }
 \details{
 The pseudo-guessing and upper bound parameter are specified in
-logit units (see \code{\link{logit}}.
+logit units (see \code{\link{logit}}).
 
 For discussion on the choice of priors see Cai, Yang, and
 Hansen (2011, p. 246).
