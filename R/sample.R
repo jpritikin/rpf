@@ -84,6 +84,9 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
 
   outcomes <- vapply(items, function(i) i@outcomes, 0)
   
+  name <- colnames(params)
+  if (is.null(name)) name <- names(items)
+
   ret <- list()
   for (ix in 1:numItems) {
     i <- items[[ix]]
@@ -105,13 +108,13 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
     P <- rpf.prob(i, param[1:rpf.numParam(i)], i.theta)
 #    if (any(is.na(P))) stop(paste("Item", i@spec, "with param", param," produced NAs"))
     ret1 <- apply(P, 2, sample, x=1:i@outcomes, size=1, replace=F)
-    ret1 <- factor(ret1, levels=1:i@outcomes, ordered=TRUE)
+    labels <- 1:i@outcomes
+    if (!missing(grp) && !is.null(grp$data)) labels <- levels(grp$data[1, name[ix]])
+    ret1 <- factor(ret1, levels=1:i@outcomes, ordered=TRUE, labels=labels)
     attr(ret1, 'mxFactor') <- TRUE  # for OpenMx
     ret[[ix]] <- ret1
   }
   ret <- as.data.frame(ret, optional=TRUE)
-  name <- colnames(params)
-  if (is.null(name)) name <- names(items)
   if (is.null(name)) name <- paste(prefix,1:numItems,sep="")
   colnames(ret) <- name
   if (mcar > 0) {
