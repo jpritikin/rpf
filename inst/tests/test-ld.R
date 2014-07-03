@@ -22,7 +22,7 @@ test_that("ct1997", {
   
   grp <- list(spec=tspec, param=gen.param[-2,], mean=c(0), cov=diag(1), data=resp)
   
-  got <- chen.thissen.1997(grp)
+  got <- ChenThissen1997(grp)
   #cat(deparse(round(got$pval[!is.na(got$pval)], 2)))
   expect_equal(got$pval[!is.na(got$pval)], 
                c(-1.52, -1.74, -2.54, -6.01, -2.74, -1.06, 1.47, -5.77, 2.42,  1.77, 7.01,
