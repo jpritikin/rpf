@@ -180,7 +180,7 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##'
 ##' @param grp a list with spec, param, and data
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
-##' @param naAction action for rows with fewer than
+##' @param naAction deprecated, will be removed in the next release
 ##' \code{minItemsPerScore}. Defaults to 'fail'. If 'pass', will fill
 ##' with NAs.
 ##' @examples
@@ -191,15 +191,12 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##' colnames(param) <- colnames(data)
 ##' grp <- list(spec=spec, param=param, data=data, minItemsPerScore=1L)
 ##' EAPscores(grp)
-EAPscores <- function(grp, ..., naAction="fail") {
+EAPscores <- function(grp, ..., naAction=NULL) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
 
-	validAction <- c('pass', 'fail')
-	if (is.na(match(naAction, validAction))) {
-		stop(paste("naAction must be one of", paste(validAction, collapse=", ")))
-	}
+	if (!missing(naAction)) warning("naAction is deprecated")
 
-	.Call(eap_wrapper, grp, naAction == "fail")
+	.Call(eap_wrapper, grp)
 }

@@ -1,7 +1,6 @@
 #include "rpf.h"
 
 struct eap {
-	bool naFail;
 	std::vector<double *> scoresOut;
 };
 
@@ -66,22 +65,15 @@ void BA81LatentScores<T>::end(class ifaGroup *state, T extraData)
 	}
 }
 
-static void naAction(eap *state, int rx, int ax)
-{
-	if (!state->naFail) return;
-	Rf_error("Data row %d has no information about ability %d", 1+rx, 1+ax);
-}
-
-SEXP eap_wrapper(SEXP Rgrp, SEXP Rnafail)
+SEXP eap_wrapper(SEXP Rgrp)
 {
 	omxManageProtectInsanity mpi;
 
 	eap eapContext;
-	eapContext.naFail = Rf_asLogical(Rnafail);
 
 	ifaGroup grp(GlobalNumberOfCores, true);
 	grp.import(Rgrp);
-	grp.buildRowSkip(&eapContext, naAction);
+	grp.buildRowSkip();
 	grp.ba81OutcomeProb(grp.param, false);
 
 	// TODO Wainer & Thissen. (1987). Estimating ability with the wrong
