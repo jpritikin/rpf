@@ -828,6 +828,7 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' 
 ##' @param grp a list with the spec, param, mean, and cov describing the group
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @param omit number of items to omit
 ##' @param method lr (default) or pearson
 ##' @param log whether to report p-value in log units
 ##' @param .twotier whether to use the two-tier optimization (default TRUE)
@@ -855,9 +856,27 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' }
 ##' sum(multinomialFit(grp)$statistic > stat)/mcReps   # better p-value
 
-multinomialFit <- function(grp, ..., method="lr", log=TRUE, .twotier=TRUE) {
+multinomialFit <- function(grp, ..., omit=0L, method="lr", log=TRUE, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+	out <- list()
+	if (omit > 0) {
+		nacount <- apply(grp$data, 2, function(c) sum(is.na(c)))
+		omit <- min(omit, sum(nacount > 0))
+		if (omit > 0) {
+			if (!is.null(grp$weightColumn)) {
+				grp$data <- expandDataFrame(grp$data, grp$weightColumn)
+				grp$weightColumn <- NULL
+			}
+			exclude <- order(-nacount)[1:omit]
+			excol <- colnames(grp$data)[exclude]
+			imask <- -match(excol, colnames(grp$param))
+			grp$spec <- grp$spec[imask]
+			grp$param <- grp$param[,imask]
+			grp$data <- grp$data[,-match(excol, colnames(grp$data))]
+			out$omitted <- excol
+		}
 	}
 	if (is.null(grp$weightColumn)) {
 		wc <- "freq"
@@ -870,24 +889,28 @@ multinomialFit <- function(grp, ..., method="lr", log=TRUE, .twotier=TRUE) {
 	} else {
 		sumFree <- sum(grp$free)
 	}
-	stat <- CaiHansen2012(grp, method, .twotier)
+	got <- CaiHansen2012(grp, method, .twotier)
+	stat <- got$stat
 	bins <- prod(sapply(grp$spec, function(s) s$outcomes))
-	out <- list(statistic=stat,
-		    df=bins - sumFree - 1)
+	out <- c(out, list(statistic=stat, df=bins - sumFree - 1))
 	out$pval <- pchisq(stat, out$df, lower.tail=FALSE, log.p=log)
 	out$log <- log
 	out$method <- method
+	out$n <- got$n
 	class(out) <- "summary.multinomialFit"
 	out
 }
 
 print.summary.multinomialFit <- function(x,...) {
 	cat("Full information multinomial fit test\n")
-	part1 <- paste(x$method, "(", x$df, ") = ", round(x$statistic, 2), sep="")
+	part1 <- paste("n = ", x$n, ", ", x$method, "(", x$df, ") = ", round(x$statistic, 2), sep="")
 	if (x$log) {
 		part2 <- paste("log(p) = ", round(x$pval,2), sep="")
 	} else {
 		part2 <- paste("p = ", round(x$pval,4), sep="")
 	}
 	cat(paste("  ", part1, ", ", part2, "\n", sep=""))
+	if (!is.null(x$omitted)) {
+		cat(paste("omitted: ", paste(x$omitted, collapse=", "), "\n", sep=""))
+	}
 }
