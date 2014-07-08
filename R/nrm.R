@@ -111,6 +111,9 @@ getT <- function(m, tx) {
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
           function(m, version) {
+		  if (m@factors == 0) {
+			  return(c(gam=ck <- sort(rnorm(m@outcomes-1))))
+		  }
             a <- rlnorm(m@factors, sdlog=.5)
             ak <- abs(rnorm(m@outcomes-1, mean=1, sd=.25))
             ck <- sort(rnorm(m@outcomes-1))

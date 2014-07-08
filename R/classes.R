@@ -176,11 +176,22 @@ setMethod("rpf.paramInfo", signature(m="rpf.base"),
 ##' The numDeriv package.
 ##' @aliases
 ##' rpf.dLL,rpf.base,numeric,numeric,numeric-method
+##' rpf.dLL,rpf.base,numeric,NULL,numeric-method
 ##' rpf_dLL_wrapper
 setGeneric("rpf.dLL", function(m, param, where, weight) standardGeneric("rpf.dLL"))
 
 setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
                                  where="numeric", weight="numeric"),
+          function(m, param, where, weight) {
+            if (length(m@spec)==0) {
+              stop("Not implemented")
+            } else {
+              .Call(rpf_dLL_wrapper, m@spec, param, where, weight)
+            }
+          })
+
+setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
+                                 where="NULL", weight="numeric"),
           function(m, param, where, weight) {
             if (length(m@spec)==0) {
               stop("Not implemented")
@@ -260,6 +271,7 @@ setMethod("rpf.rescale", signature(m="rpf.base", param="numeric",
 ##' @docType methods
 ##' @aliases
 ##' rpf.prob,rpf.1dim,numeric,numeric-method
+##' rpf.prob,rpf.mdim,numeric,NULL-method
 ##' rpf.prob,rpf.mdim,numeric,numeric-method
 ##' rpf.prob,rpf.mdim,numeric,matrix-method
 ##' rpf.prob,rpf.base,data.frame,numeric-method
@@ -301,6 +313,7 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf.logprob,rpf.1dim,numeric,matrix-method
 ##' rpf.logprob,rpf.mdim,numeric,matrix-method
 ##' rpf.logprob,rpf.mdim,numeric,numeric-method
+##' rpf.logprob,rpf.mdim,numeric,NULL-method
 ##' rpf_logprob_wrapper
 ##' @export
 ##' @examples
@@ -333,12 +346,30 @@ setMethod("rpf.logprob", signature(m="rpf.mdim", param="numeric", theta="numeric
             rpf.logprob(m, param, as.matrix(theta))
           })
 
+setMethod("rpf.logprob", signature(m="rpf.mdim", param="numeric", theta="NULL"),
+          function(m, param, theta) {
+            if (length(m@spec)==0) {
+              stop("Not implemented")
+            } else {
+              .Call(rpf_logprob_wrapper, m@spec, param, theta)
+            }
+          })
+
 setMethod("rpf.logprob", signature(m="rpf.1dim", param="numeric", theta="matrix"),
           function(m, param, theta) {
             rpf.logprob(m, param, as.numeric(theta))
           })
 
 setMethod("rpf.prob", signature(m="rpf.1dim", param="numeric", theta="numeric"),
+          function(m, param, theta) {
+            if (length(m@spec)==0) {
+              exp(rpf.logprob(m, param, theta))
+            } else {
+              .Call(rpf_prob_wrapper, m@spec, param, theta)
+            }
+          })
+
+setMethod("rpf.prob", signature(m="rpf.mdim", param="numeric", theta="NULL"),
           function(m, param, theta) {
             if (length(m@spec)==0) {
               exp(rpf.logprob(m, param, theta))

@@ -51,6 +51,11 @@ setMethod("rpf.modify", signature(m="rpf.mdim.graded", factors="numeric"),
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.graded"),
           function(m, version) {
+		  if (m@factors == 0) {
+			  b <- rnorm(m@outcomes-1)
+			  b <- b[order(-b)]
+			  return(c(b=b))
+		  }
 		  if (version == 1L) {
 			  a <- rlnorm(m@factors, meanlog=0, sdlog=.5)
 			  b <- rnorm(m@outcomes-1)
