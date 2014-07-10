@@ -828,7 +828,6 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' 
 ##' @param grp a list with the spec, param, mean, and cov describing the group
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
-##' @param omit number of items to omit
 ##' @param method lr (default) or pearson
 ##' @param log whether to report p-value in log units
 ##' @param .twotier whether to use the two-tier optimization (default TRUE)
@@ -856,28 +855,11 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' }
 ##' sum(multinomialFit(grp)$statistic > stat)/mcReps   # better p-value
 
-multinomialFit <- function(grp, ..., omit=0L, method="lr", log=TRUE, .twotier=TRUE) {
+multinomialFit <- function(grp, ..., method="lr", log=TRUE, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
 	out <- list()
-	if (omit > 0) {
-		nacount <- apply(grp$data, 2, function(c) sum(is.na(c)))
-		omit <- min(omit, sum(nacount > 0))
-		if (omit > 0) {
-			if (!is.null(grp$weightColumn)) {
-				grp$data <- expandDataFrame(grp$data, grp$weightColumn)
-				grp$weightColumn <- NULL
-			}
-			exclude <- order(-nacount)[1:omit]
-			excol <- colnames(grp$data)[exclude]
-			imask <- -match(excol, colnames(grp$param))
-			grp$spec <- grp$spec[imask]
-			grp$param <- grp$param[,imask]
-			grp$data <- grp$data[,-match(excol, colnames(grp$data))]
-			out$omitted <- excol
-		}
-	}
 	if (is.null(grp$weightColumn)) {
 		wc <- "freq"
 		grp$data <- compressDataFrame(grp$data, wc)
@@ -897,6 +879,7 @@ multinomialFit <- function(grp, ..., omit=0L, method="lr", log=TRUE, .twotier=TR
 	out$log <- log
 	out$method <- method
 	out$n <- got$n
+	out$omiited <- grp$omitted
 	class(out) <- "summary.multinomialFit"
 	out
 }

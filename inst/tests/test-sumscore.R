@@ -53,7 +53,7 @@ test_that("tpbw1995-table2", {
   
   grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param)
   
-  got <- sumScoreEAP(grp)$tbl
+  got <- sumScoreEAP(grp)
   
   expect_equal(sum(got[,'p']), 1, tolerance=.001)
   
@@ -111,5 +111,5 @@ test_that("2tier sumScoreEAP", {
   
   got <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=FALSE)
   tt <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=TRUE)
-  expect_equal(tt$tbl, got$tbl[,c(1:2,5,8)], .001)
+  expect_equal(tt, got[,c(1:2,5,8)], .001)
 })

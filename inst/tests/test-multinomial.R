@@ -53,9 +53,9 @@ test_that("multinomialFit full info, simple w/ missingness", {
   expect_equal(got$pval, 0, .01)
   expect_equal(got$n, 521)
 
-  got <- multinomialFit(grp, method="lr", omit=1)
+  got <- multinomialFit(omitMostMissing(grp, 1), method="lr")
   expect_equal(got$statistic, 253.39, .01)
-  expect_equal(got$df, 491)
+  expect_equal(got$df, 493)
   expect_equal(got$pval, 0, .01)
   expect_equal(got$n, 598)
 })
