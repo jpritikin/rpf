@@ -39,10 +39,10 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
 
     if (!missing(grp)) {
 	    if (missing(items)) items <- grp$spec
-	    if (missing(params)) params <- grp$param
-	    if (missing(mean)) mean <- grp$mean
-	    if (missing(cov)) cov <- grp$cov
-	    if (missing(theta)) theta <- nrow(grp$data)
+	    if (missing(params) && !is.null(grp$param)) params <- grp$param
+	    if (missing(mean) && !is.null(grp$mean)) mean <- grp$mean
+	    if (missing(cov) && !is.null(grp$cov)) cov <- grp$cov
+	    if (missing(theta) && !is.null(grp$data)) theta <- nrow(grp$data)
     }
 
   numItems <- length(items)
@@ -62,7 +62,7 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
     if (theta <= 1) stop("Request at least 2 samples")
     numPeople <- theta
     if (missing(mean)) mean <- rep(0, maxAbilities)
-    if (length(mean) != maxAbilities) stop(paste("Mean vector must have length",maxAbilities))
+    if (length(mean) != maxAbilities) stop(paste("Mean vector must have length",maxAbilities,"not",length(mean)))
     if (missing(cov)) cov <- diag(maxAbilities)
     if (any(dim(cov) != maxAbilities)) stop(paste("Cov matrix must be square matrices of size",maxAbilities))
     theta <- array(t(mvtnorm::rmvnorm(numPeople, mean=mean, sigma=cov)),
