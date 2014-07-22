@@ -87,6 +87,11 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
   name <- colnames(params)
   if (is.null(name)) name <- names(items)
 
+    maxParam <- max(sapply(items, rpf.numParam))
+    if (is.matrix(params) && nrow(params) > maxParam) {
+	    warning(paste("Item parameter matrix has", nrow(params) - maxParam, "extra rows"))
+    }
+
   ret <- list()
   for (ix in 1:numItems) {
     i <- items[[ix]]
