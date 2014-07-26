@@ -6,10 +6,11 @@ struct ch2012 {
 	ifaGroup grp;
 	bool pearson;
 	double stat;
+	double weightSum;
 	std::vector<bool> rowMask;
 
 	ch2012(bool twotier, SEXP Rgrp);
-	void run(const char *method, double *statOut);
+	void run(const char *method);
 	void accumulate(double observed, double expected);
 };
 
@@ -41,7 +42,7 @@ void ch2012::accumulate(double observed, double expected)
 	R_CheckUserInterrupt();  // could loop for a long time
 }
 
-void ch2012::run(const char *method, double *statOut)
+void ch2012::run(const char *method)
 {
 	/*
 	std::vector<int> &itemOutcomes = grp.itemOutcomes;
@@ -72,7 +73,7 @@ void ch2012::run(const char *method, double *statOut)
 
 	grp.ba81OutcomeProb(grp.param, false);
 
-	double weightSum = 0;
+	weightSum = 0;
 	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		if (!rowMask[rx]) continue;
 		weightSum += grp.rowWeight[rx];
@@ -96,7 +97,6 @@ void ch2012::run(const char *method, double *statOut)
 			accumulate(grp.rowWeight[px], Ei.sum() * weightSum);
 		}
 	}
-	*statOut = stat;
 }
 
 SEXP CaiHansen2012(SEXP Rgrp, SEXP Rmethod, SEXP Rtwotier)
@@ -104,11 +104,13 @@ SEXP CaiHansen2012(SEXP Rgrp, SEXP Rmethod, SEXP Rtwotier)
 	omxManageProtectInsanity mpi;
 
 	ch2012 engine(Rf_asLogical(Rtwotier), Rgrp);
-	double stat;
-	engine.run(R_CHAR(Rf_asChar(Rmethod)), &stat);
+	engine.run(R_CHAR(Rf_asChar(Rmethod)));
 	
 	//obMargin1(col);
 	//obMargin2(col1, col2);
 
-	return Rf_ScalarReal(stat);
+	MxRList out;
+	out.add("stat", Rf_ScalarReal(engine.stat));
+	out.add("n", Rf_ScalarReal(engine.weightSum));
+	return out.asR();
 }

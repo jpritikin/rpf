@@ -81,16 +81,14 @@ test_that("orlando-thissen-2000", {
 test_that("fit w/ mcar", {
   require(rpf)
   set.seed(7)
-  grp <- list(spec=list())
+  grp <- list(spec=list(), qwidth=5, qpoints=31)
   grp$spec[1:20] <- rpf.grm()
   grp$param <- sapply(grp$spec, rpf.rparam, version=1L)
   colnames(grp$param) <- paste("i", 1:20, sep="")
-  grp$mean <- 0
-  grp$cov <- diag(1)
   grp$free <- grp$param != 0
   grp$data <- rpf.sample(500, grp=grp, mcar=.1)
 
-  got <- sumScoreEAP(grp, omit=3L)
+  got <- sumScoreEAPTest(omitMostMissing(grp, 3L))
   expect_equal(got$n, 101L)
   expect_equal(got$rms.p, -1.87, tolerance=.01)
   expect_equal(got$pearson.df, 16L)

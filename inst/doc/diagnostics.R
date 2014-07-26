@@ -61,11 +61,11 @@ SSplot(got, "i6")
 (got <- sumScoreEAP(grp))
 
 ## ----, echo=FALSE,fig.height=2.5-----------------------------------------
+got <- sumScoreEAPTest(grp)
 df <- data.frame(score=as.numeric(rownames(got$tbl)),
             expected=got$tbl[,'p'] * got$n, observed=got$observed)
 df <- melt(df, id="score", variable.name="source", value.name="n")
 ggplot(df, aes(x=score, y=n, color=source)) + geom_line()
-
 
 ## ------------------------------------------------------------------------
   data(science)

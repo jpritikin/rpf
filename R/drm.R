@@ -78,6 +78,9 @@ logit <- function(prob) log(prob/(1-prob))
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
           function(m, version) {
+		  if (m@factors == 0) {
+			  return(c(b=rnorm(1)))
+		  }
 		  if (version == 1L) {
 			  c(a=rlnorm(m@factors, meanlog=0, sdlog=.5),
 			    b=rnorm(1),

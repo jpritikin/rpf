@@ -39,10 +39,10 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
 
     if (!missing(grp)) {
 	    if (missing(items)) items <- grp$spec
-	    if (missing(params)) params <- grp$param
-	    if (missing(mean)) mean <- grp$mean
-	    if (missing(cov)) cov <- grp$cov
-	    if (missing(theta)) theta <- nrow(grp$data)
+	    if (missing(params) && !is.null(grp$param)) params <- grp$param
+	    if (missing(mean) && !is.null(grp$mean)) mean <- grp$mean
+	    if (missing(cov) && !is.null(grp$cov)) cov <- grp$cov
+	    if (missing(theta) && !is.null(grp$data)) theta <- nrow(grp$data)
     }
 
   numItems <- length(items)
@@ -62,7 +62,7 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
     if (theta <= 1) stop("Request at least 2 samples")
     numPeople <- theta
     if (missing(mean)) mean <- rep(0, maxAbilities)
-    if (length(mean) != maxAbilities) stop(paste("Mean vector must have length",maxAbilities))
+    if (length(mean) != maxAbilities) stop(paste("Mean vector must have length",maxAbilities,"not",length(mean)))
     if (missing(cov)) cov <- diag(maxAbilities)
     if (any(dim(cov) != maxAbilities)) stop(paste("Cov matrix must be square matrices of size",maxAbilities))
     theta <- array(t(mvtnorm::rmvnorm(numPeople, mean=mean, sigma=cov)),
@@ -84,6 +84,14 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
 
   outcomes <- vapply(items, function(i) i@outcomes, 0)
   
+  name <- colnames(params)
+  if (is.null(name)) name <- names(items)
+
+    maxParam <- max(sapply(items, rpf.numParam))
+    if (is.matrix(params) && nrow(params) > maxParam) {
+	    warning(paste("Item parameter matrix has", nrow(params) - maxParam, "extra rows"))
+    }
+
   ret <- list()
   for (ix in 1:numItems) {
     i <- items[[ix]]
@@ -105,13 +113,13 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
     P <- rpf.prob(i, param[1:rpf.numParam(i)], i.theta)
 #    if (any(is.na(P))) stop(paste("Item", i@spec, "with param", param," produced NAs"))
     ret1 <- apply(P, 2, sample, x=1:i@outcomes, size=1, replace=F)
-    ret1 <- factor(ret1, levels=1:i@outcomes, ordered=TRUE)
+    labels <- 1:i@outcomes
+    if (!missing(grp) && !is.null(grp$data)) labels <- levels(grp$data[1, name[ix]])
+    ret1 <- factor(ret1, levels=1:i@outcomes, ordered=TRUE, labels=labels)
     attr(ret1, 'mxFactor') <- TRUE  # for OpenMx
     ret[[ix]] <- ret1
   }
   ret <- as.data.frame(ret, optional=TRUE)
-  name <- colnames(params)
-  if (is.null(name)) name <- names(items)
   if (is.null(name)) name <- paste(prefix,1:numItems,sep="")
   colnames(ret) <- name
   if (mcar > 0) {

@@ -70,9 +70,9 @@ build.T <- function(outcomes, got, type) {
 ##' can be specified as "trend" for a Fourier basis or as "id" for an
 ##' identity basis. The response probability function is
 ##'
-##' \deqn{a_k = T_a \alpha_k}
-##' \deqn{c_k = T_c \gamma_k}
-##' \deqn{\mathrm P(\mathrm{pick}=k|a,a_k,c_k) = C\ \frac{1}{1+\exp(-(a \theta a_k + c_k))}}
+##' \deqn{a = T_a \alpha}
+##' \deqn{c = T_c \gamma}
+##' \deqn{\mathrm P(\mathrm{pick}=k|a,a_k,c_k,\theta) = C\ \frac{1}{1+\exp(-(a \theta a_k + c_k))}}
 ##'
 ##' where \eqn{a_k} and \eqn{c_k} are the result of multiplying two vectors
 ##' of free parameters \eqn{\alpha} and \eqn{\gamma} by fixed matrices \eqn{T_a} and \eqn{T_c}, respectively;
@@ -111,6 +111,9 @@ getT <- function(m, tx) {
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.nrm"),
           function(m, version) {
+		  if (m@factors == 0) {
+			  return(c(gam=ck <- sort(rnorm(m@outcomes-1))))
+		  }
             a <- rlnorm(m@factors, sdlog=.5)
             ak <- abs(rnorm(m@outcomes-1, mean=1, sd=.25))
             ck <- sort(rnorm(m@outcomes-1))

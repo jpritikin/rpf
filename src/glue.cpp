@@ -152,6 +152,7 @@ int unpack_theta(int dims, double *param, int numAbilities, double *theta, doubl
 static SEXP
 rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 {
+	omxManageProtectInsanity mpi;
   if (Rf_length(r_spec) < RPF_ISpecCount)
     Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
 
@@ -171,10 +172,12 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 
   const int numOutcomes = spec[RPF_ISpecOutcomes];
   const int dims = spec[RPF_ISpecDims];
-
-  int numPeople;
+  double *param = REAL(r_param);
+  int numPeople = 1;
   int numAbilities = 1;
-  if (dims == 1) {
+  if (dims == 0) {
+	  if (Rf_length(r_theta)) numPeople = Rf_length(r_theta);
+  } else if (dims == 1) {
     numPeople = Rf_length(r_theta);
   } else {
     getMatrixDims(r_theta, &numAbilities, &numPeople);
@@ -183,17 +186,17 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   SEXP outsxp;
   Rf_protect(outsxp = Rf_allocMatrix(REALSXP, numOutcomes, numPeople));
   double *out = REAL(outsxp);
-  double *theta = REAL(r_theta);
-  double *param = REAL(r_param);
+  double *theta = NULL;
+  if (dims) theta = REAL(r_theta);
     
   Eigen::VectorXd thBuf(dims);
   for (int px=0; px < numPeople; px++) {
-	  if (!unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf.data())) {
-	for (int ox=0; ox < numOutcomes; ox++) {
-	  out[px*numOutcomes + ox] = NA_REAL;
-	}
-	continue;
-    }
+	  if (dims && !unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf.data())) {
+		  for (int ox=0; ox < numOutcomes; ox++) {
+			  out[px*numOutcomes + ox] = NA_REAL;
+		  }
+		  continue;
+	  }
 	  (*librpf_model[id].prob)(spec, param, thBuf.data(), out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
       double prob = out[px*numOutcomes + ox];
@@ -203,13 +206,13 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     }
   }
 
-  UNPROTECT(1);
   return outsxp;
 }
 
 static SEXP
 rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 {
+	omxManageProtectInsanity mpi;
   if (Rf_length(r_spec) < RPF_ISpecCount)
     Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
 
@@ -229,10 +232,12 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 
   const int numOutcomes = spec[RPF_ISpecOutcomes];
   const int dims = spec[RPF_ISpecDims];
-
-  int numPeople;
+  int numPeople = 1;
+  double *param = REAL(r_param);
   int numAbilities = 1;
-  if (dims == 1) {
+  if (dims == 0) {
+	  if (Rf_length(r_theta)) numPeople = Rf_length(r_theta);
+  } else if (dims == 1) {
     numPeople = Rf_length(r_theta);
   } else {
     getMatrixDims(r_theta, &numAbilities, &numPeople);
@@ -241,17 +246,17 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   SEXP outsxp;
   Rf_protect(outsxp = Rf_allocMatrix(REALSXP, numOutcomes, numPeople));
   double *out = REAL(outsxp);
-  double *theta = REAL(r_theta);
-  double *param = REAL(r_param);
+  double *theta = NULL;
+  if (dims) theta = REAL(r_theta);
     
   Eigen::VectorXd thBuf(dims);
   for (int px=0; px < numPeople; px++) {
-	  if (!unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf.data())) {
-	for (int ox=0; ox < numOutcomes; ox++) {
-	  out[px*numOutcomes + ox] = NA_REAL;
-	}
-	continue;
-    }
+	  if (dims && !unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf.data())) {
+		  for (int ox=0; ox < numOutcomes; ox++) {
+			  out[px*numOutcomes + ox] = NA_REAL;
+		  }
+		  continue;
+	  }
 	  (*librpf_model[id].logprob)(spec, param, thBuf.data(), out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
       double prob = out[px*numOutcomes + ox];
@@ -261,7 +266,6 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     }
   }
 
-  UNPROTECT(1);
   return outsxp;
 }
 
@@ -296,18 +300,21 @@ rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
     Rf_error("Item has %d outcomes, but weight is of length %d",
 	  outcomes, Rf_length(r_weight));
 
+  double *where = NULL;
+  if (dims) where = REAL(r_where);
+
   const int numDeriv = numParam + numParam*(numParam+1)/2;
   SEXP ret;
   Rf_protect(ret = Rf_allocVector(REALSXP, numDeriv));
   memset(REAL(ret), 0, sizeof(double) * numDeriv);
   (*librpf_model[id].dLL1)(spec, REAL(r_param),
-			    REAL(r_where), REAL(r_weight), REAL(ret));
+			    where, REAL(r_weight), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
     if (!std::isfinite(REAL(ret)[px])) Rf_error("Deriv %d not finite at step 1", px);
   }
   (*librpf_model[id].dLL2)(spec, REAL(r_param), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
-    if (!std::isfinite(REAL(ret)[px])) Rf_error("Deriv %d not finite at step 2", px);
+	  //if (!std::isfinite(REAL(ret)[px])) Rf_error("Deriv %d not finite at step 2", px);
   }
   UNPROTECT(1);
   return ret;
@@ -334,6 +341,7 @@ rpf_dTheta_wrapper(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
     Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
   int dims = spec[RPF_ISpecDims];
+  if (dims == 0) Rf_error("Item has no factors");
   if (Rf_length(r_dir) != dims)
     Rf_error("Item has %d dimensions, but dir is of length %d",
 	  dims, Rf_length(r_dir));
@@ -383,6 +391,7 @@ rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
     Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
   int dims = spec[RPF_ISpecDims];
+  if (dims == 0) Rf_error("Item has no factors");
   if (Rf_length(r_mean) != dims)
     Rf_error("Item has %d dimensions, but mean is of length %d",
 	  dims, Rf_length(r_mean));
@@ -446,7 +455,7 @@ static R_CallMethodDef flist[] = {
   {"itemOutcomeBySumScore_wrapper", (DL_FUNC) itemOutcomeBySumScore, 3},
   {"findIdenticalRowsData", (DL_FUNC) findIdenticalRowsData, 5},
   {"CaiHansen2012_wrapper", (DL_FUNC) CaiHansen2012, 3},
-  {"eap_wrapper", (DL_FUNC) eap_wrapper, 2},
+  {"eap_wrapper", (DL_FUNC) eap_wrapper, 1},
   {"hasOpenMP_wrapper", (DL_FUNC) has_openmp, 0},
   {"setNumberOfCores", (DL_FUNC) setNumberOfCores, 1},
   {NULL, NULL, 0}

@@ -30,6 +30,16 @@
 static inline int omp_get_thread_num() { return 0; }
 #endif
 
+static inline int triangleLoc1(int diag)
+{
+	return (diag) * (diag+1) / 2;   // 0 1 3 6 10 15 ..
+}
+
+static inline int triangleLoc0(int diag)
+{
+	return triangleLoc1(diag+1) - 1;  // 0 2 5 9 14 ..
+}
+
 #include "../inst/include/libifa-rpf.h"
 #include "dmvnorm.h"
 #include "ba81quad.h"
@@ -82,17 +92,7 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest);
 SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
 			   SEXP skipMissingness, SEXP skipDefvars);
 SEXP CaiHansen2012(SEXP Rgrp, SEXP Rmethod, SEXP Rtwotier);
-SEXP eap_wrapper(SEXP Rgrp, SEXP Rnafail);
-
-static inline int triangleLoc1(int diag)
-{
-	return (diag) * (diag+1) / 2;   // 0 1 3 6 10 15 ..
-}
-
-static inline int triangleLoc0(int diag)
-{
-	return triangleLoc1(diag+1) - 1;  // 0 2 5 9 14 ..
-}
+SEXP eap_wrapper(SEXP Rgrp);
 
 static inline void
 pda(const double *ar, int rows, int cols) {   // column major order

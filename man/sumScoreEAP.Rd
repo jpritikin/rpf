@@ -3,8 +3,7 @@
 \alias{sumScoreEAP}
 \title{Compute the sum-score EAP table}
 \usage{
-sumScoreEAP(grp, ..., qwidth = 6, qpoints = 49L, distributionTest = NULL,
-  omit = 0L, .twotier = TRUE)
+sumScoreEAP(grp, ..., qwidth = 6, qpoints = 49L, .twotier = TRUE)
 }
 \arguments{
 \item{grp}{a list with spec, param, mean, and cov}
@@ -14,10 +13,6 @@ sumScoreEAP(grp, ..., qwidth = 6, qpoints = 49L, distributionTest = NULL,
 \item{qwidth}{positive width of quadrature in Z units}
 
 \item{qpoints}{number of quadrature points}
-
-\item{distributionTest}{whether to perform the latent distribution test}
-
-\item{omit}{number of items to omit from the latent distribution test}
 
 \item{.twotier}{whether to enable the two-tier optimization}
 }
@@ -48,11 +43,5 @@ published yet (as of Jun 2014).
 
  grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param)
  sumScoreEAP(grp)
-}
-\references{
-Li, Z., & Cai, L. (2012, July). Summed score likelihood based indices for testing
-latent variable distribution fit in Item Response Theory. Paper presented at
-the annual International Meeting of the Psychometric Society, Lincoln,
-NE. Retrieved from http://www.cse.ucla.edu/downloads/files/SD2-final-4.pdf
 }
 

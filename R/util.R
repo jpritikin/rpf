@@ -1,8 +1,93 @@
+##' Omit items with the most missing data
+##'
+##' Items with no missing data are never omitted, regardless of the
+##' number of items requested.
+##' 
+##' @param grp an IFA group
+##' @param omit the maximum number of items to omit
+omitMostMissing <- function(grp, omit) {
+	data <- grp$data
+	if (!is.null(grp$weightColumn)) {
+		data <- expandDataFrame(grp$data, grp$weightColumn)
+	}
+	nacount <- apply(data, 2, function(c) sum(is.na(c)))
+	omit <- min(omit, sum(nacount > 0))
+	if (omit == 0) return(grp)
+
+	exclude <- order(-nacount)[1:omit]
+	excol <- colnames(grp$data)[exclude]
+	imask <- -match(excol, colnames(grp$param))
+	grp$spec <- grp$spec[imask]
+	grp$param <- grp$param[,imask]
+	grp$free <- grp$free[,imask]
+	grp$data <- grp$data[,-match(excol, colnames(grp$data))]
+	grp$omitted <- c(grp$omitted, excol)
+	grp
+}
+
 ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 	if (missing(mask)) {
 		mask <- rep(TRUE, ncol(grp$param))
 	}
 	.Call(ssEAP_wrapper, grp, qwidth, qpoints, mask, twotier, debug)
+}
+
+##' Conduct the sum-score EAP distribution test
+##' 
+##' @param grp a list with spec, param, mean, and cov
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @param .twotier whether to enable the two-tier optimization
+##' @references
+##' Li, Z., & Cai, L. (2012, July). Summed score likelihood based indices for testing
+##' latent variable distribution fit in Item Response Theory. Paper presented at
+##' the annual International Meeting of the Psychometric Society, Lincoln,
+##' NE. Retrieved from http://www.cse.ucla.edu/downloads/files/SD2-final-4.pdf
+sumScoreEAPTest <- function(grp, ..., .twotier=TRUE) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
+	if (is.null(grp$data)) {
+		stop("distributionTest cannot be conducted because there is no data")
+	}
+	qwidth <- grp$qwidth
+	if (is.null(qwidth)) { qwidth <- 6 }
+	qpoints <- grp$qpoints
+	if (is.null(qpoints)) { qpoints <- 49 }
+	tbl <- ssEAP(grp, qwidth, qpoints, twotier=.twotier)
+	rownames(tbl) <- 0:(nrow(tbl)-1)
+	result <- list(tbl=tbl)
+	oss <- observedSumScore(grp)
+	result$n <- oss$n
+	result$observed <- oss$dist
+	obs <- matrix(oss$dist, ncol=1)
+	size <- sum(obs)
+	expected <- matrix(size * tbl[,1], ncol=1)
+	result$rms.p <- log(ptw2011.gof.test(obs, expected))
+
+	kc <- .Call(collapse_wrapper, obs, expected)
+	obs <- kc$O
+	expected <- kc$E
+	mask <- !is.na(expected) & expected!=0
+	result$pearson.chisq <- sum((obs[mask] - expected[mask])^2 / expected[mask])
+	result$pearson.df <- sum(mask)-1L
+	result$pearson.p <- pchisq(result$pearson.chisq, result$pearson.df, lower.tail=FALSE, log.p=TRUE)
+	result$omitted <- grp$omitted
+	class(result) <- "summary.sumScoreEAPTest"
+	result
+}
+
+print.summary.sumScoreEAPTest <- function(x,...) {
+	cat(sprintf("Latent distribution fit test (n=%d):\n", x$n))
+	if (!is.null(x$omitted)) {
+		cat(paste("  Omitted:", paste(x$omitted, collapse=" "), "\n"))
+	}
+	if (!is.null(x$rms.p)) {
+		cat(sprintf("  RMS log(p) = %.2f\n", x$rms.p))
+	}
+	if (!is.null(x$pearson.p)) {
+		cat(sprintf("  Pearson X^2(%3d) = %.2f, log(p) = %.2f\n",
+			    x$pearson.df, x$pearson.chisq, x$pearson.p))
+	}
 }
 
 ##' Compute the sum-score EAP table
@@ -23,8 +108,6 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param qwidth positive width of quadrature in Z units
 ##' @param qpoints number of quadrature points
-##' @param distributionTest whether to perform the latent distribution test
-##' @param omit number of items to omit from the latent distribution test
 ##' @param .twotier whether to enable the two-tier optimization
 ##' @examples
 ##' # see Thissen, Pommerich, Billeaud, & Williams (1995, Table 2)
@@ -39,12 +122,7 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 ##'  
 ##'  grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param)
 ##'  sumScoreEAP(grp)
-##' @references
-##' Li, Z., & Cai, L. (2012, July). Summed score likelihood based indices for testing
-##' latent variable distribution fit in Item Response Theory. Paper presented at
-##' the annual International Meeting of the Psychometric Society, Lincoln,
-##' NE. Retrieved from http://www.cse.ucla.edu/downloads/files/SD2-final-4.pdf
-sumScoreEAP <- function(grp, ..., qwidth=6.0, qpoints=49L, distributionTest=NULL, omit=0L, .twotier=TRUE) {
+sumScoreEAP <- function(grp, ..., qwidth=6.0, qpoints=49L, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
@@ -54,57 +132,7 @@ sumScoreEAP <- function(grp, ..., qwidth=6.0, qpoints=49L, distributionTest=NULL
 
 	tbl <- ssEAP(grp, qwidth, qpoints, twotier=.twotier)
 	rownames(tbl) <- 0:(nrow(tbl)-1)
-	result <- list(tbl=tbl, distributionTest=FALSE)
-	if ((is.null(distributionTest) && !is.null(grp$data)) || (!is.null(distributionTest) && distributionTest)) {
-		if (!is.null(distributionTest) && is.null(grp$data)) {
-			stop("distributionTest cannot be conducted because there is no data")
-		}
-		result$distributionTest <- TRUE
-		mask <- rep(TRUE, ncol(grp$param))
-		if (omit > 0) {
-			if (omit >= ncol(grp$param)) stop("Cannot omit all the items")
-			nacount <- sort(-sapply(grp$data, function(x) sum(is.na(x))))
-			omit <- min(sum(nacount != 0), omit)
-			toOmit <- names(nacount)[1:omit]
-			mask[match(toOmit, colnames(grp$param))] <- FALSE
-			tbl <- ssEAP(grp, qwidth, qpoints, mask)
-			result$omitted <- toOmit
-		}
-		oss <- observedSumScore(grp, mask=mask)
-		result$n <- oss$n
-		result$observed <- oss$dist
-		obs <- matrix(oss$dist, ncol=1)
-		size <- sum(obs)
-		expected <- matrix(size * tbl[,1], ncol=1)
-		result$rms.p <- log(ptw2011.gof.test(obs, expected))
-
-		kc <- .Call(collapse_wrapper, obs, expected)
-		obs <- kc$O
-		expected <- kc$E
-		mask <- !is.na(expected) & expected!=0
-		result$pearson.chisq <- sum((obs[mask] - expected[mask])^2 / expected[mask])
-		result$pearson.df <- sum(mask)-1L
-		result$pearson.p <- pchisq(result$pearson.chisq, result$pearson.df, lower.tail=FALSE, log.p=TRUE)
-	}
-	class(result) <- "summary.sumScoreEAP"
-	result
-}
-
-print.summary.sumScoreEAP <- function(x,...) {
-	print(x$tbl)
-	if (x$distributionTest) {
-		cat(sprintf("\nLatent distribution fit test (n=%d):\n", x$n))
-	}
-	if (!is.null(x$omitted)) {
-		cat(paste("  Omitted:", paste(x$omitted, collapse=" "), "\n"))
-	}
-	if (!is.null(x$rms.p)) {
-		cat(sprintf("  RMS log(p) = %.2f\n", x$rms.p))
-	}
-	if (!is.null(x$pearson.p)) {
-		cat(sprintf("  Pearson X^2(%3d) = %.2f, log(p) = %.2f\n",
-			    x$pearson.df, x$pearson.chisq, x$pearson.p))
-	}
+	tbl
 }
 
 ##' Compute the observed sum-score
@@ -180,7 +208,7 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##'
 ##' @param grp a list with spec, param, and data
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
-##' @param naAction action for rows with fewer than
+##' @param naAction deprecated, will be removed in the next release
 ##' \code{minItemsPerScore}. Defaults to 'fail'. If 'pass', will fill
 ##' with NAs.
 ##' @examples
@@ -191,15 +219,12 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##' colnames(param) <- colnames(data)
 ##' grp <- list(spec=spec, param=param, data=data, minItemsPerScore=1L)
 ##' EAPscores(grp)
-EAPscores <- function(grp, ..., naAction="fail") {
+EAPscores <- function(grp, ..., naAction=NULL) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
 
-	validAction <- c('pass', 'fail')
-	if (is.na(match(naAction, validAction))) {
-		stop(paste("naAction must be one of", paste(validAction, collapse=", ")))
-	}
+	if (!missing(naAction)) warning("naAction is deprecated")
 
-	.Call(eap_wrapper, grp, naAction == "fail")
+	.Call(eap_wrapper, grp)
 }

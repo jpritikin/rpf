@@ -3,14 +3,14 @@
 \alias{EAPscores}
 \title{Compute EAP scores}
 \usage{
-EAPscores(grp, ..., naAction = "fail")
+EAPscores(grp, ..., naAction = NULL)
 }
 \arguments{
 \item{grp}{a list with spec, param, and data}
 
 \item{...}{Not used.  Forces remaining arguments to be specified by name.}
 
-\item{naAction}{action for rows with fewer than
+\item{naAction}{deprecated, will be removed in the next release
 \code{minItemsPerScore}. Defaults to 'fail'. If 'pass', will fill
 with NAs.}
 }
