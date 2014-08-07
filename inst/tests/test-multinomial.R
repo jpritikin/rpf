@@ -14,24 +14,28 @@ test_that("multinomialFit full info, simple", {
   grp$mean <- 0
   grp$cov <- diag(1)
   grp$free <- grp$param != 0
-  grp$data <- rpf.sample(1500, grp=grp)
+  grp$data <- compressDataFrame(rpf.sample(1500, grp=grp))
+  grp$weightColumn <- 'freq'
+  grp$observedStats <- nrow(grp$data) - 1
   
   # screw up fit
   grp$param[2,] <- grp$param[2,] + runif(10, -.75, .75)
 
   got <- multinomialFit(grp, method="pearson")
   expect_equal(got$statistic, 1287.46, .01)
-  expect_equal(got$df, 1003)
-  expect_equal(got$pval, -19.81, .01)
+  expect_equal(got$df, 209)
+  expect_equal(got$pval, -354, .1)
 
   got <- multinomialFit(grp, method="lr")
   expect_equal(got$statistic, 914.35, .01)
-  expect_equal(got$df, 1003)
-  expect_equal(got$pval, -.0216, .01)
+  expect_equal(got$df, 209)
+  expect_equal(got$pval, -202, .1)
 })
 
 test_that("multinomialFit full info, simple w/ missingness", {
   require(rpf)
+  require(testthat)
+  
   set.seed(7)
   grp <- list(spec=list())
   grp$spec[1:10] <- rpf.grm()
@@ -40,22 +44,24 @@ test_that("multinomialFit full info, simple w/ missingness", {
   grp$mean <- 0
   grp$cov <- diag(1)
   grp$free <- grp$param != 0
-  grp$data <- rpf.sample(1500, grp=grp, mcar=.1)
-
+  grp$data <- compressDataFrame(rpf.sample(1500, grp=grp, mcar=.1))
+  grp$weightColumn <- 'freq'
+  grp$observedStats <- nrow(grp$data) - 1
+  
   got <- multinomialFit(grp, method="pearson")
   expect_equal(got$statistic, 1115.63, .01)
-  expect_equal(got$df, 1003)
-  expect_equal(got$pval, -4.91, .01)
+  expect_equal(got$df, 710)
+  expect_equal(got$pval, -45.7, .1)
 
   got <- multinomialFit(grp, method="lr")
   expect_equal(got$statistic, 414.691, .01)
-  expect_equal(got$df, 1003)
+  expect_equal(got$df, 710)
   expect_equal(got$pval, 0, .01)
   expect_equal(got$n, 521)
 
   got <- multinomialFit(omitMostMissing(grp, 1), method="lr")
   expect_equal(got$statistic, 253.39, .01)
-  expect_equal(got$df, 493)
+  expect_equal(got$df, 585)
   expect_equal(got$pval, 0, .01)
   expect_equal(got$n, 598)
 })

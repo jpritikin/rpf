@@ -15,12 +15,18 @@ omitMostMissing <- function(grp, omit) {
 	if (omit == 0) return(grp)
 
 	exclude <- order(-nacount)[1:omit]
-	excol <- colnames(grp$data)[exclude]
+	excol <- colnames(data)[exclude]
 	imask <- -match(excol, colnames(grp$param))
 	grp$spec <- grp$spec[imask]
 	grp$param <- grp$param[,imask]
 	grp$free <- grp$free[,imask]
-	grp$data <- grp$data[,-match(excol, colnames(grp$data))]
+	grp$data <- data[,-match(excol, colnames(data))]
+	if (!is.null(grp$weightColumn)) {
+		grp$data <- compressDataFrame(grp$data)
+	}
+	if (!is.null(grp$observedStats)) {
+		grp$observedStats <- nrow(grp$data)
+	}
 	grp$omitted <- c(grp$omitted, excol)
 	grp
 }
