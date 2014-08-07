@@ -64,10 +64,10 @@ read.flexmirt <- function(fname) {
           # grab item parameters
           logitg <- thisGroup[i,7]
           c <- thisGroup[i,8]
-          a <- thisGroup[i,9]
+          a <- thisGroup[i,9:(9+dims-1)]
 
-          spec <- rpf.drm(multidimensional=TRUE)
-          param <- c(a, c, logitg)
+          spec <- rpf.drm(factors = dims)
+          param <- c(unlist(a), c, logitg, logit(1))
         }
         if (thisGroup[i,5] == 2) { # graded
           # grab item parameters
@@ -78,7 +78,7 @@ read.flexmirt <- function(fname) {
           }
           a <- thisGroup[i,(6+nc):(6+nc+dims-1)]
 
-          spec <- rpf.grm(multidimensional=TRUE, outcomes=nc, factors=dims)
+          spec <- rpf.grm(outcomes=nc, factors=dims)
           param <- c(unlist(a), c)
         }
         if (thisGroup[i,5] == 3) { # nominal
