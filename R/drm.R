@@ -67,14 +67,21 @@ setMethod("rpf.modify", signature(m="rpf.mdim.drm", factors="numeric"),
 ##' Transform from [0,1] to the reals
 ##'
 ##' The logit function is a standard transformation from [0,1] (such
-##' as a probability) to the real number line.
+##' as a probability) to the real number line. This function is
+##' exactly the same as qlogis.
 ##'
-##' @param prob a number between 0 and 1
+##' @param p a number between 0 and 1
+##' @param location see qlogis
+##' @param scale see qlogis
+##' @param lower.tail see qlogis
+##' @param log.p see qlogis
 ##' @examples
 ##' logit(.5)  # 0
 ##' logit(.25) # -1.098
 ##' logit(0)   # -Inf
-logit <- function(prob) log(prob/(1-prob))
+##' @seealso
+##' qlogis
+logit <- qlogis
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),
           function(m, version) {
