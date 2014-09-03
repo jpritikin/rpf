@@ -1,4 +1,5 @@
 import(methods)
+import(parallel)
 exportClassPattern("^rpf.+")
 exportMethods(rpf.logprob)
 exportMethods(rpf.prob)
