@@ -482,7 +482,6 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
 	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
 
     spec <- grp$spec
-    if (ncol(grp$data) != length(spec)) stop("Dim mismatch between data and spec")
     param <- grp$param
     if (ncol(param) != length(spec)) stop("Dim mismatch between param and spec")
     if (is.null(colnames(param))) stop("grp$param must have column names")
