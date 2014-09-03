@@ -74,6 +74,9 @@ SEXP eap_wrapper(SEXP Rgrp)
 	ifaGroup grp(GlobalNumberOfCores, true);
 	grp.import(Rgrp);
 	grp.buildRowSkip();
+	if (grp.getNumUnique() == 0) {
+		Rf_error("EAP requested but there are no data rows");
+	}
 	grp.ba81OutcomeProb(grp.param, false);
 
 	// TODO Wainer & Thissen. (1987). Estimating ability with the wrong
@@ -124,7 +127,9 @@ SEXP eap_wrapper(SEXP Rgrp)
 	SET_STRING_ELT(classes, 0, Rf_mkChar("data.frame"));
 	Rf_setAttrib(Rscores, R_ClassSymbol, classes);
 
-	Rf_setAttrib(Rscores, R_RowNamesSymbol, grp.dataRowNames);
+	if (grp.dataRowNames) {
+		Rf_setAttrib(Rscores, R_RowNamesSymbol, grp.dataRowNames);
+	}
 
 	if (grp.numSpecific == 0) {
 		BA81Engine<eap&, BA81Dense, BA81LatentScores, BA81OmitEstep> engine;

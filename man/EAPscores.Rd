@@ -15,7 +15,19 @@ EAPscores(grp, ..., naAction = NULL)
 with NAs.}
 }
 \description{
-Compute EAP scores
+If you have missing data then you must specify
+\code{minItemsPerScore}.  This option will set scores to NA when
+there are too few items to make an accurate score estimate.  If
+you are using the scores as point estimates without considering
+the standard error then you should set \code{minItemsPerScore} as
+high as you can tolerate. This will increase the amount of missing
+data but scores will be more accurate. If you are carefully
+considering the standard errors of the scores then you can set
+\code{minItemsPerScore} to 1. This will mimic the behavior of most
+other IFA software wherein scores are estimated if there is at
+least 1 non-NA item for the score. However, it may make more sense
+to set \code{minItemsPerScore} to 0. When set to 0, all NA rows
+are scored to the prior distribution.
 }
 \examples{
 spec <- list()

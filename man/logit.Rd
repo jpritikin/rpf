@@ -3,18 +3,30 @@
 \alias{logit}
 \title{Transform from [0,1] to the reals}
 \usage{
-logit(prob)
+logit(p, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
 }
 \arguments{
-\item{prob}{a number between 0 and 1}
+\item{p}{a number between 0 and 1}
+
+\item{location}{see qlogis}
+
+\item{scale}{see qlogis}
+
+\item{lower.tail}{see qlogis}
+
+\item{log.p}{see qlogis}
 }
 \description{
 The logit function is a standard transformation from [0,1] (such
-as a probability) to the real number line.
+as a probability) to the real number line. This function is
+exactly the same as qlogis.
 }
 \examples{
 logit(.5)  # 0
 logit(.25) # -1.098
 logit(0)   # -Inf
+}
+\seealso{
+qlogis
 }
 

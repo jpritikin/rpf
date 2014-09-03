@@ -482,7 +482,6 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
 	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
 
     spec <- grp$spec
-    if (ncol(grp$data) != length(spec)) stop("Dim mismatch between data and spec")
     param <- grp$param
     if (ncol(param) != length(spec)) stop("Dim mismatch between param and spec")
     if (is.null(colnames(param))) stop("grp$param must have column names")
@@ -873,8 +872,7 @@ multinomialFit <- function(grp, ..., method="lr", log=TRUE, .twotier=TRUE) {
 	}
 	got <- CaiHansen2012(grp, method, .twotier)
 	stat <- got$stat
-	bins <- prod(sapply(grp$spec, function(s) s$outcomes))
-	out <- c(out, list(statistic=stat, df=bins - sumFree - 1))
+	out <- c(out, list(statistic=stat, df=grp$observedStats - sumFree))
 	out$pval <- pchisq(stat, out$df, lower.tail=FALSE, log.p=log)
 	out$log <- log
 	out$method <- method
@@ -892,7 +890,8 @@ print.summary.multinomialFit <- function(x,...) {
 	} else {
 		part2 <- paste("p = ", round(x$pval,4), sep="")
 	}
-	cat(paste("  ", part1, ", ", part2, "\n", sep=""))
+	rmsea <- sqrt((x$statistic - x$df) / (x$df * (x$n - 1)))
+	cat(paste("  ", part1, ", ", part2, ", RMSEA = ", round(rmsea,3),"\n", sep=""))
 	if (!is.null(x$omitted)) {
 		cat(paste("omitted: ", paste(x$omitted, collapse=", "), "\n", sep=""))
 	}

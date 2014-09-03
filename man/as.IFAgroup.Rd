@@ -3,12 +3,14 @@
 \alias{as.IFAgroup}
 \title{Convert an OpenMx MxModel object into an IFA group}
 \usage{
-as.IFAgroup(mxModel, data = NULL)
+as.IFAgroup(mxModel, data = NULL, container = NULL)
 }
 \arguments{
 \item{mxModel}{MxModel object}
 
 \item{data}{observed data (otherwise the data will be taken from the mxModel)}
+
+\item{container}{an MxModel in which to search for the latent distribution matrices}
 }
 \value{
 a groups with item parameters and latent distribution

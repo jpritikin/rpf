@@ -84,6 +84,11 @@ void ba81NormalQuad::setup(double Qwidth, int Qpoints, double *means,
 	maxDims = primaryDims + (numSpecific? 1 : 0);
 	maxAbilities = primaryDims + numSpecific;
 
+	if (maxAbilities == 0) {
+		setup0();
+		return;
+	}
+
 	totalQuadPoints = 1;
 	for (int dx=0; dx < maxDims; dx++) {
 		totalQuadPoints *= quadGridSize;
@@ -454,7 +459,19 @@ void ifaGroup::import(SEXP Rlist)
 			bool found=false;
 			for (int dc=0; dc < int(dataColNames.size()); ++dc) {
 				if (strEQ(itemNames[ix], dataColNames[dc])) {
-					dataColumns.push_back(INTEGER(VECTOR_ELT(Rdata, dc)));
+					SEXP col = VECTOR_ELT(Rdata, dc);
+					if (!Rf_isFactor(col)) {
+						if (TYPEOF(col) == INTSXP) {
+							Rf_error("Column '%s' is an integer but "
+								 "not an ordered factor",
+								 dataColNames[dc]);
+						} else {
+							Rf_error("Column '%s' is of type %s; expecting an "
+								 "ordered factor (integer)",
+								 dataColNames[dc], Rf_type2char(TYPEOF(col)));
+						}
+					}
+					dataColumns.push_back(INTEGER(col));
 					found=true;
 					break;
 				}

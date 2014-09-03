@@ -72,12 +72,12 @@ build.T <- function(outcomes, got, type) {
 ##'
 ##' \deqn{a = T_a \alpha}
 ##' \deqn{c = T_c \gamma}
-##' \deqn{\mathrm P(\mathrm{pick}=k|a,a_k,c_k,\theta) = C\ \frac{1}{1+\exp(-(a \theta a_k + c_k))}}
+##' \deqn{\mathrm P(\mathrm{pick}=k|s,a_k,c_k,\theta) = C\ \frac{1}{1+\exp(-(s \theta a_k + c_k))}}
 ##'
 ##' where \eqn{a_k} and \eqn{c_k} are the result of multiplying two vectors
 ##' of free parameters \eqn{\alpha} and \eqn{\gamma} by fixed matrices \eqn{T_a} and \eqn{T_c}, respectively;
 ##' \eqn{a_0} and \eqn{c_0} are fixed to 0 for identification;
-##' and \eqn{C} is a normalizing constant to ensure that \eqn{\sum_k \mathrm P(\mathrm{pick}=k) = 1}.
+##' and \eqn{C} is a normalizing factor to ensure that \eqn{\sum_k \mathrm P(\mathrm{pick}=k) = 1}.
 ##' 
 ##' @param outcomes The number of choices available
 ##' @param factors the number of factors

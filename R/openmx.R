@@ -2,14 +2,19 @@
 ##'
 ##' @param mxModel MxModel object
 ##' @param data observed data (otherwise the data will be taken from the mxModel)
+##' @param container an MxModel in which to search for the latent distribution matrices
 ##' @return a groups with item parameters and latent distribution
-as.IFAgroup <- function(mxModel, data=NULL) {
-  if (!is(mxModel$expectation, "MxExpectationBA81")) {
+as.IFAgroup <- function(mxModel, data=NULL, container=NULL) {
+	expectation <- mxModel$expectation
+  if (!is(expectation, "MxExpectationBA81")) {
     stop(paste("Don't know how to create an IFA group from",
-               class(mxModel$expectation)))
+               class(expectation)))
   }
+	if (missing(container)) {
+		container <- mxModel
+	}
 
-  mat <- mxModel$expectation$item
+  mat <- expectation$item
   if (length(grep("\\.", mat))) {
     stop(paste("Don't know how to obtain the item matrix", mat))
   }
@@ -18,30 +23,40 @@ as.IFAgroup <- function(mxModel, data=NULL) {
     stop(paste("Item matrix", mat, "not found"))
   }
   
-  ret <- list(spec = mxModel$expectation$ItemSpec,
+  ret <- list(spec = expectation$ItemSpec,
               param = itemMat$values,
               free = itemMat$free,
-              qpoints = mxModel$expectation$qpoints,
-              qwidth = mxModel$expectation$qwidth)
+              qpoints = expectation$qpoints,
+              qwidth = expectation$qwidth)
   
-  mat <- mxModel$expectation$mean
+  mat <- expectation$mean
   if (length(grep("\\.", mat))) {
-    stop(paste("Don't know how to obtain the mean matrix", mat))
-  }
-  meanMat <- mxModel[[mat]]
-  if (!is.null(meanMat)) {
-    ret$mean <- meanMat$values
-    ret$meanFree <- meanMat$free
+    meanMat <- eval(substitute(mxEval(theExpression, container),
+			       list(theExpression = parse(text = mat)[[1]])))
+    if (is.null(meanMat)) {
+      stop(paste("Don't know how to obtain the mean matrix", mat))
+    }
+    ret$mean <- meanMat
+  } else {
+	  mxMat <- mxModel[[mat]]
+	  if (!is.null(mxMat)) {
+		  ret$mean <- mxMat$values
+	  }
   }
 
-  mat <- mxModel$expectation$cov
+  mat <- expectation$cov
   if (length(grep("\\.", mat))) {
-    stop(paste("Don't know how to obtain the cov matrix", mat))
-  }
-  covMat <- mxModel[[mat]]
-  if (!is.null(covMat)) {
-    ret$cov <- covMat$values
-    ret$covFree <- covMat$free
+    covMat <- eval(substitute(mxEval(theExpression, container),
+				   list(theExpression = parse(text = mat)[[1]])))
+    if (is.null(covMat)) {
+      stop(paste("Don't know how to obtain the cov matrix", mat))
+    }
+    ret$cov <- covMat
+  } else {
+	  mxMat <- mxModel[[mat]]
+	  if (!is.null(mxMat)) {
+		  ret$cov <- mxMat$values
+	  }
   }
   
   if (!missing(data)) {
@@ -59,11 +74,20 @@ as.IFAgroup <- function(mxModel, data=NULL) {
     }
   }
 
-  if (!is.na(mxModel$expectation$minItemsPerScore)) {
-    ret$minItemsPerScore <- mxModel$expectation$minItemsPerScore
+  if (!is.na(expectation$minItemsPerScore)) {
+    ret$minItemsPerScore <- expectation$minItemsPerScore
   }
-  if (!is.na(mxModel$expectation$weightColumn)) {
-    ret$weightColumn <- mxModel$expectation$weightColumn
+
+	# take minItemsPerScore into account TODO
+  if (!is.na(expectation$weightColumn)) {
+    ret$weightColumn <- expectation$weightColumn
+    ret$observedStats <- nrow(ret$data) - 1
+  } else {
+	  if (ncol(ret$param) == ncol(ret$data)) {
+		  freq <- tabulateRows(ret$data[orderCompletely(ret$data),])
+		  ret$observedStats <- length(freq) - 1L
+	  }
   }
+
   ret
 }

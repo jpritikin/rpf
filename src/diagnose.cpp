@@ -925,7 +925,7 @@ SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials)
 		draw.setZero();
 		for (int rx=0; rx < rows; ++rx) {
 			for (int sx=0; sx < simSize(rx); ++sx) {
-				int r1 = rand();
+				int r1 = RAND_MAX * unif_rand();
 				for (int cx=0; cx < cols; ++cx) {
 					int threshold = Eprob(rx, cx);
 					if (r1 <= threshold) {
