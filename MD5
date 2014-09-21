@@ -1,4 +1,4 @@
-b1e71f15197dde6b4770fd61f45529fa *DESCRIPTION
+13c94303d0404e787e5eecdcabbca106 *DESCRIPTION
 e151427ecdb19a2429baa086851f7ed8 *NAMESPACE
 ce23a9394358c4cd21d07c96ac946dd5 *R/classes.R
 6d05fd12fc957cc07010b96959de070e *R/dataframe.R
@@ -22,7 +22,7 @@ a1572b0a53bfa8b3ec1388fc110764e6 *cleanup
 8c7b78a124e936cf68ffd7ed4d524aa0 *data/science.rda
 0609804d0187b121e00fa04f6a0e4a10 *inst/doc/diagnostics.R
 70a40673d87bb843d945a1549869795c *inst/doc/diagnostics.Rmd
-983b7a4c076a0f073e2ddd82921ea4e1 *inst/doc/diagnostics.html
+74c6f6f7758c0067a8b3e59b705f66f5 *inst/doc/diagnostics.html
 5ef0cac5f5216ddbc6cdef144e19c12f *inst/doc/flexmirt-plots.R
 c55656d38746ea1f7ace79f242e0c909 *inst/doc/flexmirt-plots.Rmd
 871339c0a504a1b0f93399cfbc15862a *inst/doc/flexmirt-plots.html
@@ -36,7 +36,6 @@ c17e0e2f159aff75f0aafbea16125c63 *inst/tests/test-gamma.R
 19777754436602e8f83bfb5dc2f6a550 *inst/tests/test-mirt-icc.R
 3b0308138d2c1b5eb0ddca67769d8e57 *inst/tests/test-multinomial.R
 bb7129eccee738d2973822ed1dd6ecb6 *inst/tests/test-null.R
-6435b4465ffc147d554a018fa7b38c5f *inst/tests/test-plink.R
 bc81e3b58ee5bd38aeda0806d20dc626 *inst/tests/test-raschfit.R
 dce103e15cc2a897fcb730a4d5ca2c0d *inst/tests/test-rescale.R
 4bcdab86162f522a3d0c20661fa0f99b *inst/tests/test-sample.R
