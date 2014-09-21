@@ -1,8 +1,8 @@
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.38
-Date: 2014-09-03
+Version: 0.39
+Date: 2014-09-21
 Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     role=c('cre','aut')), person("Jonathan",family="Weeks",
     email="weeksjp@gmail.com", role=c('ctb')),
@@ -20,7 +20,6 @@ LazyDataCompression: bzip2
 License: GPL (>= 3)
 LinkingTo: RcppEigen
 Suggests:
-    plink,
     testthat,
     roxygen2,
     ggplot2,
