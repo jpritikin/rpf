@@ -38,6 +38,24 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 	.Call(ssEAP_wrapper, grp, qwidth, qpoints, mask, twotier, debug)
 }
 
+sumScoreEAPTestInternal <- function(result) {
+	expected <- matrix(result$expected, ncol=1)
+	obs <- matrix(result$observed, ncol=1)
+
+	result$rms.p <- log(ptw2011.gof.test(obs, expected))
+
+	kc <- .Call(collapse_wrapper, obs, expected)
+	obs <- kc$O
+	expected <- kc$E
+	mask <- !is.na(expected) & expected!=0
+	result$pearson.chisq <- sum((obs[mask] - expected[mask])^2 / expected[mask])
+	result$pearson.df <- sum(mask)-1L
+	result$pearson.p <- pchisq(result$pearson.chisq, result$pearson.df, lower.tail=FALSE, log.p=TRUE)
+
+	class(result) <- "summary.sumScoreEAPTest"
+	result
+}
+
 ##' Conduct the sum-score EAP distribution test
 ##' 
 ##' @param grp a list with spec, param, mean, and cov
@@ -65,21 +83,34 @@ sumScoreEAPTest <- function(grp, ..., .twotier=TRUE) {
 	oss <- observedSumScore(grp)
 	result$n <- oss$n
 	result$observed <- oss$dist
-	obs <- matrix(oss$dist, ncol=1)
-	size <- sum(obs)
-	expected <- matrix(size * tbl[,1], ncol=1)
-	result$rms.p <- log(ptw2011.gof.test(obs, expected))
-
-	kc <- .Call(collapse_wrapper, obs, expected)
-	obs <- kc$O
-	expected <- kc$E
-	mask <- !is.na(expected) & expected!=0
-	result$pearson.chisq <- sum((obs[mask] - expected[mask])^2 / expected[mask])
-	result$pearson.df <- sum(mask)-1L
-	result$pearson.p <- pchisq(result$pearson.chisq, result$pearson.df, lower.tail=FALSE, log.p=TRUE)
+	result$expected <- result$n * tbl[,1]
+	names(result$observed) <- rownames(tbl)
+	names(result$expected) <- rownames(tbl)
 	result$omitted <- grp$omitted
-	class(result) <- "summary.sumScoreEAPTest"
+	result <- sumScoreEAPTestInternal(result)
 	result
+}
+
+"+.summary.sumScoreEAPTest" <- function(e1, e2) {
+	e2name <- deparse(substitute(e2))
+	if (!inherits(e2, "summary.sumScoreEAPTest")) {
+		stop("Don't know how to add ", e2name, " to a sumScoreEAPTest",
+		     call. = FALSE)
+	}
+
+	if (length(e1$observed) != length(e2$observed)) {
+		stop("The two groups have a different maximum sum-score. Sum-score tests cannot be combined")
+	}
+	if (any(e1$omitted != e2$omitted)) {
+		stop("The two groups have different items omitted. Sum-score tests cannot be combined")
+	}
+
+	cb <- list(observed=e1$observed + e2$observed,
+		   expected=e1$expected + e2$expected,
+		   n=e1$n + e2$n,
+		   omitted=e1$omitted)
+	cb <- sumScoreEAPTestInternal(cb)
+	cb
 }
 
 print.summary.sumScoreEAPTest <- function(x,...) {

@@ -80,6 +80,7 @@ test_that("orlando-thissen-2000", {
 
 test_that("fit w/ mcar", {
   require(rpf)
+  require(testthat)
   set.seed(7)
   grp <- list(spec=list(), qwidth=5, qpoints=31)
   grp$spec[1:20] <- rpf.grm()
@@ -93,6 +94,15 @@ test_that("fit w/ mcar", {
   expect_equal(got$rms.p, -1.87, tolerance=.01)
   expect_equal(got$pearson.df, 16L)
   expect_equal(got$pearson.p, -1.46, tolerance=.01)
+
+  grp1 <- grp
+  grp1$data <- grp$data[1:250,]
+  grp2 <- grp
+  grp2$data <- grp$data[251:500,]
+  e1 <- sumScoreEAPTest(grp1) + sumScoreEAPTest(grp2)
+  e2 <- sumScoreEAPTest(grp)
+  chk <- c('n','pearson.df', 'pearson.chisq', 'pearson.p')
+  expect_equal(unlist(e1[chk]), unlist(e2[chk]))
   
   got <- SitemFit(grp, omit=2L)
   stat <- sapply(got, function(x) x$statistic)
