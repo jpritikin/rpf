@@ -77,6 +77,16 @@ test_that("ct1997 permutations", {
   
   ChenThissen1997(grp, inames = colnames(grp$param)[sample.int(10, 9)])
   # will stop if something is wrong
+  
+  grp1 <- grp
+  grp1$data <- grp$data[1:250,]
+  grp2 <- grp
+  grp2$data <- grp$data[251:500,]
+
+  r1 <- ChenThissen1997(grp)
+  r2 <- ChenThissen1997(grp1) + ChenThissen1997(grp2)
+  expect_equal(r1$pval, r2$pval)
+  expect_equal(r1$gamma, r2$gamma)
 })
 
 drawRandomProportion <- function(expected) {

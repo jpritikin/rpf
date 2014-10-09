@@ -667,6 +667,62 @@ ptw2011.gof.test <- function(observed, expected) {
   p.value
 }
 
+CT1997Internal1 <- function(info, method) {
+	observed <- info$orig.observed
+	expected <- info$orig.expected
+	
+	s <- ordinal.gamma(observed) - ordinal.gamma(expected)
+	if (!is.finite(s) || is.na(s) || s==0) s <- 1
+	info <- c(info, sign=sign(s), gamma=s)
+
+	if (method == "pearson") {
+		kc <- .Call(collapse_wrapper, observed, expected)
+		observed <- kc$O
+		expected <- kc$E
+		mask <- !is.na(expected)
+		x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+		df <- prod(dim(observed)-1) - kc$collapsed
+		if (df < 1L) df <- 1L
+		info <- c(info, list(statistic=x2, df=df, observed=observed, expected=expected))
+	} else if (method == "lr") {
+		mask <- observed > 0
+		g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
+		df <- prod(dim(observed)-1)
+		info <- c(info, statistic=g2, df=df)
+	}
+	info
+}
+
+CT1997Internal2 <- function(inames, detail) {
+	gamma <- matrix(NA, length(inames), length(inames))
+	dimnames(gamma) <- list(inames, inames)
+	raw <- matrix(NA, length(inames), length(inames))
+	dimnames(raw) <- list(inames, inames)
+	std <- matrix(NA, length(inames), length(inames))
+	dimnames(std) <- list(inames, inames)
+	pval <- matrix(NA, length(inames), length(inames))
+	dimnames(pval) <- list(inames, inames)
+
+	px <- 1L
+	for (iter1 in 2:length(inames)) {
+		for (iter2 in 1:(iter1-1)) {
+			d1 <- detail[[px]]
+			gamma[iter1, iter2] <- d1$gamma
+			s <- d1$sign
+			stat <- d1$statistic
+			df <- d1$df
+			raw[iter1, iter2] <- stat
+			std[iter1, iter2] <- s * abs((stat - df)/sqrt(2*df))
+			pval[iter1, iter2] <- s * -pchisq(stat, df, lower.tail=FALSE, log.p=TRUE)
+			px <- px + 1L
+		}
+	}
+
+	retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=detail)
+	class(retobj) <- "summary.ChenThissen1997"
+	retobj
+}
+
 ##' Computes local dependence indices for all pairs of items
 ##'
 ##' Item Factor Analysis makes two assumptions: (1) that the latent
@@ -756,9 +812,6 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 		i2 <- items[iter2]
 		observed <- table(data[,dataMap[c(i1,i2)]])
 		N <- sum(observed)
-		s1 <- spec[[i1]]
-		s2 <- spec[[i2]]
-		info <- list()
 
 		expected <- N * pairwiseExpected(grp, c(i1, i2), qwidth, qpoints, .twotier)
 		if (any(dim(observed) != dim(expected))) {
@@ -771,32 +824,14 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 			}
 			Eoutcomes <- dim(expected)[margin]
 			lev <- dimnames(observed)[[margin]]
-			info$error <- paste(colnames(grp$param)[bad], " has ", Eoutcomes,
-					    " outcomes in the model but the data has ", length(lev), " (",
-					    paste(lev, collapse=", "),")", sep="")
+			info <- list(error <- paste(colnames(grp$param)[bad], " has ", Eoutcomes,
+						    " outcomes in the model but the data has ", length(lev), " (",
+						    paste(lev, collapse=", "),")", sep=""))
 			return(info)
 		}
 		dimnames(expected) <- dimnames(observed)
-
-		s <- ordinal.gamma(observed) - ordinal.gamma(expected)
-		if (!is.finite(s) || is.na(s) || s==0) s <- 1
-		info <- c(info, list(orig.observed=observed, orig.expected=expected, sign=sign(s), gamma=s))
-
-		if (method == "pearson") {
-			kc <- .Call(collapse_wrapper, observed, expected)
-			observed <- kc$O
-			expected <- kc$E
-			mask <- !is.na(expected)
-			x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-			df <- (s1@outcomes-1) * (s2@outcomes-1) - kc$collapsed
-			if (df < 1L) df <- 1L
-			info <- c(info, list(statistic=x2, df=df, observed=observed, expected=expected))
-		} else if (method == "lr") {
-			mask <- observed > 0
-			g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
-			df <- (s1@outcomes-1) * (s2@outcomes-1)
-			info <- c(info, statistic=g2, df=df)
-		}
+		info <- list(orig.observed=observed, orig.expected=expected)
+		info <- CT1997Internal1(info, method)
 		info
 	})
 
@@ -804,39 +839,43 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 		if (!is.null(d1$error)) stop(d1$error)
 	})
 
-	gamma <- matrix(NA, length(items), length(items))
-	dimnames(gamma) <- list(inames, inames)
-	raw <- matrix(NA, length(items), length(items))
-	dimnames(raw) <- list(inames, inames)
-	std <- matrix(NA, length(items), length(items))
-	dimnames(std) <- list(inames, inames)
-	pval <- matrix(NA, length(items), length(items))
-	dimnames(pval) <- list(inames, inames)
-
-	for (px in 1:length(pairs)) {
-		iter1 <- pairs[[px]][1]
-		iter2 <- pairs[[px]][2]
-		d1 <- detail[[px]]
-		gamma[iter1, iter2] <- d1$gamma
-		s <- d1$sign
-		stat <- d1$statistic
-		df <- d1$df
-		raw[iter1, iter2] <- stat
-		std[iter1, iter2] <- s * abs((stat - df)/sqrt(2*df))
-		pval[iter1, iter2] <- s * -pchisq(stat, df, lower.tail=FALSE, log.p=TRUE)
-	}
-
 	names(detail) <- sapply(pairs, function(pair) {
 		paste(inames[pair[1]], inames[pair[2]], sep=":")
 	})
 
-	retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=detail, method=method)
-	class(retobj) <- "summary.ChenThissen1997"
+	retobj <- CT1997Internal2(inames, detail)
+	retobj$inames <- inames
+	retobj$method <- method
 	retobj
 }
 
 # deprecated name
 chen.thissen.1997 <- ChenThissen1997
+
+"+.summary.ChenThissen1997" <- function(e1, e2) {
+	e2name <- deparse(substitute(e2))
+	if (!inherits(e2, "summary.ChenThissen1997")) {
+		stop("Don't know how to add ", e2name, " to a ChenThissen1997",
+		     call. = FALSE)
+	}
+	if (length(e1$detail) != length(e2$detail)) {
+		stop("Cannot combine two groups with a different number of items")
+	}
+	if (any(names(e1$detail) != names(e2$detail))) {
+		stop("Cannot combine two groups with a different items")
+	}
+	method <- e1$method
+	detail <- mapply(function(i1, i2) {
+		ii <- list(orig.observed = i1$orig.observed + i2$orig.observed,
+			   orig.expected = i1$orig.expected + i2$orig.expected)
+		ii <- CT1997Internal1(ii, method)
+	}, e1$detail, e2$detail, SIMPLIFY=FALSE)
+
+	retobj <- CT1997Internal2(e1$inames, detail)
+	retobj$inames <- e1$inames
+	retobj$method <- method
+	retobj
+}
 
 print.summary.ChenThissen1997 <- function(x,...) {
 	cat("Chen & Thissen (1997) local dependence test\n")
