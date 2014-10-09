@@ -310,6 +310,45 @@ collapseCells <- function(On, En, mincell = 1){
         return(list(O=On, E=En))
 }
 
+SitemFit1Internal <- function(out) {
+	observed <- out$orig.observed
+	expected <- out$orig.expected
+
+    mask <- apply(observed, 1, sum) != 0
+    observed = observed[mask,,drop=FALSE]
+    expected = expected[mask,,drop=FALSE]
+    if (!length(observed)) stop("No data for item")
+
+	method <- out$method
+    if (method == "pearson") {
+	if (out$alt) {
+		kc <- collapseCells(observed, expected)
+	} else {
+		kc <- .Call(collapse_wrapper, observed, expected)
+	}
+        out$observed <- observed <- kc$O
+        out$expected <- expected <- kc$E
+        mask <- !is.na(expected) & expected!=0
+        out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+	    out$df <- nrow(observed) * (ncol(observed) - 1)
+        out$df <- out$df - out$free - sum(is.na(expected));
+	out$df[out$df < 1] <- 1
+        out$pval <- pchisq(out$statistic, out$df, lower.tail=FALSE, log.p=log)
+    } else if (method == "rms") {
+      pval <- crosstabTest(observed, expected)
+        out$observed <- observed
+        out$expected <- expected
+        if (log) {
+            out$pval <- log(pval)
+        } else {
+            out$pval <- pval
+        }
+    } else {
+        stop(paste("Method", method, "not recognized"))
+    }
+    out
+}
+
 ##' Compute the S fit statistic for 1 item
 ##'
 ##' Implements the Kang & Chen (2007) polytomous extension to
@@ -344,7 +383,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##' @param qwidth the positive width of the quadrature in Z units
 ##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
-##' @param omit number of items to omit when calculating the observed and expected sum-score tables
+##' @param omit number of items to omit or a character vector with the names of the items to omit when calculating the observed and expected sum-score tables
 ##' @param .twotier whether to enable the two-tier optimization
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
@@ -373,17 +412,26 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 
 	mask <- rep(TRUE, ncol(param))
 	if (!alt) mask[itemIndex] <- FALSE
-	if (omit > 0L) {
-		omask <- rep(TRUE, ncol(param))
-		omask[itemIndex] <- FALSE
-		if (omit >= sum(omask)) stop("Cannot omit all the items")
-		rowMask <- !is.na(grp$data[,colnames(param)[itemIndex]])
-		nacount <- sort(-sapply(grp$data[rowMask, omask], function(x) sum(is.na(x))))
-		omit <- min(sum(nacount != 0), omit)
-		toOmit <- names(nacount)[1:omit]
-		#print(c(colnames(param)[itemIndex], toOmit))
-		mask[match(toOmit, colnames(grp$param))] <- FALSE
+	omitted <- NULL
+	if (is.numeric(omit)) {
+		if (omit > 0L) {
+			omask <- rep(TRUE, ncol(param))
+			omask[itemIndex] <- FALSE
+			if (omit >= sum(omask)) stop("Cannot omit all the items")
+			rowMask <- !is.na(grp$data[,colnames(param)[itemIndex]])
+			nacount <- sort(-sapply(grp$data[rowMask, omask], function(x) sum(is.na(x))))
+			omit <- min(sum(nacount != 0), omit)
+			if (omit > 0L) {
+				omitted <- names(nacount)[1:omit]
+					#print(c(colnames(param)[itemIndex], omitted))
+			}
+		}
+	} else if (is.character(omit)) {
+		omitted <- omit
+	} else {
+		stop(paste("Not clear how to interpret omit =", omit))
 	}
+	mask[match(omitted, colnames(grp$param))] <- FALSE
 	iobss <- itemOutcomeBySumScore(grp, mask, itemIndex)
 	observed <-iobss$table
 
@@ -401,42 +449,10 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
     expected <- Eproportion * Escale
 	names(dimnames(observed)) <- c("sumScore", "outcome")
 	dimnames(expected) <- dimnames(observed)
-    out <- list(orig.observed=observed, orig.expected = expected)
+    out <- list(orig.observed=observed, orig.expected = expected,
+		log=log, method=method, n=iobss$n, free=free, alt=alt, omitted=omitted)
 
-    mask <- apply(observed, 1, sum) != 0
-    observed = observed[mask,,drop=FALSE]
-    expected = expected[mask,,drop=FALSE]
-    if (!length(observed)) stop(paste("No data for item", item))
-
-    if (method == "pearson") {
-	if (alt) {
-		kc <- collapseCells(observed, expected)
-	} else {
-		kc <- .Call(collapse_wrapper, observed, expected)
-	}
-        out$observed <- observed <- kc$O
-        out$expected <- expected <- kc$E
-        mask <- !is.na(expected) & expected!=0
-        out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-	    out$df <- nrow(observed) * (ncol(observed) - 1)
-        out$df <- out$df - free - sum(is.na(expected));
-	out$df[out$df < 1] <- 1
-        out$pval <- pchisq(out$statistic, out$df, lower.tail=FALSE, log.p=log)
-    } else if (method == "rms") {
-      pval <- crosstabTest(observed, expected)
-        out$observed <- observed
-        out$expected <- expected
-        if (log) {
-            out$pval <- log(pval)
-        } else {
-            out$pval <- pval
-        }
-    } else {
-        stop(paste("Method", method, "not recognized"))
-    }
-    out$log <- log
-    out$method <- method
-	out$n <- iobss$n
+	out <- SitemFit1Internal(out)
 	out
 }
 
@@ -458,7 +474,7 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
 ##' @param qwidth the positive width of the quadrature in Z units
 ##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
-##' @param omit number of items to omit
+##' @param omit number of items to omit (a single number) or a list of the length the number of items
 ##' @param .twotier whether to enable the two-tier optimization
 ##' @return
 ##' a list of output from \code{\link{SitemFit1}}
@@ -490,11 +506,46 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
 		free <- 0
 		if (!is.null(grp$free)) free <- sum(grp$free[,interest])
 		itemname <- colnames(param)[interest]
+		omit1 <- omit
+		if (is.list(omit)) {
+			omit1 <- omit[[interest]]
+		}
 		ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints,
-				    alt=alt, omit=omit, .twotier=.twotier)
+				    alt=alt, omit=omit1, .twotier=.twotier)
 		ot.out
 	})
 	names(got) <- colnames(param)
+	class(got) <- "summary.SitemFit"
+	got
+}
+
+"+.summary.SitemFit" <- function(e1, e2) {
+	e2name <- deparse(substitute(e2))
+	if (!inherits(e2, "summary.SitemFit")) {
+		stop("Don't know how to add ", e2name, " to a SitemFit",
+		     call. = FALSE)
+	}
+	if (length(e1) != length(e2)) {
+		stop("Cannot combine two groups with a different number of items")
+	}
+	if (any(names(e1) != names(e2))) {
+		stop("Cannot combine two groups with a different items")
+	}
+	if (!all(mapply(function(i1,i2){ isTRUE(all.equal(i1$omitted, i2$omitted)) }, e1, e2))) {
+		stop("Cannot combine two groups with different omitted items")
+	}
+
+	got <- mapply(function(i1, i2){
+		ii <- list(orig.observed = i1$orig.observed + i2$orig.observed,
+			   orig.expected = i1$orig.expected + i2$orig.expected,
+			   log = i1$log,
+			   method = i1$method,
+			   n = i1$n + i2$n,
+			   free = max(i1$free, i2$free),
+			   alt = i1$alt)
+		SitemFit1Internal(ii)
+	}, e1, e2, SIMPLIFY=FALSE)
+
 	class(got) <- "summary.SitemFit"
 	got
 }
