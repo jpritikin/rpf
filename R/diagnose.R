@@ -413,19 +413,10 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 	mask <- rep(TRUE, ncol(param))
 	if (!alt) mask[itemIndex] <- FALSE
 	omitted <- NULL
-	if (is.numeric(omit)) {
-		if (omit > 0L) {
-			omask <- rep(TRUE, ncol(param))
-			omask[itemIndex] <- FALSE
-			if (omit >= sum(omask)) stop("Cannot omit all the items")
-			rowMask <- !is.na(grp$data[,colnames(param)[itemIndex]])
-			nacount <- sort(-sapply(grp$data[rowMask, omask], function(x) sum(is.na(x))))
-			omit <- min(sum(nacount != 0), omit)
-			if (omit > 0L) {
-				omitted <- names(nacount)[1:omit]
-					#print(c(colnames(param)[itemIndex], omitted))
-			}
-		}
+	if (is.null(omit)) {
+		# OK
+	} else if (is.numeric(omit)) {
+		omitted <- bestToOmit(grp, omit, item)
 	} else if (is.character(omit)) {
 		omitted <- omit
 	} else {

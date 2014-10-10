@@ -81,6 +81,9 @@ expandDataFrame <- function(tabdata, freqName=NULL) {
 #' @return Returns a compressed data frame
 compressDataFrame <- function(tabdata, freqColName="freq") {
 	if (!is.na(match(freqColName, colnames(tabdata)))) {
+		# Might be nice to recompress instead of stopping.
+		# There might be rows to collapse due to removal
+		# of columns.
 		stop(paste("Frequency column", freqColName, "already appears as a column:",
 			   paste(colnames(tabdata), collapse=", ")))
 	}

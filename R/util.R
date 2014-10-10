@@ -1,3 +1,59 @@
+##' Identify the columns with most missing data
+##'
+##' If a reference column is given then only rows that are not missing
+##' on the reference column are considered. Otherwise all rows are
+##' considered.
+##' 
+##' @param grp an IFA group
+##' @param omit the maximum number of items to omit
+##' @param ref the reference column (optional)
+bestToOmit <- function(grp, omit, ref=NULL) {
+	if (missing(omit)) stop("How many items to omit?")
+	if (omit == 0) return(NULL)
+	dat <- grp$data
+	wcol <- 1
+	if (!is.null(grp$weightColumn)) {
+		wcol <- dat[[grp$weightColumn]]
+		dat <- dat[,-match(grp$weightColumn, colnames(dat))]
+	}
+	if (omit >= ncol(dat)) stop("Cannot omit all columns")
+	if (!is.null(ref)) {
+		dat <- dat[!is.na(dat[[ref]]),]
+	}
+	nacount <- apply(dat, 2, function(c) sum(is.na(c) * wcol))
+	omit <- min(omit, sum(nacount > 0))
+	if (omit == 0) return(NULL)
+	names(sort(-nacount)[1:omit])
+}
+
+##' Omit the given items
+##'
+##' @param grp an IFA group
+##' @param excol vector of column names to omit
+omitItems <- function(grp, excol) {
+	if (missing(excol)) stop("Which items to omit?")
+	if (length(excol) == 0) return(grp)
+	imask <- -match(excol, colnames(grp$param))
+	grp$spec <- grp$spec[imask]
+	grp$param <- grp$param[,imask]
+	grp$free <- grp$free[,imask]
+	grp$data <- grp$data[,-match(excol, colnames(grp$data))]
+
+	# We need to repack the data because
+	# rows that only differed on the column
+	# we removed are now the same.
+	if (!is.null(grp$weightColumn)) {
+		data <- expandDataFrame(grp$data, grp$weightColumn)
+		grp$data <- compressDataFrame(data)
+	}
+
+	if (!is.null(grp$observedStats)) {
+		grp$observedStats <- nrow(grp$data)
+	}
+	grp$omitted <- c(grp$omitted, excol)
+	grp
+}
+
 ##' Omit items with the most missing data
 ##'
 ##' Items with no missing data are never omitted, regardless of the
@@ -6,29 +62,7 @@
 ##' @param grp an IFA group
 ##' @param omit the maximum number of items to omit
 omitMostMissing <- function(grp, omit) {
-	data <- grp$data
-	if (!is.null(grp$weightColumn)) {
-		data <- expandDataFrame(grp$data, grp$weightColumn)
-	}
-	nacount <- apply(data, 2, function(c) sum(is.na(c)))
-	omit <- min(omit, sum(nacount > 0))
-	if (omit == 0) return(grp)
-
-	exclude <- order(-nacount)[1:omit]
-	excol <- colnames(data)[exclude]
-	imask <- -match(excol, colnames(grp$param))
-	grp$spec <- grp$spec[imask]
-	grp$param <- grp$param[,imask]
-	grp$free <- grp$free[,imask]
-	grp$data <- data[,-match(excol, colnames(data))]
-	if (!is.null(grp$weightColumn)) {
-		grp$data <- compressDataFrame(grp$data)
-	}
-	if (!is.null(grp$observedStats)) {
-		grp$observedStats <- nrow(grp$data)
-	}
-	grp$omitted <- c(grp$omitted, excol)
-	grp
+	omitItems(grp, bestToOmit(grp, omit))
 }
 
 ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
