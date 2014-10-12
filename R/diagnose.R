@@ -505,6 +505,9 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
 				    alt=alt, omit=omit1, .twotier=.twotier)
 		ot.out
 	})
+	lapply(got, function(d1) {
+		if (inherits(d1, "try-error")) stop(d1)
+	})
 	names(got) <- colnames(param)
 	class(got) <- "summary.SitemFit"
 	got
@@ -816,10 +819,9 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 			}
 			Eoutcomes <- dim(expected)[margin]
 			lev <- dimnames(observed)[[margin]]
-			info <- list(error <- paste(colnames(grp$param)[bad], " has ", Eoutcomes,
-						    " outcomes in the model but the data has ", length(lev), " (",
-						    paste(lev, collapse=", "),")", sep=""))
-			return(info)
+			stop(paste(colnames(grp$param)[bad], " has ", Eoutcomes,
+				   " outcomes in the model but the data has ", length(lev), " (",
+				   paste(lev, collapse=", "),")", sep=""))
 		}
 		dimnames(expected) <- dimnames(observed)
 		info <- list(orig.observed=observed, orig.expected=expected)
@@ -828,7 +830,7 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 	})
 
 	lapply(detail, function(d1) {
-		if (!is.null(d1$error)) stop(d1$error)
+		if (inherits(d1, "try-error")) stop(d1)
 	})
 
 	names(detail) <- sapply(pairs, function(pair) {
