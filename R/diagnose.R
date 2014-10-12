@@ -685,14 +685,15 @@ CT1997Internal1 <- function(info, method) {
 }
 
 CT1997Internal2 <- function(inames, detail) {
-	gamma <- matrix(NA, length(inames), length(inames))
-	dimnames(gamma) <- list(inames, inames)
-	raw <- matrix(NA, length(inames), length(inames))
-	dimnames(raw) <- list(inames, inames)
-	std <- matrix(NA, length(inames), length(inames))
-	dimnames(std) <- list(inames, inames)
-	pval <- matrix(NA, length(inames), length(inames))
-	dimnames(pval) <- list(inames, inames)
+	cnames <- inames[-length(inames)]
+	gamma <- matrix(NA, length(inames), length(cnames))
+	dimnames(gamma) <- list(inames, cnames)
+	raw <- matrix(NA, length(inames), length(cnames))
+	dimnames(raw) <- list(inames, cnames)
+	std <- matrix(NA, length(inames), length(cnames))
+	dimnames(std) <- list(inames, cnames)
+	pval <- matrix(NA, length(inames), length(cnames))
+	dimnames(pval) <- list(inames, cnames)
 
 	px <- 1L
 	for (iter1 in 2:length(inames)) {
@@ -709,7 +710,7 @@ CT1997Internal2 <- function(inames, detail) {
 		}
 	}
 
-	retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=detail)
+	retobj <- list(pval=pval[-1,], std=std[-1,], raw=raw[-1,], gamma=gamma[-1,], detail=detail)
 	class(retobj) <- "summary.ChenThissen1997"
 	retobj
 }
