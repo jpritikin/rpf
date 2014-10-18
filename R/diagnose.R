@@ -621,8 +621,10 @@ P.cdf.fn <- function(x, g.var, t) {
 
 ptw2011.gof.test <- function(observed, expected) {
   orig.draws <- sum(observed)
-  if (abs(sum(expected) - orig.draws) > 1e-6) {
-	  stop(paste("Total observed - total expected", abs(sum(expected) - orig.draws)))
+  oeDiff <- abs(sum(expected) - orig.draws)
+  if (is.na(oeDiff) || oeDiff > 1e-6) {
+	  warning(paste("Total observed - total expected", oeDiff))
+    return(NA)
   }
   if (any(c(expected)==0)) {
 	  zeros <- sum(c(expected)==0)
