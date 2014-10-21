@@ -4,7 +4,7 @@
 ##' Winsteps 3.73 using a 1PL model (slope fixed to 1).
 ##'
 ##' @docType data
-##' @keywords datasets
+##' @keywords data
 ##' @name kct
 ##' @aliases kct.items kct.people
 ##' @references

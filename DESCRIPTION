@@ -42,6 +42,7 @@ Collate:
     'nrm.R'
     'mcm.R'
     'grm.R'
+    'LSAT.R'
     'sample.R'
     'dataframe.R'
     'diagnose.R'
