@@ -28,6 +28,7 @@ Tnom.idc <- function(nc) {
 }
 
 build.T <- function(outcomes, got, type) {
+	if (is.null(got)) stop("rpf.nrm: T matrix specified as NULL")
   if (!is.matrix(got)) {
     if (got == "id") {
 	    if (type == 'a') {

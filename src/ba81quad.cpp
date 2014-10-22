@@ -255,7 +255,7 @@ void ifaGroup::importSpec(SEXP slotValue)
 	itemOutcomes.reserve(spec.size());
 	cumItemOutcomes.reserve(spec.size());
 
-	paramRows = 0;
+	impliedParamRows = 0;
 	totalOutcomes = 0;
 	maxItemDims = 0;
 	for (int cx = 0; cx < numItems(); cx++) {
@@ -270,8 +270,8 @@ void ifaGroup::importSpec(SEXP slotValue)
 		totalOutcomes += no;
 
 		int numParam = (*librpf_model[id].numParam)(ispec);
-		if (paramRows < numParam)
-			paramRows = numParam;
+		if (impliedParamRows < numParam)
+			impliedParamRows = numParam;
 	}
 }
 
@@ -329,7 +329,8 @@ void ifaGroup::import(SEXP Rlist)
 
 	std::vector<const char *> dataColNames;
 
-	int pmatRows=-1, pmatCols=-1;
+	paramRows = -1;
+	int pmatCols=-1;
 	int mips = 1;
 	int dataRows = 0;
 	SEXP Rmean=0, Rcov=0;
@@ -342,7 +343,7 @@ void ifaGroup::import(SEXP Rlist)
 		} else if (strEQ(key, "param")) {
 			if (!Rf_isReal(slotValue)) Rf_error("'param' must be a numeric matrix of item parameters");
 			param = REAL(slotValue);
-			getMatrixDims(slotValue, &pmatRows, &pmatCols);
+			getMatrixDims(slotValue, &paramRows, &pmatCols);
 
 			SEXP dimnames;
 			Rf_protect(dimnames = Rf_getAttrib(slotValue, R_DimNamesSymbol));
@@ -483,7 +484,12 @@ void ifaGroup::import(SEXP Rlist)
 		if (weightColumnName) {
 			for (int dc=0; dc < int(dataColNames.size()); ++dc) {
 				if (strEQ(weightColumnName, dataColNames[dc])) {
-					rowWeight = REAL(VECTOR_ELT(Rdata, dc));
+					SEXP col = VECTOR_ELT(Rdata, dc);
+					if (TYPEOF(col) != REALSXP) {
+						Rf_error("Column '%s' is of type %s; expecting type numeric (double)",
+							 dataColNames[dc], Rf_type2char(TYPEOF(col)));
+					}
+					rowWeight = REAL(col);
 					break;
 				}
 			}
@@ -498,9 +504,9 @@ void ifaGroup::import(SEXP Rlist)
 	detectTwoTier();
 	sanityCheck();
 
-	if (pmatRows < paramRows) {
+	if (paramRows < impliedParamRows) {
 		Rf_error("At least %d rows are required in the item parameter matrix, only %d found",
-			 paramRows, pmatRows);
+			 impliedParamRows, paramRows);
 	}
 
 	Eigen::Map<Eigen::MatrixXd> fullCov(cov, maxAbilities, maxAbilities);

@@ -21,7 +21,7 @@ SitemFit(grp, ..., method = "pearson", log = TRUE, qwidth = 6,
 
 \item{alt}{whether to include the item of interest in the denominator}
 
-\item{omit}{number of items to omit}
+\item{omit}{number of items to omit (a single number) or a list of the length the number of items}
 
 \item{.twotier}{whether to enable the two-tier optimization}
 }

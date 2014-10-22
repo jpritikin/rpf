@@ -168,7 +168,11 @@ irt_rpf_mdim_drm_prob(const double *spec,
   } else {
 	  const double gg = antilogit(param[numDims+1]);
 	  const double uu = antilogit(param[numDims+2]);
-	  tmp = gg + (uu-gg) / (1 + exp(athb));
+	  const double width = uu-gg;
+	  if (width < 0) tmp = nan("I");
+	  else {
+		  tmp = gg + width / (1 + exp(athb));
+	  }
   }
   out[0] = 1-tmp;
   out[1] = tmp;
@@ -328,6 +332,10 @@ irt_rpf_mdim_drm_deriv2(const double *spec,
   if (uu == INFINITY) {
     out[numDims+2] = nan("I");
   }
+  if (gg > uu) {
+    out[numDims+1] = nan("I");
+    out[numDims+2] = nan("I");
+  }
 }
 
 static void
@@ -419,12 +427,8 @@ static void _grm_fix_crazy_stuff(const double *spec, const int numOutcomes, doub
   }
 
   for (int fx=0; fx < numOutcomes; fx++) {
-    if (out[fx] < -6.3e-16) {
-      set_deriv_nan(spec, out);
-      return;
-    }
-    if (out[fx] < 1e-20) {
-      double small = SMALLEST_PROB;
+    if (out[fx] < SMALLEST_PROB) {
+      double small = SMALLEST_PROB - out[fx];
       out[bigk] -= small;
       out[fx] += small;
     }
@@ -450,6 +454,12 @@ irt_rpf_mdim_grm_prob(const double *spec,
   out[1] = tmp;
 
   for (int kx=2; kx < numOutcomes; kx++) {
+	  if (1e-6 + kat[kx-1] >= kat[kx-2]) {
+		  for (int ky=0; ky < numOutcomes; ky++) {
+			  out[ky] = nan("I");
+		  }
+		  return;
+	  }
     double athb = -(dprod + kat[kx-1]);
     if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
     else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;

@@ -1,3 +1,59 @@
+##' Identify the columns with most missing data
+##'
+##' If a reference column is given then only rows that are not missing
+##' on the reference column are considered. Otherwise all rows are
+##' considered.
+##' 
+##' @param grp an IFA group
+##' @param omit the maximum number of items to omit
+##' @param ref the reference column (optional)
+bestToOmit <- function(grp, omit, ref=NULL) {
+	if (missing(omit)) stop("How many items to omit?")
+	if (omit == 0) return(NULL)
+	dat <- grp$data
+	wcol <- 1
+	if (!is.null(grp$weightColumn)) {
+		wcol <- dat[[grp$weightColumn]]
+		dat <- dat[,-match(grp$weightColumn, colnames(dat))]
+	}
+	if (omit >= ncol(dat)) stop("Cannot omit all columns")
+	if (!is.null(ref)) {
+		dat <- dat[!is.na(dat[[ref]]),]
+	}
+	nacount <- apply(dat, 2, function(c) sum(is.na(c) * wcol))
+	omit <- min(omit, sum(nacount > 0))
+	if (omit == 0) return(NULL)
+	names(sort(-nacount)[1:omit])
+}
+
+##' Omit the given items
+##'
+##' @param grp an IFA group
+##' @param excol vector of column names to omit
+omitItems <- function(grp, excol) {
+	if (missing(excol)) stop("Which items to omit?")
+	if (length(excol) == 0) return(grp)
+	imask <- -match(excol, colnames(grp$param))
+	grp$spec <- grp$spec[imask]
+	grp$param <- grp$param[,imask]
+	grp$free <- grp$free[,imask]
+	grp$data <- grp$data[,-match(excol, colnames(grp$data))]
+
+	# We need to repack the data because
+	# rows that only differed on the column
+	# we removed are now the same.
+	if (!is.null(grp$weightColumn)) {
+		data <- expandDataFrame(grp$data, grp$weightColumn)
+		grp$data <- compressDataFrame(data)
+	}
+
+	if (!is.null(grp$observedStats)) {
+		grp$observedStats <- nrow(grp$data)
+	}
+	grp$omitted <- c(grp$omitted, excol)
+	grp
+}
+
 ##' Omit items with the most missing data
 ##'
 ##' Items with no missing data are never omitted, regardless of the
@@ -6,29 +62,7 @@
 ##' @param grp an IFA group
 ##' @param omit the maximum number of items to omit
 omitMostMissing <- function(grp, omit) {
-	data <- grp$data
-	if (!is.null(grp$weightColumn)) {
-		data <- expandDataFrame(grp$data, grp$weightColumn)
-	}
-	nacount <- apply(data, 2, function(c) sum(is.na(c)))
-	omit <- min(omit, sum(nacount > 0))
-	if (omit == 0) return(grp)
-
-	exclude <- order(-nacount)[1:omit]
-	excol <- colnames(data)[exclude]
-	imask <- -match(excol, colnames(grp$param))
-	grp$spec <- grp$spec[imask]
-	grp$param <- grp$param[,imask]
-	grp$free <- grp$free[,imask]
-	grp$data <- data[,-match(excol, colnames(data))]
-	if (!is.null(grp$weightColumn)) {
-		grp$data <- compressDataFrame(grp$data)
-	}
-	if (!is.null(grp$observedStats)) {
-		grp$observedStats <- nrow(grp$data)
-	}
-	grp$omitted <- c(grp$omitted, excol)
-	grp
+	omitItems(grp, bestToOmit(grp, omit))
 }
 
 ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
@@ -36,6 +70,24 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 		mask <- rep(TRUE, ncol(grp$param))
 	}
 	.Call(ssEAP_wrapper, grp, qwidth, qpoints, mask, twotier, debug)
+}
+
+sumScoreEAPTestInternal <- function(result) {
+	expected <- matrix(result$expected, ncol=1)
+	obs <- matrix(result$observed, ncol=1)
+
+	result$rms.p <- log(ptw2011.gof.test(obs, expected))
+
+	kc <- .Call(collapse_wrapper, obs, expected)
+	obs <- kc$O
+	expected <- kc$E
+	mask <- !is.na(expected) & expected!=0
+	result$pearson.chisq <- sum((obs[mask] - expected[mask])^2 / expected[mask])
+	result$pearson.df <- sum(mask)-1L
+	result$pearson.p <- pchisq(result$pearson.chisq, result$pearson.df, lower.tail=FALSE, log.p=TRUE)
+
+	class(result) <- "summary.sumScoreEAPTest"
+	result
 }
 
 ##' Conduct the sum-score EAP distribution test
@@ -65,21 +117,34 @@ sumScoreEAPTest <- function(grp, ..., .twotier=TRUE) {
 	oss <- observedSumScore(grp)
 	result$n <- oss$n
 	result$observed <- oss$dist
-	obs <- matrix(oss$dist, ncol=1)
-	size <- sum(obs)
-	expected <- matrix(size * tbl[,1], ncol=1)
-	result$rms.p <- log(ptw2011.gof.test(obs, expected))
-
-	kc <- .Call(collapse_wrapper, obs, expected)
-	obs <- kc$O
-	expected <- kc$E
-	mask <- !is.na(expected) & expected!=0
-	result$pearson.chisq <- sum((obs[mask] - expected[mask])^2 / expected[mask])
-	result$pearson.df <- sum(mask)-1L
-	result$pearson.p <- pchisq(result$pearson.chisq, result$pearson.df, lower.tail=FALSE, log.p=TRUE)
+	result$expected <- result$n * tbl[,1]
+	names(result$observed) <- rownames(tbl)
+	names(result$expected) <- rownames(tbl)
 	result$omitted <- grp$omitted
-	class(result) <- "summary.sumScoreEAPTest"
+	result <- sumScoreEAPTestInternal(result)
 	result
+}
+
+"+.summary.sumScoreEAPTest" <- function(e1, e2) {
+	e2name <- deparse(substitute(e2))
+	if (!inherits(e2, "summary.sumScoreEAPTest")) {
+		stop("Don't know how to add ", e2name, " to a sumScoreEAPTest",
+		     call. = FALSE)
+	}
+
+	if (length(e1$observed) != length(e2$observed)) {
+		stop("The two groups have a different maximum sum-score. Sum-score tests cannot be combined")
+	}
+	if (any(e1$omitted != e2$omitted)) {
+		stop("The two groups have different items omitted. Sum-score tests cannot be combined")
+	}
+
+	cb <- list(observed=e1$observed + e2$observed,
+		   expected=e1$expected + e2$expected,
+		   n=e1$n + e2$n,
+		   omitted=e1$omitted)
+	cb <- sumScoreEAPTestInternal(cb)
+	cb
 }
 
 print.summary.sumScoreEAPTest <- function(x,...) {

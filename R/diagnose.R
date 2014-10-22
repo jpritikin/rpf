@@ -310,6 +310,45 @@ collapseCells <- function(On, En, mincell = 1){
         return(list(O=On, E=En))
 }
 
+SitemFit1Internal <- function(out) {
+	observed <- out$orig.observed
+	expected <- out$orig.expected
+
+    mask <- apply(observed, 1, sum) != 0
+    observed = observed[mask,,drop=FALSE]
+    expected = expected[mask,,drop=FALSE]
+    if (!length(observed)) stop("No data for item")
+
+	method <- out$method
+    if (method == "pearson") {
+	if (out$alt) {
+		kc <- collapseCells(observed, expected)
+	} else {
+		kc <- .Call(collapse_wrapper, observed, expected)
+	}
+        out$observed <- observed <- kc$O
+        out$expected <- expected <- kc$E
+        mask <- !is.na(expected) & expected!=0
+        out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+	    out$df <- nrow(observed) * (ncol(observed) - 1)
+        out$df <- out$df - out$free - sum(is.na(expected));
+	out$df[out$df < 1] <- 1
+        out$pval <- pchisq(out$statistic, out$df, lower.tail=FALSE, log.p=log)
+    } else if (method == "rms") {
+      pval <- crosstabTest(observed, expected)
+        out$observed <- observed
+        out$expected <- expected
+        if (log) {
+            out$pval <- log(pval)
+        } else {
+            out$pval <- pval
+        }
+    } else {
+        stop(paste("Method", method, "not recognized"))
+    }
+    out
+}
+
 ##' Compute the S fit statistic for 1 item
 ##'
 ##' Implements the Kang & Chen (2007) polytomous extension to
@@ -344,7 +383,7 @@ collapseCells <- function(On, En, mincell = 1){
 ##' @param qwidth the positive width of the quadrature in Z units
 ##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
-##' @param omit number of items to omit when calculating the observed and expected sum-score tables
+##' @param omit number of items to omit or a character vector with the names of the items to omit when calculating the observed and expected sum-score tables
 ##' @param .twotier whether to enable the two-tier optimization
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
@@ -373,17 +412,17 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 
 	mask <- rep(TRUE, ncol(param))
 	if (!alt) mask[itemIndex] <- FALSE
-	if (omit > 0L) {
-		omask <- rep(TRUE, ncol(param))
-		omask[itemIndex] <- FALSE
-		if (omit >= sum(omask)) stop("Cannot omit all the items")
-		rowMask <- !is.na(grp$data[,colnames(param)[itemIndex]])
-		nacount <- sort(-sapply(grp$data[rowMask, omask], function(x) sum(is.na(x))))
-		omit <- min(sum(nacount != 0), omit)
-		toOmit <- names(nacount)[1:omit]
-		#print(c(colnames(param)[itemIndex], toOmit))
-		mask[match(toOmit, colnames(grp$param))] <- FALSE
+	omitted <- NULL
+	if (is.null(omit)) {
+		# OK
+	} else if (is.numeric(omit)) {
+		omitted <- bestToOmit(grp, omit, item)
+	} else if (is.character(omit)) {
+		omitted <- omit
+	} else {
+		stop(paste("Not clear how to interpret omit =", omit))
 	}
+	mask[match(omitted, colnames(grp$param))] <- FALSE
 	iobss <- itemOutcomeBySumScore(grp, mask, itemIndex)
 	observed <-iobss$table
 
@@ -401,42 +440,10 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
     expected <- Eproportion * Escale
 	names(dimnames(observed)) <- c("sumScore", "outcome")
 	dimnames(expected) <- dimnames(observed)
-    out <- list(orig.observed=observed, orig.expected = expected)
+    out <- list(orig.observed=observed, orig.expected = expected,
+		log=log, method=method, n=iobss$n, free=free, alt=alt, omitted=omitted)
 
-    mask <- apply(observed, 1, sum) != 0
-    observed = observed[mask,,drop=FALSE]
-    expected = expected[mask,,drop=FALSE]
-    if (!length(observed)) stop(paste("No data for item", item))
-
-    if (method == "pearson") {
-	if (alt) {
-		kc <- collapseCells(observed, expected)
-	} else {
-		kc <- .Call(collapse_wrapper, observed, expected)
-	}
-        out$observed <- observed <- kc$O
-        out$expected <- expected <- kc$E
-        mask <- !is.na(expected) & expected!=0
-        out$statistic <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-	    out$df <- nrow(observed) * (ncol(observed) - 1)
-        out$df <- out$df - free - sum(is.na(expected));
-	out$df[out$df < 1] <- 1
-        out$pval <- pchisq(out$statistic, out$df, lower.tail=FALSE, log.p=log)
-    } else if (method == "rms") {
-      pval <- crosstabTest(observed, expected)
-        out$observed <- observed
-        out$expected <- expected
-        if (log) {
-            out$pval <- log(pval)
-        } else {
-            out$pval <- pval
-        }
-    } else {
-        stop(paste("Method", method, "not recognized"))
-    }
-    out$log <- log
-    out$method <- method
-	out$n <- iobss$n
+	out <- SitemFit1Internal(out)
 	out
 }
 
@@ -458,7 +465,7 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
 ##' @param qwidth the positive width of the quadrature in Z units
 ##' @param qpoints the number of quadrature points
 ##' @param alt whether to include the item of interest in the denominator
-##' @param omit number of items to omit
+##' @param omit number of items to omit (a single number) or a list of the length the number of items
 ##' @param .twotier whether to enable the two-tier optimization
 ##' @return
 ##' a list of output from \code{\link{SitemFit1}}
@@ -490,11 +497,49 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
 		free <- 0
 		if (!is.null(grp$free)) free <- sum(grp$free[,interest])
 		itemname <- colnames(param)[interest]
+		omit1 <- omit
+		if (is.list(omit)) {
+			omit1 <- omit[[interest]]
+		}
 		ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints,
-				    alt=alt, omit=omit, .twotier=.twotier)
+				    alt=alt, omit=omit1, .twotier=.twotier)
 		ot.out
 	})
+	lapply(got, function(d1) {
+		if (inherits(d1, "try-error")) stop(d1)
+	})
 	names(got) <- colnames(param)
+	class(got) <- "summary.SitemFit"
+	got
+}
+
+"+.summary.SitemFit" <- function(e1, e2) {
+	e2name <- deparse(substitute(e2))
+	if (!inherits(e2, "summary.SitemFit")) {
+		stop("Don't know how to add ", e2name, " to a SitemFit",
+		     call. = FALSE)
+	}
+	if (length(e1) != length(e2)) {
+		stop("Cannot combine two groups with a different number of items")
+	}
+	if (any(names(e1) != names(e2))) {
+		stop("Cannot combine two groups with a different items")
+	}
+	if (!all(mapply(function(i1,i2){ isTRUE(all.equal(i1$omitted, i2$omitted)) }, e1, e2))) {
+		stop("Cannot combine two groups with different omitted items")
+	}
+
+	got <- mapply(function(i1, i2){
+		ii <- list(orig.observed = i1$orig.observed + i2$orig.observed,
+			   orig.expected = i1$orig.expected + i2$orig.expected,
+			   log = i1$log,
+			   method = i1$method,
+			   n = i1$n + i2$n,
+			   free = max(i1$free, i2$free),
+			   alt = i1$alt)
+		SitemFit1Internal(ii)
+	}, e1, e2, SIMPLIFY=FALSE)
+
 	class(got) <- "summary.SitemFit"
 	got
 }
@@ -576,8 +621,10 @@ P.cdf.fn <- function(x, g.var, t) {
 
 ptw2011.gof.test <- function(observed, expected) {
   orig.draws <- sum(observed)
-  if (abs(sum(expected) - orig.draws) > 1e-6) {
-	  stop(paste("Total observed - total expected", abs(sum(expected) - orig.draws)))
+  oeDiff <- abs(sum(expected) - orig.draws)
+  if (is.na(oeDiff) || oeDiff > 1e-6) {
+	  warning(paste("Total observed - total expected", oeDiff))
+    return(NA)
   }
   if (any(c(expected)==0)) {
 	  zeros <- sum(c(expected)==0)
@@ -614,6 +661,84 @@ ptw2011.gof.test <- function(observed, expected) {
   smallest <- 6.3e-16  # approx exp(-35)
   if (p.value < smallest) p.value <- smallest
   p.value
+}
+
+CT1997Internal1 <- function(info, method) {
+	observed <- info$orig.observed
+	expected <- info$orig.expected
+	
+	s <- ordinal.gamma(observed) - ordinal.gamma(expected)
+	if (!is.finite(s) || is.na(s) || s==0) s <- 1
+	info <- c(info, sign=sign(s), gamma=s)
+
+	if (method == "pearson") {
+		kc <- .Call(collapse_wrapper, observed, expected)
+		observed <- kc$O
+		expected <- kc$E
+		mask <- !is.na(expected)
+		x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
+		df <- prod(dim(observed)-1) - kc$collapsed
+		if (df < 1L) df <- 1L
+		info <- c(info, list(statistic=x2, df=df, observed=observed, expected=expected))
+	} else if (method == "lr") {
+		mask <- observed > 0
+		g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
+		df <- prod(dim(observed)-1)
+		info <- c(info, statistic=g2, df=df)
+	}
+	info
+}
+
+CT1997Internal2 <- function(inames, detail) {
+	cnames <- inames[-length(inames)]
+	gamma <- matrix(NA, length(inames), length(cnames))
+	dimnames(gamma) <- list(inames, cnames)
+	raw <- matrix(NA, length(inames), length(cnames))
+	dimnames(raw) <- list(inames, cnames)
+	std <- matrix(NA, length(inames), length(cnames))
+	dimnames(std) <- list(inames, cnames)
+	pval <- matrix(NA, length(inames), length(cnames))
+	dimnames(pval) <- list(inames, cnames)
+
+	px <- 1L
+	for (iter1 in 2:length(inames)) {
+		for (iter2 in 1:(iter1-1)) {
+			d1 <- detail[[px]]
+			gamma[iter1, iter2] <- d1$gamma
+			s <- d1$sign
+			stat <- d1$statistic
+			df <- d1$df
+			raw[iter1, iter2] <- stat
+			std[iter1, iter2] <- s * abs((stat - df)/sqrt(2*df))
+			pval[iter1, iter2] <- s * -pchisq(stat, df, lower.tail=FALSE, log.p=TRUE)
+			px <- px + 1L
+		}
+	}
+
+	retobj <- list(pval=pval[-1,], std=std[-1,], raw=raw[-1,], gamma=gamma[-1,], detail=detail)
+	class(retobj) <- "summary.ChenThissen1997"
+	retobj
+}
+
+tableWithWeights <- function(colpair, weights) {
+	if (length(colpair) != 2) stop("Not a pair")
+	l1 <- levels(colpair[[1]])
+	l2 <- levels(colpair[[2]])
+	if (1) {
+		result <- .Call(fast_tableWithWeights, colpair[[1]], colpair[[2]], weights)
+	} else {
+		result <- matrix(0.0, length(l1), length(l2))
+		if (nrow(colpair)) for (rx in 1:nrow(colpair)) {
+			row <- colpair[rx,]
+			ind <- sapply(row, unclass)
+			w <- 1
+			if (length(weights)) w <- weights[rx]
+			result[ind[1], ind[2]] <- result[ind[1], ind[2]] + w
+		}
+	}
+	dimnames(result) <- list(l1, l2)
+	names(dimnames(result)) <- colnames(colpair)
+	result
 }
 
 ##' Computes local dependence indices for all pairs of items
@@ -703,11 +828,13 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 		iter2 <- pair[2]
 		i1 <- items[iter1]
 		i2 <- items[iter2]
-		observed <- table(data[,dataMap[c(i1,i2)]])
+		obpair <- data[,dataMap[c(i1,i2)]]
+		rowWeight <- c()
+		if (!is.null(grp[['weightColumn']])) {
+			rowWeight <- data[[ grp[['weightColumn']] ]]
+		}
+		observed <- tableWithWeights(obpair, rowWeight)
 		N <- sum(observed)
-		s1 <- spec[[i1]]
-		s2 <- spec[[i2]]
-		info <- list()
 
 		expected <- N * pairwiseExpected(grp, c(i1, i2), qwidth, qpoints, .twotier)
 		if (any(dim(observed) != dim(expected))) {
@@ -720,72 +847,57 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 			}
 			Eoutcomes <- dim(expected)[margin]
 			lev <- dimnames(observed)[[margin]]
-			info$error <- paste(colnames(grp$param)[bad], " has ", Eoutcomes,
-					    " outcomes in the model but the data has ", length(lev), " (",
-					    paste(lev, collapse=", "),")", sep="")
-			return(info)
+			stop(paste(colnames(grp$param)[bad], " has ", Eoutcomes,
+				   " outcomes in the model but the data has ", length(lev), " (",
+				   paste(lev, collapse=", "),")", sep=""))
 		}
 		dimnames(expected) <- dimnames(observed)
-
-		s <- ordinal.gamma(observed) - ordinal.gamma(expected)
-		if (!is.finite(s) || is.na(s) || s==0) s <- 1
-		info <- c(info, list(orig.observed=observed, orig.expected=expected, sign=sign(s), gamma=s))
-
-		if (method == "pearson") {
-			kc <- .Call(collapse_wrapper, observed, expected)
-			observed <- kc$O
-			expected <- kc$E
-			mask <- !is.na(expected)
-			x2 <- sum((observed[mask] - expected[mask])^2 / expected[mask])
-			df <- (s1@outcomes-1) * (s2@outcomes-1) - kc$collapsed
-			if (df < 1L) df <- 1L
-			info <- c(info, list(statistic=x2, df=df, observed=observed, expected=expected))
-		} else if (method == "lr") {
-			mask <- observed > 0
-			g2 <- -2 * sum(observed[mask] * log(expected[mask] / observed[mask]))
-			df <- (s1@outcomes-1) * (s2@outcomes-1)
-			info <- c(info, statistic=g2, df=df)
-		}
+		info <- list(orig.observed=observed, orig.expected=expected)
+		info <- CT1997Internal1(info, method)
 		info
 	})
 
 	lapply(detail, function(d1) {
-		if (!is.null(d1$error)) stop(d1$error)
+		if (inherits(d1, "try-error")) stop(d1)
 	})
-
-	gamma <- matrix(NA, length(items), length(items))
-	dimnames(gamma) <- list(inames, inames)
-	raw <- matrix(NA, length(items), length(items))
-	dimnames(raw) <- list(inames, inames)
-	std <- matrix(NA, length(items), length(items))
-	dimnames(std) <- list(inames, inames)
-	pval <- matrix(NA, length(items), length(items))
-	dimnames(pval) <- list(inames, inames)
-
-	for (px in 1:length(pairs)) {
-		iter1 <- pairs[[px]][1]
-		iter2 <- pairs[[px]][2]
-		d1 <- detail[[px]]
-		gamma[iter1, iter2] <- d1$gamma
-		s <- d1$sign
-		stat <- d1$statistic
-		df <- d1$df
-		raw[iter1, iter2] <- stat
-		std[iter1, iter2] <- s * abs((stat - df)/sqrt(2*df))
-		pval[iter1, iter2] <- s * -pchisq(stat, df, lower.tail=FALSE, log.p=TRUE)
-	}
 
 	names(detail) <- sapply(pairs, function(pair) {
 		paste(inames[pair[1]], inames[pair[2]], sep=":")
 	})
 
-	retobj <- list(pval=pval, std=std, raw=raw, gamma=gamma, detail=detail, method=method)
-	class(retobj) <- "summary.ChenThissen1997"
+	retobj <- CT1997Internal2(inames, detail)
+	retobj$inames <- inames
+	retobj$method <- method
 	retobj
 }
 
 # deprecated name
 chen.thissen.1997 <- ChenThissen1997
+
+"+.summary.ChenThissen1997" <- function(e1, e2) {
+	e2name <- deparse(substitute(e2))
+	if (!inherits(e2, "summary.ChenThissen1997")) {
+		stop("Don't know how to add ", e2name, " to a ChenThissen1997",
+		     call. = FALSE)
+	}
+	if (length(e1$detail) != length(e2$detail)) {
+		stop("Cannot combine two groups with a different number of items")
+	}
+	if (any(names(e1$detail) != names(e2$detail))) {
+		stop("Cannot combine two groups with a different items")
+	}
+	method <- e1$method
+	detail <- mapply(function(i1, i2) {
+		ii <- list(orig.observed = i1$orig.observed + i2$orig.observed,
+			   orig.expected = i1$orig.expected + i2$orig.expected)
+		ii <- CT1997Internal1(ii, method)
+	}, e1$detail, e2$detail, SIMPLIFY=FALSE)
+
+	retobj <- CT1997Internal2(e1$inames, detail)
+	retobj$inames <- e1$inames
+	retobj$method <- method
+	retobj
+}
 
 print.summary.ChenThissen1997 <- function(x,...) {
 	cat("Chen & Thissen (1997) local dependence test\n")

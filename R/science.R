@@ -6,7 +6,7 @@
 ##' using Ministep 3.75.0.
 ##'
 ##' @docType data
-##' @keywords datasets
+##' @keywords data
 ##' @name science
 ##' @aliases sfif sfpf sfsf sfxf
 ##' @references Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale

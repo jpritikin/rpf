@@ -93,6 +93,7 @@ SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
 			   SEXP skipMissingness, SEXP skipDefvars);
 SEXP CaiHansen2012(SEXP Rgrp, SEXP Rmethod, SEXP Rtwotier);
 SEXP eap_wrapper(SEXP Rgrp);
+SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight);
 
 static inline void
 pda(const double *ar, int rows, int cols) {   // column major order

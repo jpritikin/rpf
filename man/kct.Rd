@@ -15,5 +15,5 @@ data(kct)
 \references{
 Wright, B. D. & Stone, M. H. (1979). \emph{Best Test Design: Rasch Measurement.} Univ of Chicago Social Research.
 }
-\keyword{datasets}
+\keyword{data}
 

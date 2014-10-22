@@ -45,7 +45,8 @@ test_that("orlando-thissen-2000", {
   grp$free <- grp$param != 0
   grp$data <- rpf.sample(500, grp=grp)
   
-  got <- SitemFit(grp, method="pearson")
+  got <- SitemFit(grp, method="pearson", omit=1)
+  expect_true(all(sapply(got, function(ii) is.null(ii$omitted))))
   stat <- sapply(got, function(x) x$statistic)
   names(stat) <- NULL
   Estat <- c(10.8, 13.38, 19.47, 15.34, 13.62, 6.52, 19.91, 8.19,  8.03, 11.73, 12.84,
@@ -80,6 +81,7 @@ test_that("orlando-thissen-2000", {
 
 test_that("fit w/ mcar", {
   require(rpf)
+  require(testthat)
   set.seed(7)
   grp <- list(spec=list(), qwidth=5, qpoints=31)
   grp$spec[1:20] <- rpf.grm()
@@ -93,6 +95,15 @@ test_that("fit w/ mcar", {
   expect_equal(got$rms.p, -1.87, tolerance=.01)
   expect_equal(got$pearson.df, 16L)
   expect_equal(got$pearson.p, -1.46, tolerance=.01)
+
+  grp1 <- grp
+  grp1$data <- grp$data[1:250,]
+  grp2 <- grp
+  grp2$data <- grp$data[251:500,]
+  e1 <- sumScoreEAPTest(grp1) + sumScoreEAPTest(grp2)
+  e2 <- sumScoreEAPTest(grp)
+  chk <- c('n','pearson.df', 'pearson.chisq', 'pearson.p')
+  expect_equal(unlist(e1[chk]), unlist(e2[chk]))
   
   got <- SitemFit(grp, omit=2L)
   stat <- sapply(got, function(x) x$statistic)
@@ -100,6 +111,11 @@ test_that("fit w/ mcar", {
   Estat <- c(6.68, 6.87, 9.6, 14.31, 11.74, 11.63, 15.05, 2.08, 6.16, 6.8,
              10.28, 2.37, 6.86, 6.47, 10.02, 11.48, 13.96, 9.96, 8.24, 11.77 )
   expect_equal(stat, Estat, tolerance=.01)
+  
+  e1 <- SitemFit(grp1) + SitemFit(grp2)
+  e2 <- SitemFit(grp)
+  expect_equal(sapply(e1, function(ii) ii$statistic),
+               sapply(e2, function(ii) ii$statistic))
 })
 
 test_that("2tier fit", {

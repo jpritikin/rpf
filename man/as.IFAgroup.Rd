@@ -3,7 +3,8 @@
 \alias{as.IFAgroup}
 \title{Convert an OpenMx MxModel object into an IFA group}
 \usage{
-as.IFAgroup(mxModel, data = NULL, container = NULL)
+as.IFAgroup(mxModel, data = NULL, container = NULL, ...,
+  minItemsPerScore = NULL)
 }
 \arguments{
 \item{mxModel}{MxModel object}
@@ -11,11 +12,17 @@ as.IFAgroup(mxModel, data = NULL, container = NULL)
 \item{data}{observed data (otherwise the data will be taken from the mxModel)}
 
 \item{container}{an MxModel in which to search for the latent distribution matrices}
+
+\item{...}{Not used.  Forces remaining arguments to be specified by name.}
+
+\item{minItemsPerScore}{minimum number of items required to compute a score (also see description)}
 }
 \value{
 a groups with item parameters and latent distribution
 }
 \description{
-Convert an OpenMx MxModel object into an IFA group
+When \dQuote{minItemsPerScore} is passed, EAP scores will be computed
+from the data and stored. Scores are required for some diagnostic
+tests. See discussion of \dQuote{minItemsPerScore} in \link{EAPscores}.
 }
 

@@ -25,7 +25,7 @@ SitemFit1(grp, item, free = 0, ..., method = "pearson", log = TRUE,
 
 \item{alt}{whether to include the item of interest in the denominator}
 
-\item{omit}{number of items to omit when calculating the observed and expected sum-score tables}
+\item{omit}{number of items to omit or a character vector with the names of the items to omit when calculating the observed and expected sum-score tables}
 
 \item{.twotier}{whether to enable the two-tier optimization}
 }

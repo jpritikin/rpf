@@ -1,10 +1,19 @@
 ##' Convert an OpenMx MxModel object into an IFA group
 ##'
+##' When \dQuote{minItemsPerScore} is passed, EAP scores will be computed
+##' from the data and stored. Scores are required for some diagnostic
+##' tests. See discussion of \dQuote{minItemsPerScore} in \link{EAPscores}.
+##' 
 ##' @param mxModel MxModel object
 ##' @param data observed data (otherwise the data will be taken from the mxModel)
 ##' @param container an MxModel in which to search for the latent distribution matrices
+##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @param minItemsPerScore minimum number of items required to compute a score (also see description)
 ##' @return a groups with item parameters and latent distribution
-as.IFAgroup <- function(mxModel, data=NULL, container=NULL) {
+as.IFAgroup <- function(mxModel, data=NULL, container=NULL, ..., minItemsPerScore=NULL) {
+	if (length(list(...)) > 0) {
+		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
+	}
 	expectation <- mxModel$expectation
   if (!is(expectation, "MxExpectationBA81")) {
     stop(paste("Don't know how to create an IFA group from",
@@ -74,11 +83,6 @@ as.IFAgroup <- function(mxModel, data=NULL, container=NULL) {
     }
   }
 
-  if (!is.na(expectation$minItemsPerScore)) {
-    ret$minItemsPerScore <- expectation$minItemsPerScore
-  }
-
-	# take minItemsPerScore into account TODO
   if (!is.na(expectation$weightColumn)) {
     ret$weightColumn <- expectation$weightColumn
     ret$observedStats <- nrow(ret$data) - 1
@@ -89,5 +93,19 @@ as.IFAgroup <- function(mxModel, data=NULL, container=NULL) {
 	  }
   }
 
+  if (!missing(minItemsPerScore)) {
+    ret$minItemsPerScore <- minItemsPerScore
+    ret$score <- EAPscores(ret)
+  }
+
   ret
+}
+
+#' Strip data and scores from an IFA group
+#'
+#' @param grp an IFA group
+stripData <- function(grp) {
+	grp$data <- NULL
+	grp$score <- NULL
+	grp
 }
