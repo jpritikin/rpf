@@ -1,8 +1,8 @@
 ##' Convert an OpenMx MxModel object into an IFA group
 ##'
-##' When `minItemsPerScore` is passed, EAP scores will be computed
+##' When \dQuote{minItemsPerScore} is passed, EAP scores will be computed
 ##' from the data and stored. Scores are required for some diagnostic
-##' tests. See discussion of `minItemsPerScore` in \link{EAPscores}.
+##' tests. See discussion of \dQuote{minItemsPerScore} in \link{EAPscores}.
 ##' 
 ##' @param mxModel MxModel object
 ##' @param data observed data (otherwise the data will be taken from the mxModel)
