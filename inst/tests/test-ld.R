@@ -48,6 +48,13 @@ test_that("ct1997 2tier", {
 	fast <- ChenThissen1997(grp, qpoints=13L, qwidth=4, .twotier=TRUE)
   expect_equal(slow$raw[!is.na(slow$raw)],
                fast$raw[!is.na(fast$raw)], .001)
+  
+  grp$data <- rpf.sample(200, spec, gen.param, mcar=.2)
+  fast <- ChenThissen1997(grp, qpoints=13L, qwidth=4)
+  got <- fast$pval[,'i1']
+  names(got) <- NULL
+#  cat(deparse(round(fast$pval[,'i1'],2)))
+  expect_equal(got, c(2.18, -2.71, -4.15, -7.58), .1)
 })
 
 mxSimplify2Array <- function(x) {

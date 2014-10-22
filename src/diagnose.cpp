@@ -599,14 +599,14 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwot
 static const double KANG_CHEN_MIN_EXPECTED = 1.0;  // customizable parameter?
 
 struct ManhattenCollapse {
-	Eigen::Map<Eigen::ArrayXXi> obs;
+	Eigen::Map<Eigen::ArrayXXd> obs;
 	Eigen::Map<Eigen::ArrayXXd> expected;
 
 	Eigen::DenseIndex smr, smc;
 	double bestFit;
 	Eigen::DenseIndex bestR, bestC;
 	
-	ManhattenCollapse(int rows, int cols, int *oMem, double *eMem)
+	ManhattenCollapse(int rows, int cols, double *oMem, double *eMem)
 		: obs(oMem, rows, cols), expected(eMem, rows, cols) {}
 	void probe(Eigen::DenseIndex br, Eigen::DenseIndex bc);
 	int run();
@@ -642,7 +642,7 @@ int ManhattenCollapse::run()
 					expected(bestR, bestC) += expected(smr, smc);
 					obs(bestR, bestC) += obs(smr, smc);
 					expected(smr, smc) = NA_REAL;
-					obs(smr, smc) = NA_INTEGER;
+					obs(smr, smc) = NA_REAL;
 					++collapsed;
 					done = true;
 				}
@@ -673,12 +673,12 @@ SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
   }
 
   SEXP r_observed, r_expected;
-  Rf_protect(r_observed = Rf_allocMatrix(INTSXP, rows, cols));
+  Rf_protect(r_observed = Rf_allocMatrix(REALSXP, rows, cols));
   Rf_protect(r_expected = Rf_allocMatrix(REALSXP, rows, cols));
 
-  int *observed = INTEGER(r_observed);
+  double *observed = REAL(r_observed);
   double *expected = REAL(r_expected);
-  memcpy(observed, INTEGER(r_observed_orig), sizeof(int) * rows * cols);
+  memcpy(observed, REAL(r_observed_orig), sizeof(double) * rows * cols);
   memcpy(expected, REAL(r_expected_orig), sizeof(double) * rows * cols);
 
   ManhattenCollapse mcollapse(rows, cols, observed, expected);
@@ -721,6 +721,41 @@ static bool computeObservedSumScore(ifaGroup &grp, int *itemMask, int row, int *
 	return false;
 }
 
+SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
+{
+	omxManageProtectInsanity mpi;
+
+	int rows = Rf_length(Ritem1);
+	if (rows != Rf_length(Ritem2)) Rf_error("Data are of different lengths");
+
+	Eigen::Map<Eigen::ArrayXi> item1(INTEGER(Ritem1), rows);
+	Eigen::Map<Eigen::ArrayXi> item2(INTEGER(Ritem2), rows);
+	double *wvec = 0;
+	if (Rf_length(Rweight) == rows) wvec = REAL(Rweight);
+
+	SEXP lev1, lev2;
+	Rf_protect(lev1 = Rf_getAttrib(Ritem1, R_LevelsSymbol));
+	Rf_protect(lev2 = Rf_getAttrib(Ritem2, R_LevelsSymbol));
+	int nlev1 = Rf_length(lev1);
+	int nlev2 = Rf_length(lev2);
+
+	SEXP Rdist;
+	Rf_protect(Rdist = Rf_allocMatrix(REALSXP, nlev1, nlev2));
+	Eigen::Map<Eigen::ArrayXXd> result(REAL(Rdist), nlev1, nlev2);
+	result.setZero();
+
+	for (int rx=0; rx < rows; ++rx) {
+		if (item1[rx] == NA_INTEGER || item2[rx] == NA_INTEGER) continue;
+		int i1 = item1[rx] - 1;
+		int i2 = item2[rx] - 1;
+		double weight = 1;
+		if (wvec) weight = wvec[rx];
+		result(i1,i2) += weight;
+	}
+
+	return Rdist;
+}
+
 SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 {
 	omxManageProtectInsanity mpi;
@@ -737,21 +772,22 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 	int numScores = 1+maxObservedSumScore(grp, itemMask);
 
 	SEXP Rdist;
-	Rf_protect(Rdist = Rf_allocVector(INTSXP, numScores));
-	Eigen::Map<Eigen::ArrayXi> distOut(INTEGER(Rdist), numScores);
+	Rf_protect(Rdist = Rf_allocVector(REALSXP, numScores));
+	Eigen::Map<Eigen::ArrayXd> distOut(REAL(Rdist), numScores);
 	distOut.setZero();
 
-	int rowsIncluded = 0;
+	double rowsIncluded = 0;
 	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		int ss;
 		if (computeObservedSumScore(grp, itemMask, rx, &ss)) continue;
-		distOut[ss] += 1;
-		++rowsIncluded;
+		double weight = grp.rowWeight? grp.rowWeight[rx] : 1;
+		distOut[ss] += weight;
+		rowsIncluded += weight;
 	}
 
 	MxRList out;
 	out.add("dist", Rdist);
-	out.add("n", Rf_ScalarInteger(rowsIncluded));
+	out.add("n", Rf_ScalarReal(rowsIncluded));
 	return out.asR();
 }
 
@@ -779,25 +815,26 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 	int outcomes = spec[RPF_ISpecOutcomes];
 
 	SEXP r_ans;
-	Rf_protect(r_ans = Rf_allocMatrix(INTSXP, numScores, outcomes));
-	Eigen::Map<Eigen::ArrayXXi> out(INTEGER(r_ans), numScores, outcomes);
+	Rf_protect(r_ans = Rf_allocMatrix(REALSXP, numScores, outcomes));
+	Eigen::Map<Eigen::ArrayXXd> out(REAL(r_ans), numScores, outcomes);
 	out.setZero();
 
 	const int *iresp = grp.dataColumn(interest);
 
-	int rowsIncluded = 0;
+	double rowsIncluded = 0;
 	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		int pick = iresp[rx];
 		if (pick == NA_INTEGER) continue;
 		int ss;
 		if (computeObservedSumScore(grp, itemMask, rx, &ss)) continue;
-		out(ss, pick-1) += 1;
-		++rowsIncluded;
+		double weight = grp.rowWeight? grp.rowWeight[rx] : 1;
+		out(ss, pick-1) += weight;
+		rowsIncluded += weight;
 	}
 
 	MxRList lout;
 	lout.add("table", r_ans);
-	lout.add("n", Rf_ScalarInteger(rowsIncluded));
+	lout.add("n", Rf_ScalarReal(rowsIncluded));
 	return lout.asR();
 }
 

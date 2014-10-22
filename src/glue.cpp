@@ -458,6 +458,7 @@ static R_CallMethodDef flist[] = {
   {"eap_wrapper", (DL_FUNC) eap_wrapper, 1},
   {"hasOpenMP_wrapper", (DL_FUNC) has_openmp, 0},
   {"setNumberOfCores", (DL_FUNC) setNumberOfCores, 1},
+  {"fast_tableWithWeights", (DL_FUNC) fast_tableWithWeights, 3},
   {NULL, NULL, 0}
 };
 

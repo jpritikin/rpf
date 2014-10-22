@@ -720,6 +720,27 @@ CT1997Internal2 <- function(inames, detail) {
 	retobj
 }
 
+tableWithWeights <- function(colpair, weights) {
+	if (length(colpair) != 2) stop("Not a pair")
+	l1 <- levels(colpair[[1]])
+	l2 <- levels(colpair[[2]])
+	if (1) {
+		result <- .Call(fast_tableWithWeights, colpair[[1]], colpair[[2]], weights)
+	} else {
+		result <- matrix(0.0, length(l1), length(l2))
+		if (nrow(colpair)) for (rx in 1:nrow(colpair)) {
+			row <- colpair[rx,]
+			ind <- sapply(row, unclass)
+			w <- 1
+			if (length(weights)) w <- weights[rx]
+			result[ind[1], ind[2]] <- result[ind[1], ind[2]] + w
+		}
+	}
+	dimnames(result) <- list(l1, l2)
+	names(dimnames(result)) <- colnames(colpair)
+	result
+}
+
 ##' Computes local dependence indices for all pairs of items
 ##'
 ##' Item Factor Analysis makes two assumptions: (1) that the latent
@@ -807,7 +828,12 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 		iter2 <- pair[2]
 		i1 <- items[iter1]
 		i2 <- items[iter2]
-		observed <- table(data[,dataMap[c(i1,i2)]])
+		obpair <- data[,dataMap[c(i1,i2)]]
+		rowWeight <- c()
+		if (!is.null(grp[['weightColumn']])) {
+			rowWeight <- data[[ grp[['weightColumn']] ]]
+		}
+		observed <- tableWithWeights(obpair, rowWeight)
 		N <- sum(observed)
 
 		expected <- N * pairwiseExpected(grp, c(i1, i2), qwidth, qpoints, .twotier)
