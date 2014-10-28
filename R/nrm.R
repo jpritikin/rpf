@@ -90,8 +90,12 @@ build.T <- function(outcomes, got, type) {
 ##' R. Ostini (Eds.), \emph{Handbook of Polytomous Item Response
 ##' Theory Models} (pp. 43--75). Routledge.
 ##' @examples
+##' spec <- rpf.nrm()
+##' rpf.prob(spec, rpf.rparam(spec), 0)
 ##' # typical parameterization for the Generalized Partial Credit Model
 ##' gpcm <- function(outcomes) rpf.nrm(outcomes, T.c=lower.tri(diag(outcomes-1),TRUE) * -1)
+##' spec <- gpcm(4)
+##' rpf.prob(spec, rpf.rparam(spec), 0)
 rpf.nrm <- function(outcomes=3, factors=1, T.a="trend", T.c="trend") {
   if (outcomes < 3) stop("Minimum number of outcomes is 3")
   T.a <- build.T(outcomes, T.a, 'a')
