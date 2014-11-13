@@ -33,6 +33,10 @@ logit units (see \code{\link{logit}}).
 For discussion on the choice of priors see Cai, Yang, and
 Hansen (2011, p. 246).
 }
+\examples{
+spec <- rpf.drm()
+rpf.prob(spec, rpf.rparam(spec), 0)
+}
 \references{
 Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
 Full-Information Item Bifactor Analysis.  \emph{Psychological

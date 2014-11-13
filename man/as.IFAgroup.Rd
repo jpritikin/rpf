@@ -25,4 +25,7 @@ When \dQuote{minItemsPerScore} is passed, EAP scores will be computed
 from the data and stored. Scores are required for some diagnostic
 tests. See discussion of \dQuote{minItemsPerScore} in \link{EAPscores}.
 }
+\seealso{
+\href{https://github.com/jpritikin/ifaTools}{ifaTools}
+}
 

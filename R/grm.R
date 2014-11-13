@@ -24,6 +24,9 @@
 ##' Defaults to \code{TRUE}.
 ##' @return an item model
 ##' @export
+##' @examples
+##' spec <- rpf.grm()
+##' rpf.prob(spec, rpf.rparam(spec), 0)
 rpf.grm <- function(outcomes=2, factors=1, multidimensional=TRUE) {
   if (!multidimensional && factors > 1) {
     stop("More than 1 dimension must use a multidimensional model")

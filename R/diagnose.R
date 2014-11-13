@@ -96,6 +96,18 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
 ##' Analysis.} Chicago: Mesa Press.
 ##' @export
+##' @examples
+##' data(kct)
+##' responses <- kct.people[,paste("V",2:19, sep="")]
+##' rownames(responses) <- kct.people$NAME
+##' colnames(responses) <- kct.items$NAME
+##' scores <- kct.people$MEASURE
+##' params <- cbind(1, kct.items$MEASURE, logit(0), logit(1))
+##' rownames(params) <- kct.items$NAME
+##' items<-list()
+##' items[1:18] <- rpf.drm()
+##' params[,2] <- -params[,2]
+##' rpf.1dim.fit(items, t(params), responses, scores, 2, wh.exact=TRUE)
 rpf.1dim.fit <- function(spec, params, responses, scores, margin, group=NULL, wh.exact=TRUE) {
     if (!missing(group)) {
         spec <- group$spec
@@ -575,6 +587,10 @@ print.summary.SitemFit <- function(x,...) {
 ##' @param mat a cross tabulation matrix
 ##' @references
 ##' Agresti, A. (1990). Categorical data analysis. New York: Wiley.
+##' @examples
+##' # Example data from Agresti (1990, p. 21)
+##' jobsat <- matrix(c(20,22,13,7,24,38,28,18,80,104,81,54,82,125,113,92), nrow=4, ncol=4)
+##' ordinal.gamma(jobsat)
 ordinal.gamma <- function(mat) .Call(ordinal_gamma_wrapper, mat)
 
 # root mean squared statistic (sqrt omitted)
@@ -776,9 +792,14 @@ tableWithWeights <- function(colpair, weights) {
 ##' indexes for item pairs using Item Response Theory. \emph{Journal
 ##' of Educational and Behavioral Statistics, 22}(3), 265-289.
 ##'
+##' Thissen, D., Steinberg, L., & Mooney, J. A. (1989). Trace lines for testlets: A use
+##' of multiple-categorical-response models. \emph{Journal of Educational Measurement,
+##' 26} (3), 247--260.
+##'
 ##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 ##' adaptive testing: A case for testlets.  \emph{Journal of
 ##' Educational measurement, 24}(3), 185--201.
+##' @seealso \href{https://github.com/jpritikin/ifaTools}{ifaTools}
 ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson", .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))

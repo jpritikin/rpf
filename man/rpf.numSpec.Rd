@@ -13,4 +13,8 @@ rpf.numSpec(m)
 \description{
 Length of the item model vector
 }
+\examples{
+rpf.numSpec(rpf.grm(outcomes=3))
+rpf.numSpec(rpf.nrm(outcomes=3))
+}
 

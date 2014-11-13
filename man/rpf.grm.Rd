@@ -36,4 +36,8 @@ provides a little more information than the nominal model.
 Stronger a priori assumptions offer provide more power at the cost
 of flexibility.
 }
+\examples{
+spec <- rpf.grm()
+rpf.prob(spec, rpf.rparam(spec), 0)
+}
 

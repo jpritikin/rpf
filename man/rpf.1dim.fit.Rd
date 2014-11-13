@@ -35,6 +35,19 @@ refer to Wright & Masters (1982, p. 100).
 The Wilson-Hilferty transformation is biased for less than 25 items.
 Consider wh.exact=FALSE for less than 25 items.
 }
+\examples{
+data(kct)
+responses <- kct.people[,paste("V",2:19, sep="")]
+rownames(responses) <- kct.people$NAME
+colnames(responses) <- kct.items$NAME
+scores <- kct.people$MEASURE
+params <- cbind(1, kct.items$MEASURE, logit(0), logit(1))
+rownames(params) <- kct.items$NAME
+items<-list()
+items[1:18] <- rpf.drm()
+params[,2] <- -params[,2]
+rpf.1dim.fit(items, t(params), responses, scores, 2, wh.exact=TRUE)
+}
 \references{
 Masters, G. N. & Wright, B. D. (1997). The Partial
 Credit Model. In W. van der Linden & R. K. Kambleton (Eds.),

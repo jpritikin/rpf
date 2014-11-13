@@ -37,8 +37,12 @@ of free parameters \eqn{\alpha} and \eqn{\gamma} by fixed matrices \eqn{T_a} and
 and \eqn{C} is a normalizing factor to ensure that \eqn{\sum_k \mathrm P(\mathrm{pick}=k) = 1}.
 }
 \examples{
+spec <- rpf.nrm()
+rpf.prob(spec, rpf.rparam(spec), 0)
 # typical parameterization for the Generalized Partial Credit Model
 gpcm <- function(outcomes) rpf.nrm(outcomes, T.c=lower.tri(diag(outcomes-1),TRUE) * -1)
+spec <- gpcm(4)
+rpf.prob(spec, rpf.rparam(spec), 0)
 }
 \references{
 Thissen, D., Cai, L., & Bock, R. D. (2010). The

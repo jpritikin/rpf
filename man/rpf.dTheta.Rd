@@ -19,6 +19,6 @@ rpf.dTheta(m, param, where, dir)
 }
 \description{
 Evaluate the partial derivatives of the response probability with
-respect to ability.
+respect to ability. See \link{rpf.info} for an application.
 }
 

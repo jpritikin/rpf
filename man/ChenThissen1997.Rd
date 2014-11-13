@@ -53,8 +53,15 @@ Chen, W.-H. & Thissen, D. (1997). Local dependence
 indexes for item pairs using Item Response Theory. \emph{Journal
 of Educational and Behavioral Statistics, 22}(3), 265-289.
 
+Thissen, D., Steinberg, L., & Mooney, J. A. (1989). Trace lines for testlets: A use
+of multiple-categorical-response models. \emph{Journal of Educational Measurement,
+26} (3), 247--260.
+
 Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 adaptive testing: A case for testlets.  \emph{Journal of
 Educational measurement, 24}(3), 185--201.
+}
+\seealso{
+\href{https://github.com/jpritikin/ifaTools}{ifaTools}
 }
 

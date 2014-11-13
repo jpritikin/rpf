@@ -31,12 +31,12 @@ for (ii in items) {
     }
     if (ii$factors == 1) {
       expect_equal(analytic$gradient, c(deriv[1,]), 1e-6)
-      expect_equal(analytic$hessian, c(deriv[2,]), 1e-4)
+      expect_equal(analytic$hessian, c(deriv[2,]), 1e-3)
     } else {
       expect_equal(analytic$gradient,
                    c(dir %*% deriv[c(1:ii$factors),]), 1e-6)
       expect_equal(analytic$hessian,
-                   c(dir %*% deriv[c(ii$factors+triSize(1:ii$factors)),]), 1e-4)
+                   c(dir %*% deriv[c(ii$factors+triSize(1:ii$factors)),]), 1e-3)
     }
   })
 }

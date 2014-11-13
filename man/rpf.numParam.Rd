@@ -13,4 +13,8 @@ rpf.numParam(m)
 \description{
 Length of the item parameter vector
 }
+\examples{
+rpf.numParam(rpf.grm(outcomes=3))
+rpf.numParam(rpf.nrm(outcomes=3))
+}
 

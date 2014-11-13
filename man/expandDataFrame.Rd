@@ -17,6 +17,10 @@ Returns a data frame with all the response patterns
 Expand a summary table of unique response patterns to a full sized
 data-set.
 }
+\examples{
+data(LSAT7)
+expandDataFrame(LSAT7, freqName="freq")
+}
 \author{
 Based on code by Phil Chalmers \email{rphilip.chalmers@gmail.com}
 }

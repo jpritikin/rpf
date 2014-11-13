@@ -27,6 +27,14 @@ are the lower triangle of the second derivative.
 Evaluate the partial derivatives of the log likelihood with
 respect to each parameter at \code{where} with \code{weight}.
 }
+\details{
+It is not easy to write an example for this function. To evaluate
+the derivative, you need to sum the derivatives across a
+quadrature. You also need response outcome weights at each
+quadrature point. It is not anticipated that this function will be
+often used in R code. It's mainly to expose a C-level function for
+occasional debugging.
+}
 \seealso{
 The numDeriv package.
 }

@@ -12,6 +12,11 @@ tabulateRows(observed)
 Like \code{tabulate} but entire rows are the unit of tabulation.
 The data.frame is not sorted, but must be sorted already.
 }
+\examples{
+df <- as.data.frame(matrix(c(sample.int(2, 30, replace=TRUE)), 10, 3))
+df <- df[orderCompletely(df),]
+tabulateRows(df)
+}
 \seealso{
 \code{\link{orderCompletely}}
 }

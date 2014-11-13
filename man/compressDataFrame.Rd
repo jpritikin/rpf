@@ -16,4 +16,8 @@ Returns a compressed data frame
 \description{
 Compress a data frame into unique rows and frequency counts.
 }
+\examples{
+df <- as.data.frame(matrix(c(sample.int(2, 30, replace=TRUE)), 10, 3))
+compressDataFrame(df)
+}
 

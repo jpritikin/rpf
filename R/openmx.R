@@ -10,6 +10,7 @@
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param minItemsPerScore minimum number of items required to compute a score (also see description)
 ##' @return a groups with item parameters and latent distribution
+##' @seealso \href{https://github.com/jpritikin/ifaTools}{ifaTools}
 as.IFAgroup <- function(mxModel, data=NULL, container=NULL, ..., minItemsPerScore=NULL) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))

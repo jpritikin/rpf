@@ -18,4 +18,7 @@ a list containing the type, upper bound, and lower bound
 \description{
 Retrieve a description of the given parameter
 }
+\examples{
+rpf.paramInfo(rpf.drm())
+}
 

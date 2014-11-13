@@ -97,6 +97,9 @@ setClass("rpf.mdim", contains='rpf.base',
 ##' @aliases
 ##' rpf.numSpec,rpf.base-method
 ##' rpf_numSpec_wrapper
+##' @examples
+##' rpf.numSpec(rpf.grm(outcomes=3))
+##' rpf.numSpec(rpf.nrm(outcomes=3))
 setGeneric("rpf.numSpec", function(m) standardGeneric("rpf.numSpec"))
 
 setMethod("rpf.numSpec", signature(m="rpf.base"),
@@ -114,6 +117,9 @@ setMethod("rpf.numSpec", signature(m="rpf.base"),
 ##' @aliases
 ##' rpf.numParam,rpf.base-method
 ##' rpf_numParam_wrapper
+##' @examples
+##' rpf.numParam(rpf.grm(outcomes=3))
+##' rpf.numParam(rpf.nrm(outcomes=3))
 setGeneric("rpf.numParam", function(m) standardGeneric("rpf.numParam"))
 
 setMethod("rpf.numParam", signature(m="rpf.base"),
@@ -143,6 +149,8 @@ setGeneric("rpf.modify", function(m, factors) standardGeneric("rpf.modify"))
 ##' @aliases
 ##' rpf.paramInfo,rpf.base-method
 ##' rpf_paramInfo_wrapper
+##' @examples
+##' rpf.paramInfo(rpf.drm())
 setGeneric("rpf.paramInfo", function(m, num=NULL) standardGeneric("rpf.paramInfo"))
 
 setMethod("rpf.paramInfo", signature(m="rpf.base"),
@@ -163,6 +171,13 @@ setMethod("rpf.paramInfo", signature(m="rpf.base"),
 ##'
 ##' Evaluate the partial derivatives of the log likelihood with
 ##' respect to each parameter at \code{where} with \code{weight}.
+##'
+##' It is not easy to write an example for this function. To evaluate
+##' the derivative, you need to sum the derivatives across a
+##' quadrature. You also need response outcome weights at each
+##' quadrature point. It is not anticipated that this function will be
+##' often used in R code. It's mainly to expose a C-level function for
+##' occasional debugging.
 ##'
 ##' @param m item model
 ##' @param param item parameters
@@ -203,7 +218,7 @@ setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
 ##' Item derivatives with respect to the location in the latent space
 ##'
 ##' Evaluate the partial derivatives of the response probability with
-##' respect to ability.
+##' respect to ability. See \link{rpf.info} for an application.
 ##' 
 ##' @param m item model
 ##' @param param item parameters
@@ -245,6 +260,17 @@ setMethod("rpf.dTheta", signature(m="rpf.base", param="numeric",
 ##' @aliases
 ##' rpf_rescale_wrapper
 ##' rpf.rescale,rpf.base,numeric,numeric,matrix-method
+##' @examples
+##' spec <- rpf.grm()
+##' p1 <- rpf.rparam(spec)
+##' testPoint <- rnorm(1)
+##' move <- rnorm(1)
+##' cov <- as.matrix(rlnorm(1))
+##' Icov <- solve(cov)
+##' padj <- rpf.rescale(spec, p1, move, cov)
+##' pr1 <- rpf.prob(spec, padj, (testPoint-move) %*% Icov)
+##' pr2 <- rpf.prob(spec, p1, testPoint)
+##' abs(pr1 - pr2) < 1e9
 setGeneric("rpf.rescale", function(m, param, mean, cov) standardGeneric("rpf.rescale"))
 
 setMethod("rpf.rescale", signature(m="rpf.base", param="numeric",

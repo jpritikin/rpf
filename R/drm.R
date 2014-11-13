@@ -24,6 +24,9 @@
 ##' @references Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
 ##' Full-Information Item Bifactor Analysis.  \emph{Psychological
 ##' Methods, 16}(3), 221-248.
+##' @examples
+##' spec <- rpf.drm()
+##' rpf.prob(spec, rpf.rparam(spec), 0)
 rpf.drm <- function(factors=1, multidimensional=TRUE, poor=FALSE) {
   if (!multidimensional && factors > 1) {
     stop("More than 1 dimension must use a multidimensional model")
@@ -80,7 +83,7 @@ setMethod("rpf.modify", signature(m="rpf.mdim.drm", factors="numeric"),
 ##' logit(.25) # -1.098
 ##' logit(0)   # -Inf
 ##' @seealso
-##' qlogis
+##' qlogis, plogis
 logit <- qlogis
 
 setMethod("rpf.rparam", signature(m="rpf.mdim.drm"),

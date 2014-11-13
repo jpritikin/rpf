@@ -27,6 +27,6 @@ logit(.25) # -1.098
 logit(0)   # -Inf
 }
 \seealso{
-qlogis
+qlogis, plogis
 }
 

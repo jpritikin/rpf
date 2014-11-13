@@ -4,6 +4,11 @@
 ##' 
 ##' @param observed a data.frame holding ordered factors in every column
 ##' @return the sorted order of the rows
+##' @examples
+##' df <- as.data.frame(matrix(c(sample.int(2, 30, replace=TRUE)), 10, 3))
+##' mask <- matrix(c(sample.int(3, 30, replace=TRUE)), 10, 3) == 1
+##' df[mask] <- NA
+##' df[orderCompletely(df),]
 orderCompletely <- function(observed) {
 	observedNames <- colnames(observed)
 	nacount <- sapply(observedNames, function(x) { sum(is.na(observed[,x])) })
@@ -21,6 +26,10 @@ orderCompletely <- function(observed) {
 ##'
 ##' @param observed a sorted data.frame holding ordered factors in every column
 ##' @seealso \code{\link{orderCompletely}}
+##' @examples
+##' df <- as.data.frame(matrix(c(sample.int(2, 30, replace=TRUE)), 10, 3))
+##' df <- df[orderCompletely(df),]
+##' tabulateRows(df)
 tabulateRows <- function(observed) {
 	selectMissing <- rep(0L, nrow(observed))
 	selectDefvars <- rep(0L, nrow(observed))
@@ -47,6 +56,9 @@ tabulateRows <- function(observed) {
 #' @param freqName Column name containing the frequencies
 #' @return Returns a data frame with all the response patterns
 #' @author Based on code by Phil Chalmers \email{rphilip.chalmers@@gmail.com}
+#' @examples
+#' data(LSAT7)
+#' expandDataFrame(LSAT7, freqName="freq")
 expandDataFrame <- function(tabdata, freqName=NULL) {
 	if (is.null(colnames(tabdata))) stop("colnames are required")
 
@@ -79,6 +91,9 @@ expandDataFrame <- function(tabdata, freqName=NULL) {
 #' @param tabdata An object of class \code{data.frame}
 #' @param freqColName Column name to contain the frequencies
 #' @return Returns a compressed data frame
+#' @examples
+#' df <- as.data.frame(matrix(c(sample.int(2, 30, replace=TRUE)), 10, 3))
+#' compressDataFrame(df)
 compressDataFrame <- function(tabdata, freqColName="freq") {
 	if (!is.na(match(freqColName, colnames(tabdata)))) {
 		# Might be nice to recompress instead of stopping.
