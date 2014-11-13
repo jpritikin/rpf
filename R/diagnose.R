@@ -794,12 +794,12 @@ tableWithWeights <- function(colpair, weights) {
 ##'
 ##' Thissen, D., Steinberg, L., & Mooney, J. A. (1989). Trace lines for testlets: A use
 ##' of multiple-categorical-response models. \emph{Journal of Educational Measurement,
-##' 26} (3), 247–260.
+##' 26} (3), 247--260.
 ##'
 ##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 ##' adaptive testing: A case for testlets.  \emph{Journal of
 ##' Educational measurement, 24}(3), 185--201.
-##' @seealso \link[ifaTools]{modelBuilder}
+##' @seealso \href{https://github.com/jpritikin/ifaTools}{ifaTools}
 ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson", .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
