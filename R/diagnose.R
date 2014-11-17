@@ -731,7 +731,8 @@ CT1997Internal2 <- function(inames, detail) {
 		}
 	}
 
-	retobj <- list(pval=pval[-1,], std=std[-1,], raw=raw[-1,], gamma=gamma[-1,], detail=detail)
+	retobj <- list(pval=pval[-1,,drop=FALSE], std=std[-1,,drop=FALSE],
+		       raw=raw[-1,,drop=FALSE], gamma=gamma[-1,,drop=FALSE], detail=detail)
 	class(retobj) <- "summary.ChenThissen1997"
 	retobj
 }
