@@ -332,3 +332,29 @@ EAPscores <- function(grp, ..., naAction=NULL, compressed=FALSE) {
 
 	ctbl
 }
+
+#' Convert response function slopes to factor loadings
+#'
+#' @param slope a matrix with items in the columns and slopes in the rows
+#' @param ogive the ogive constant (default rpf.ogive)
+#' @return
+#' a factor loading matrix with items in the rows and factors in the columns
+toFactorLoading <- function(slope, ogive=rpf.ogive) {
+  tmp <- t(slope / ogive)
+  got <- tmp / sqrt(1 + rowSums(tmp ^ 2))
+  h2 <- rowSums(got^2)
+  if(any(h2 > .975)) {
+    warning("Solution has Heywood cases. Interpret with caution.")
+  }
+  got
+}
+
+#' Convert factor loadings to response function slopes
+#'
+#' @param loading a matrix with items in the rows and factors in the columns
+#' @param ogive the ogive constant (default rpf.ogive)
+#' @return
+#' a slope matrix with items in the columns and factors in the rows
+fromFactorLoading <- function(loading, ogive=rpf.ogive) {
+  t(ogive * loading / sqrt(1 - rowSums(loading ^ 2)))
+}
