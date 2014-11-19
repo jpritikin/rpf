@@ -38,6 +38,7 @@ VignetteBuilder: knitr
 Collate:
     'init.R'
     'classes.R'
+    'fit.R'
     'drm.R'
     'nrm.R'
     'mcm.R'
