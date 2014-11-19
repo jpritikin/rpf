@@ -36,6 +36,9 @@ as.IFAgroup <- function(mxModel, data=NULL, container=NULL, ..., minItemsPerScor
   ret <- list(spec = expectation$ItemSpec,
               param = itemMat$values,
               free = itemMat$free,
+	      labels = itemMat$labels,
+	      # TODO maybe should include free variables in latent distribution?
+	      uniqueFree = length(unique(itemMat$labels[itemMat$free], incomparables=NA)),
               qpoints = expectation$qpoints,
               qwidth = expectation$qwidth)
   

@@ -999,10 +999,10 @@ multinomialFit <- function(grp, ..., method="lr", log=TRUE, .twotier=TRUE) {
 		grp$weightColumn <- wc
 	}
 	sumFree <- 0
-	if (is.null(grp$free)) {
-		warning("Free parameters should be indicated in free matrix")
+	if (is.null(grp$uniqueFree)) {
+		warning("Number of free parameters not available; assuming 0")
 	} else {
-		sumFree <- sum(grp$free)
+		sumFree <- grp$uniqueFree
 	}
 	got <- CaiHansen2012(grp, method, .twotier)
 	stat <- got$stat

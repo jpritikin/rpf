@@ -13,7 +13,7 @@ test_that("multinomialFit full info, simple", {
   colnames(grp$param) <- paste("i", 1:10, sep="")
   grp$mean <- 0
   grp$cov <- diag(1)
-  grp$free <- grp$param != 0
+  grp$uniqueFree <- sum(grp$param != 0)
   grp$data <- compressDataFrame(rpf.sample(1500, grp=grp))
   grp$weightColumn <- 'freq'
   grp$observedStats <- nrow(grp$data) - 1
@@ -44,6 +44,8 @@ test_that("multinomialFit full info, simple w/ missingness", {
   grp$mean <- 0
   grp$cov <- diag(1)
   grp$free <- grp$param != 0
+  grp$labels <- matrix(NA, nrow(grp$param), ncol(grp$param))
+  grp$uniqueFree <- sum(grp$param != 0)
   grp$data <- compressDataFrame(rpf.sample(1500, grp=grp, mcar=.1))
   grp$weightColumn <- 'freq'
   grp$observedStats <- nrow(grp$data) - 1
@@ -77,7 +79,7 @@ test_that("multinomialFit full info, two-tier", {
   colnames(gen.param) <- paste("i", 1:ncol(gen.param), sep="")
   resp <- rpf.sample(1500, spec, gen.param)
   grp <- list(spec=spec, param=gen.param, mean=runif(3, 0, 1), cov=diag(runif(3,1,2)),
-              data=resp, free=gen.param!=0, qwidth=5, qpoints=21)
+              data=resp, uniqueFree=sum(gen.param!=0), qwidth=5, qpoints=21)
   
   got1 <- multinomialFit(grp, .twotier = FALSE)
   got2 <- multinomialFit(grp, .twotier = TRUE)

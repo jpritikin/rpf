@@ -37,6 +37,8 @@ omitItems <- function(grp, excol) {
 	grp$spec <- grp$spec[imask]
 	grp$param <- grp$param[,imask]
 	grp$free <- grp$free[,imask]
+	grp$labels <- grp$labels[,imask]
+	grp$uniqueFree <- length(unique(grp$labels[grp$free], incomparables=NA))
 	grp$data <- grp$data[,-match(excol, colnames(grp$data))]
 
 	# We need to repack the data because
