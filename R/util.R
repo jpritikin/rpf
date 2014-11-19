@@ -293,9 +293,10 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##' to set \code{minItemsPerScore} to 0. When set to 0, all NA rows
 ##' are scored to the prior distribution.
 ##'
-##' @param grp a list with spec, param, and data
+##' @param grp a list with spec, param, data, and minItemsPerScore
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param naAction deprecated, will be removed in the next release
+##' @param compressed output one score per observed data row even when weightColumn is set (default FALSE)
 ##' \code{minItemsPerScore}. Defaults to 'fail'. If 'pass', will fill
 ##' with NAs.
 ##' @examples
@@ -306,12 +307,28 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##' colnames(param) <- colnames(data)
 ##' grp <- list(spec=spec, param=param, data=data, minItemsPerScore=1L)
 ##' EAPscores(grp)
-EAPscores <- function(grp, ..., naAction=NULL) {
+EAPscores <- function(grp, ..., naAction=NULL, compressed=FALSE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
 
 	if (!missing(naAction)) warning("naAction is deprecated")
 
-	.Call(eap_wrapper, grp)
+	ctbl <- .Call(eap_wrapper, grp)
+
+	if (!compressed && !is.null(grp$weightColumn)) {
+		freq <- grp$data[[ grp$weightColumn ]]
+		rows <- sum(freq)
+		indexVector <- rep(NA, rows)
+		rx <- 1L
+		ix <- 1L
+		while (rx <= length(freq)) {
+			indexVector[ix:(ix + freq[rx] - 1)] <- rx
+			ix <- ix + freq[rx]
+			rx <- rx + 1L
+		}
+		ctbl <- ctbl[indexVector,]
+	}
+
+	ctbl
 }
