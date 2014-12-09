@@ -97,7 +97,7 @@ as.IFAgroup <- function(mxModel, data=NULL, container=NULL, ..., minItemsPerScor
 	  }
   }
 
-  if (!missing(minItemsPerScore)) {
+  if (max(sapply(ret$spec, function(s) s$factors)) > 0 && !missing(minItemsPerScore)) {
     ret$minItemsPerScore <- minItemsPerScore
     ret$score <- EAPscores(ret)
   }
