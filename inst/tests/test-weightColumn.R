@@ -25,6 +25,10 @@ grp2$data <- expandDataFrame(LSAT6, freqName = "Freq")
 grp2$weightColumn <- NULL
 grp2$score <- EAPscores(grp2)
 
+expect_equal(nrow(EAPscores(grp1, compressed=TRUE)), nrow(LSAT6))
+expect_equal(nrow(grp1$score), nrow(grp2$score))
+expect_equal(grp1$score[,1], grp2$score[,1])
+
 test_that("observedSumScore", {
   t1 <- observedSumScore(grp1)
   t2 <- observedSumScore(grp2)

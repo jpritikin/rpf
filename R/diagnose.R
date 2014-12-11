@@ -113,7 +113,7 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, group=NULL, wh
         spec <- group$spec
         params <- group$param
         responses <- group$data
-        scores <- group$scores[,1]  # should not assume first score TODO
+        scores <- group$score[,1]  # should not assume first score TODO
     }
 
   if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")  # true? TODO
@@ -731,7 +731,8 @@ CT1997Internal2 <- function(inames, detail) {
 		}
 	}
 
-	retobj <- list(pval=pval[-1,], std=std[-1,], raw=raw[-1,], gamma=gamma[-1,], detail=detail)
+	retobj <- list(pval=pval[-1,,drop=FALSE], std=std[-1,,drop=FALSE],
+		       raw=raw[-1,,drop=FALSE], gamma=gamma[-1,,drop=FALSE], detail=detail)
 	class(retobj) <- "summary.ChenThissen1997"
 	retobj
 }
@@ -949,23 +950,33 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 
 ##' Multinomial fit test
 ##'
-##' The p-value is known to become poorly calibrated as the number of
-##' cells becomes large (e.g. more than 1000). For accurate p-values,
-##' you can conduct a Monte-Carlo simulation study (see examples).
+##' For degrees of freedom, we use the number of observed statistics
+##' (incorrect) instead of the number of possible response patterns
+##' (correct) (see Bock, Giibons, & Muraki, 1998, p. 265). This is not
+##' a huge problem because this test is becomes poorly calibrated when
+##' the multinomial table is sparse. For more accurate p-values, you
+##' can conduct a Monte-Carlo simulation study (see examples).
 ##'
 ##' Rows with missing data are ignored.
 ##' 
 ##' The full information test is described in Bartholomew & Tzamourani
 ##' (1999, Section 3).
+##'
+##' For CFI and TLI, you must provide an independence model.
 ##' 
 ##' @param grp a list with the spec, param, mean, and cov describing the group
+##' @param independenceGrp a list with the spec, param, mean, and cov describing the independence group
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param method lr (default) or pearson
 ##' @param log whether to report p-value in log units
 ##' @param .twotier whether to use the two-tier optimization (default TRUE)
 ##' @references Bartholomew, D. J., & Tzamourani, P. (1999). The
 ##' goodness-of-fit of latent trait models in attitude
-##' measurement. Sociological Methods and Research, 27, 525-546.
+##' measurement. \emph{Sociological Methods and Research, 27}(4), 525-546.
+##'
+##' Bock, R. D., Gibbons, R., & Muraki, E. (1988). Full-information
+##' item factor analysis. \emph{Applied Psychological Measurement, 12}(3),
+##' 261-280.
 ##' @examples
 ##' # Create an example IFA group
 ##' grp <- list(spec=list())
@@ -974,7 +985,7 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' colnames(grp$param) <- paste("i", 1:10, sep="")
 ##' grp$mean <- 0
 ##' grp$cov <- diag(1)
-##' grp$free <- grp$param != 0
+##' grp$uniqueFree <- sum(grp$param != 0)
 ##' grp$data <- rpf.sample(1000, grp=grp)
 ##' 
 ##' # Monte-Carlo simulation study
@@ -987,30 +998,46 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' }
 ##' sum(multinomialFit(grp)$statistic > stat)/mcReps   # better p-value
 
-multinomialFit <- function(grp, ..., method="lr", log=TRUE, .twotier=TRUE) {
+multinomialFit <- function(grp, independenceGrp, ..., method="lr", log=TRUE, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
+	todo <- list(grp)
+	if (!missing(independenceGrp)) todo <- list(grp, independenceGrp)
+	todo <- lapply(todo, function(gx) {
+		if (is.null(gx$weightColumn)) {
+			wc <- "freq"
+			gx$data <- compressDataFrame(gx$data, wc)
+			gx$weightColumn <- wc
+			gx$observedStats <- nrow(gx$data)
+		}
+		if (is.null(gx$uniqueFree)) {
+			warning("Number of free parameters not available; assuming 0")
+			gx$uniqueFree <- 0
+		}
+		if (is.null(gx$observedStats)) {
+			warning("Number of observed statistics unknown; assuming the number of possible response patterns")
+			gx$observedStats <- prod(sapply(gx$spec, function(sp) sp$outcomes))
+		}
+		gx
+	})
+	got <- lapply(todo, CaiHansen2012, method, .twotier)
+	stat <- got[[1]]$stat
+	df <- todo[[1]]$observedStats - todo[[1]]$uniqueFree
 	out <- list()
-	if (is.null(grp$weightColumn)) {
-		wc <- "freq"
-		grp$data <- compressDataFrame(grp$data, wc)
-		grp$weightColumn <- wc
-	}
-	sumFree <- 0
-	if (is.null(grp$free)) {
-		warning("Free parameters should be indicated in free matrix")
-	} else {
-		sumFree <- sum(grp$free)
-	}
-	got <- CaiHansen2012(grp, method, .twotier)
-	stat <- got$stat
-	out <- c(out, list(statistic=stat, df=grp$observedStats - sumFree))
+	out <- c(out, list(statistic=stat, df=df))
 	out$pval <- pchisq(stat, out$df, lower.tail=FALSE, log.p=log)
 	out$log <- log
 	out$method <- method
-	out$n <- got$n
-	out$omiited <- grp$omitted
+	out$n <- got[[1]]$n
+	out$omitted <- grp$omitted
+	if (length(todo) == 1) {
+		fi <- computeFitStatistics(stat, df, out$n, NA, NA)
+	} else {
+		fi <- computeFitStatistics(stat, df, out$n,
+					   got[[2]]$stat, todo[[2]]$observedStats - todo[[2]]$uniqueFree)
+	}
+	for (k in names(fi)) out[[k]] <- fi[[k]]
 	class(out) <- "summary.multinomialFit"
 	out
 }
@@ -1023,8 +1050,8 @@ print.summary.multinomialFit <- function(x,...) {
 	} else {
 		part2 <- paste("p = ", round(x$pval,4), sep="")
 	}
-	rmsea <- sqrt((x$statistic - x$df) / (x$df * (x$n - 1)))
-	cat(paste("  ", part1, ", ", part2, ", RMSEA = ", round(rmsea,3),"\n", sep=""))
+	cat(paste(part1, ", ", part2, sep=""), fill=TRUE)
+	catFitStatistics(x)
 	if (!is.null(x$omitted)) {
 		cat(paste("omitted: ", paste(x$omitted, collapse=", "), "\n", sep=""))
 	}

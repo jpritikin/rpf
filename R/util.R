@@ -18,7 +18,9 @@ bestToOmit <- function(grp, omit, ref=NULL) {
 	}
 	if (omit >= ncol(dat)) stop("Cannot omit all columns")
 	if (!is.null(ref)) {
-		dat <- dat[!is.na(dat[[ref]]),]
+		mask <- !is.na(dat[[ref]])
+		dat <- dat[mask,]
+		if (length(wcol) > 1) wcol <- wcol[mask]
 	}
 	nacount <- apply(dat, 2, function(c) sum(is.na(c) * wcol))
 	omit <- min(omit, sum(nacount > 0))
@@ -37,6 +39,8 @@ omitItems <- function(grp, excol) {
 	grp$spec <- grp$spec[imask]
 	grp$param <- grp$param[,imask]
 	grp$free <- grp$free[,imask]
+	grp$labels <- grp$labels[,imask]
+	grp$uniqueFree <- length(unique(grp$labels[grp$free], incomparables=NA))
 	grp$data <- grp$data[,-match(excol, colnames(grp$data))]
 
 	# We need to repack the data because
@@ -291,9 +295,10 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##' to set \code{minItemsPerScore} to 0. When set to 0, all NA rows
 ##' are scored to the prior distribution.
 ##'
-##' @param grp a list with spec, param, and data
+##' @param grp a list with spec, param, data, and minItemsPerScore
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param naAction deprecated, will be removed in the next release
+##' @param compressed output one score per observed data row even when weightColumn is set (default FALSE)
 ##' \code{minItemsPerScore}. Defaults to 'fail'. If 'pass', will fill
 ##' with NAs.
 ##' @examples
@@ -304,12 +309,54 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##' colnames(param) <- colnames(data)
 ##' grp <- list(spec=spec, param=param, data=data, minItemsPerScore=1L)
 ##' EAPscores(grp)
-EAPscores <- function(grp, ..., naAction=NULL) {
+EAPscores <- function(grp, ..., naAction=NULL, compressed=FALSE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
 
 	if (!missing(naAction)) warning("naAction is deprecated")
 
-	.Call(eap_wrapper, grp)
+	ctbl <- .Call(eap_wrapper, grp)
+
+	if (!compressed && !is.null(grp$weightColumn)) {
+		freq <- grp$data[[ grp$weightColumn ]]
+		rows <- sum(freq)
+		indexVector <- rep(NA, rows)
+		rx <- 1L
+		ix <- 1L
+		while (rx <= length(freq)) {
+			indexVector[ix:(ix + freq[rx] - 1)] <- rx
+			ix <- ix + freq[rx]
+			rx <- rx + 1L
+		}
+		ctbl <- ctbl[indexVector,]
+	}
+
+	ctbl
+}
+
+#' Convert response function slopes to factor loadings
+#'
+#' @param slope a matrix with items in the columns and slopes in the rows
+#' @param ogive the ogive constant (default rpf.ogive)
+#' @return
+#' a factor loading matrix with items in the rows and factors in the columns
+toFactorLoading <- function(slope, ogive=rpf.ogive) {
+  tmp <- t(slope / ogive)
+  got <- tmp / sqrt(1 + rowSums(tmp ^ 2))
+  h2 <- rowSums(got^2)
+  if(any(h2 > .975)) {
+    warning("Solution has Heywood cases. Interpret with caution.")
+  }
+  got
+}
+
+#' Convert factor loadings to response function slopes
+#'
+#' @param loading a matrix with items in the rows and factors in the columns
+#' @param ogive the ogive constant (default rpf.ogive)
+#' @return
+#' a slope matrix with items in the columns and factors in the rows
+fromFactorLoading <- function(loading, ogive=rpf.ogive) {
+  t(ogive * loading / sqrt(1 - rowSums(loading ^ 2)))
 }

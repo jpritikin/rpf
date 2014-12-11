@@ -1,8 +1,8 @@
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.43
-Date: 2014-11-13
+Version: 0.44
+Date: 2014-12-11
 Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     role=c('cre','aut')), person("Jonathan",family="Weeks",
     email="weeksjp@gmail.com", role=c('ctb')),
@@ -24,11 +24,11 @@ Suggests: testthat, roxygen2, ggplot2, reshape2, gridExtra, numDeriv,
 Imports: mvtnorm
 Depends: methods, parallel, R (>= 2.14.0)
 VignetteBuilder: knitr
-Collate: 'init.R' 'classes.R' 'drm.R' 'nrm.R' 'mcm.R' 'grm.R' 'LSAT.R'
-        'sample.R' 'dataframe.R' 'diagnose.R' 'science.R' 'kct.R'
-        'openmx.R' 'flexmirt.R' 'util.R'
+Collate: 'init.R' 'classes.R' 'fit.R' 'drm.R' 'nrm.R' 'mcm.R' 'grm.R'
+        'LSAT.R' 'sample.R' 'dataframe.R' 'diagnose.R' 'science.R'
+        'kct.R' 'openmx.R' 'flexmirt.R' 'util.R'
 URL: https://gitorious.org/rpf
-Packaged: 2014-11-13 18:17:19 UTC; joshua
+Packaged: 2014-12-11 14:16:27 UTC; joshua
 Author: Joshua Pritikin [cre, aut],
   Jonathan Weeks [ctb],
   Li Cai [ctb],
@@ -36,4 +36,4 @@ Author: Joshua Pritikin [cre, aut],
   Phil Chalmers [ctb]
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2014-11-14 00:17:34
+Date/Publication: 2014-12-11 16:58:07
