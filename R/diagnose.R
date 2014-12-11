@@ -113,7 +113,7 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, group=NULL, wh
         spec <- group$spec
         params <- group$param
         responses <- group$data
-        scores <- group$scores[,1]  # should not assume first score TODO
+        scores <- group$score[,1]  # should not assume first score TODO
     }
 
   if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")  # true? TODO
