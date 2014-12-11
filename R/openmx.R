@@ -99,7 +99,7 @@ as.IFAgroup <- function(mxModel, data=NULL, container=NULL, ..., minItemsPerScor
 
   if (max(sapply(ret$spec, function(s) s$factors)) > 0 && !missing(minItemsPerScore)) {
     ret$minItemsPerScore <- minItemsPerScore
-    ret$score <- EAPscores(ret)
+    ret$score <- EAPscores(ret, compressed=TRUE)
   }
 
   ret
@@ -107,9 +107,12 @@ as.IFAgroup <- function(mxModel, data=NULL, container=NULL, ..., minItemsPerScor
 
 #' Strip data and scores from an IFA group
 #'
+#' In addition, the weightColumn is reset to NULL.
+#' 
 #' @param grp an IFA group
 stripData <- function(grp) {
 	grp$data <- NULL
 	grp$score <- NULL
+	grp$weightColumn <- NULL
 	grp
 }

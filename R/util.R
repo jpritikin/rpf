@@ -18,7 +18,9 @@ bestToOmit <- function(grp, omit, ref=NULL) {
 	}
 	if (omit >= ncol(dat)) stop("Cannot omit all columns")
 	if (!is.null(ref)) {
-		dat <- dat[!is.na(dat[[ref]]),]
+		mask <- !is.na(dat[[ref]])
+		dat <- dat[mask,]
+		if (length(wcol) > 1) wcol <- wcol[mask]
 	}
 	nacount <- apply(dat, 2, function(c) sum(is.na(c) * wcol))
 	omit <- min(omit, sum(nacount > 0))
