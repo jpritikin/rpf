@@ -299,8 +299,6 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param naAction deprecated, will be removed in the next release
 ##' @param compressed output one score per observed data row even when weightColumn is set (default FALSE)
-##' \code{minItemsPerScore}. Defaults to 'fail'. If 'pass', will fill
-##' with NAs.
 ##' @examples
 ##' spec <- list()
 ##' spec[1:3] <- rpf.grm(outcomes=3)
