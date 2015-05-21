@@ -446,7 +446,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 	for (int ax=0; ax < quad.primaryDims; ++ax) {
 		const int SMALLBUF = 10;
 		char buf[SMALLBUF];
-		SET_STRING_ELT(names, 1+ax, Rf_mkChar(grp.factorNames[ax]));
+		SET_STRING_ELT(names, 1+ax, Rf_mkChar(grp.factorNames[ax].c_str()));
 		snprintf(buf, SMALLBUF, "se%d", 1+ax);
 		SET_STRING_ELT(names, 1+quad.primaryDims+ax, Rf_mkChar(buf));
 	}
