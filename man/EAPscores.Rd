@@ -12,9 +12,7 @@ EAPscores(grp, ..., naAction = NULL, compressed = FALSE)
 
 \item{naAction}{deprecated, will be removed in the next release}
 
-\item{compressed}{output one score per observed data row even when weightColumn is set (default FALSE)
-\code{minItemsPerScore}. Defaults to 'fail'. If 'pass', will fill
-with NAs.}
+\item{compressed}{output one score per observed data row even when weightColumn is set (default FALSE)}
 }
 \description{
 If you have missing data then you must specify

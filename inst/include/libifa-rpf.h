@@ -59,7 +59,9 @@ struct rpf {
 };
 
 /* R_GetCCallable */
-typedef void (*get_librpf_t)(int *version, int *numModels, const struct rpf **model);
+#define LIBIFA_RPF_API_VERSION 420832   /* this is a random number */
+
+typedef void (*get_librpf_t)(int version, int *numModels, const struct rpf **model);
 
 extern const struct rpf librpf_model[];
 extern const int librpf_numModels;

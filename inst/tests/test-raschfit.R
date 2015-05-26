@@ -23,7 +23,7 @@ test_that("kct", {
   expect_equal(fit$infit, kct.items$IN.MSQ[4:17], tolerance=.002)
   expect_equal(fit$infit.z, kct.items$IN.ZSTD[4:17], tolerance=.01)
   expect_equal(fit$outfit, kct.items$OUT.MSQ[4:17], tolerance=.002)
-  expect_equal(fit$outfit.z, kct.items$OUT.ZSTD[4:17], .01)
+  expect_equal(fit$outfit.z, kct.items$OUT.ZSTD[4:17], tolerance=.01)
 
   expect_warning(fit <- rpf.1dim.fit(items, t(params), responses, scores, 1, wh.exact=TRUE),
                  "Excluding item 1= 1-4")
@@ -61,18 +61,18 @@ test_that("sf", {
   expect_warning(fit <- rpf.1dim.fit(spec, param, responses, sfpf$MEASURE, 2, wh.exact=TRUE),
                  "Excluding item GO TO MUSEUM")
   
-  expect_equal(fit$infit, sfif$IN.MSQ[-12], .002)
-  expect_equal(fit$infit.z, sfif$IN.ZSTD[-12], .005)
-  expect_equal(fit$outfit, sfif$OUT.MSQ[-12], .002)
-  expect_equal(fit$outfit.z, sfif$OUT.ZSTD[-12], .005)
+  expect_equal(fit$infit, sfif$IN.MSQ[-12], tolerance=.002)
+  expect_equal(fit$infit.z, sfif$IN.ZSTD[-12], tolerance=.005)
+  expect_equal(fit$outfit, sfif$OUT.MSQ[-12], tolerance=.002)
+  expect_equal(fit$outfit.z, sfif$OUT.ZSTD[-12], tolerance=.005)
 
   expect_warning(fit <- rpf.1dim.fit(spec, param, responses, sfpf$MEASURE, 1, wh.exact=TRUE),
                  "Excluding response ROSSNER, LAWRENCE")
   
-  expect_equal(fit$infit, sfpf$IN.MSQ[-2], .02)
-  expect_equal(fit$infit.z, sfpf$IN.ZSTD[-2], .05)
-  expect_equal(fit$outfit, sfpf$OUT.MSQ[-2], .05)
-  expect_equal(fit$outfit.z, sfpf$OUT.ZSTD[-2], .075)
+  expect_equal(fit$infit, sfpf$IN.MSQ[-2], tolerance=.02)
+  expect_equal(fit$infit.z, sfpf$IN.ZSTD[-2], tolerance=.05)
+  expect_equal(fit$outfit, sfpf$OUT.MSQ[-2], tolerance=.05)
+  expect_equal(fit$outfit.z, sfpf$OUT.ZSTD[-2], tolerance=.075)
 })
 
 test_that("mirt", {

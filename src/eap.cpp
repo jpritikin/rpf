@@ -112,7 +112,7 @@ SEXP eap_wrapper(SEXP Rgrp)
 	SEXP names;
 	Rf_protect(names = Rf_allocVector(STRSXP, cols));
 	for (int nx=0; nx < maxAbilities; ++nx) {
-		SET_STRING_ELT(names, nx, Rf_mkChar(grp.factorNames[nx]));
+		SET_STRING_ELT(names, nx, Rf_mkChar(grp.factorNames[nx].c_str()));
 		snprintf(buf, SMALLBUF, "se%d", nx+1);
 		SET_STRING_ELT(names, maxAbilities + nx, Rf_mkChar(buf));
 	}

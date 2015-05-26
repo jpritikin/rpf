@@ -22,14 +22,14 @@ test_that("multinomialFit full info, simple", {
   grp$param[2,] <- grp$param[2,] + runif(10, -.75, .75)
 
   got <- multinomialFit(grp, method="pearson")
-  expect_equal(got$statistic, 1287.46, .01)
+  expect_equal(got$statistic, 1287.46, tolerance=.01)
   expect_equal(got$df, 209)
-  expect_equal(got$pval, -354, .1)
+  expect_equal(got$pval, -354, tolerance=.1)
 
   got <- multinomialFit(grp, method="lr")
-  expect_equal(got$statistic, 914.35, .01)
+  expect_equal(got$statistic, 914.35, tolerance=.01)
   expect_equal(got$df, 209)
-  expect_equal(got$pval, -202, .1)
+  expect_equal(got$pval, -202, tolerance=.1)
 })
 
 test_that("multinomialFit full info, simple w/ missingness", {
@@ -51,20 +51,20 @@ test_that("multinomialFit full info, simple w/ missingness", {
   grp$observedStats <- nrow(grp$data) - 1
   
   got <- multinomialFit(grp, method="pearson")
-  expect_equal(got$statistic, 1115.63, .01)
+  expect_equal(got$statistic, 1115.63, tolerance=.01)
   expect_equal(got$df, 710)
-  expect_equal(got$pval, -45.7, .1)
+  expect_equal(got$pval, -45.7, tolerance=.1)
 
   got <- multinomialFit(grp, method="lr")
-  expect_equal(got$statistic, 414.691, .01)
+  expect_equal(got$statistic, 414.691, tolerance=.01)
   expect_equal(got$df, 710)
-  expect_equal(got$pval, 0, .01)
+  expect_equal(got$pval, 0, tolerance=.01)
   expect_equal(got$n, 521)
 
   got <- multinomialFit(omitMostMissing(grp, 1), method="lr")
-  expect_equal(got$statistic, 253.39, .01)
+  expect_equal(got$statistic, 253.39, tolerance=.01)
   expect_equal(got$df, 585)
-  expect_equal(got$pval, 0, .01)
+  expect_equal(got$pval, 0, tolerance=.01)
   expect_equal(got$n, 598)
 })
 
@@ -83,9 +83,9 @@ test_that("multinomialFit full info, two-tier", {
   
   got1 <- multinomialFit(grp, .twotier = FALSE)
   got2 <- multinomialFit(grp, .twotier = TRUE)
-  expect_equal(got1$statistic, got2$statistic, .001)
+  expect_equal(got1$statistic, got2$statistic, tolerance=.001)
   expect_equal(got1$df, got2$df)
-  expect_equal(got1$pval, got2$pval, .001)
+  expect_equal(got1$pval, got2$pval, tolerance=.001)
 })
 
 if (0) {

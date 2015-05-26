@@ -463,9 +463,9 @@ static R_CallMethodDef flist[] = {
 };
 
 static void
-get_librpf_models(int *version, int *numModels, const struct rpf **model)
+get_librpf_models(int version, int *numModels, const struct rpf **model)
 {
-  *version = 10;
+	if (version != LIBIFA_RPF_API_VERSION) Rf_error("LIBIFA_RPF binary API version mismatch");
   *numModels = librpf_numModels;
   *model = librpf_model;
 }

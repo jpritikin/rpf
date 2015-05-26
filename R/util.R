@@ -299,8 +299,6 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param naAction deprecated, will be removed in the next release
 ##' @param compressed output one score per observed data row even when weightColumn is set (default FALSE)
-##' \code{minItemsPerScore}. Defaults to 'fail'. If 'pass', will fill
-##' with NAs.
 ##' @examples
 ##' spec <- list()
 ##' spec[1:3] <- rpf.grm(outcomes=3)
@@ -359,4 +357,30 @@ toFactorLoading <- function(slope, ogive=rpf.ogive) {
 #' a slope matrix with items in the columns and factors in the rows
 fromFactorLoading <- function(loading, ogive=rpf.ogive) {
   t(ogive * loading / sqrt(1 - rowSums(loading ^ 2)))
+}
+
+#' Convert response function intercepts to factor thresholds
+#'
+#' @param intercept a matrix with items in the columns and intercepts in the rows
+#' @param slope a matrix with items in the columns and slopes in the rows
+#' @param ogive the ogive constant (default rpf.ogive)
+#' @return
+#' a factor threshold matrix with items in the columns and factor thresholds in the rows
+toFactorThreshold <- function(intercept, slope, ogive=rpf.ogive) {
+  tmp <- t(slope / ogive)
+  thr <- t(intercept / ogive)
+  got <- -t( thr / sqrt(1 + rowSums(tmp ^ 2)) )
+  got
+}
+
+#' Convert factor thresholds to response function intercepts
+#'
+#' @param threshold a matrix with items in the columns and thresholds in the rows
+#' @param loading a matrix with items in the rows and factors in the columns
+#' @param ogive the ogive constant (default rpf.ogive)
+#' @return
+#' an item intercept matrix with items in the columns and intercepts in the rows
+fromFactorThreshold <- function(threshold, loading, ogive=rpf.ogive) {
+  got <- t(-ogive*t(threshold) / sqrt(1 - rowSums(loading ^ 2)) )
+  got
 }

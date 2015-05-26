@@ -26,11 +26,11 @@ test_that("ct1997", {
   #cat(deparse(round(got$pval[!is.na(got$pval)], 2)))
   expect_equal(got$pval[!is.na(got$pval)], 
                c(-1.52, -1.74, -2.54, -6.01, -2.74, -1.06, 1.47, -5.77, 2.42,  1.77, 7.01,
-                 2.24, 11.01, 6.99, 21.95), .001)
+                 2.24, 11.01, 6.99, 21.95), tolerance=.001)
   #cat(deparse(round(got$gamma[!is.na(got$gamma)], 3)))
   expect_equal(got$gamma[!is.na(got$gamma)],
                c(-0.064, -0.056, -0.099, -0.002, -0.078, -0.022, 0.04, -0.002,
-                 0.061, 0.021, 0.085, 0.043, 0.18, 0.168, 0.3), .01)
+                 0.061, 0.021, 0.085, 0.043, 0.18, 0.168, 0.3), tolerance=.01)
 })
 
 test_that("ct1997 2tier", {
@@ -47,14 +47,14 @@ test_that("ct1997 2tier", {
 	slow <- ChenThissen1997(grp, qpoints=13L, qwidth=4, .twotier=FALSE)
 	fast <- ChenThissen1997(grp, qpoints=13L, qwidth=4, .twotier=TRUE)
   expect_equal(slow$raw[!is.na(slow$raw)],
-               fast$raw[!is.na(fast$raw)], .001)
+               fast$raw[!is.na(fast$raw)], tolerance=.001)
   
   grp$data <- rpf.sample(200, spec, gen.param, mcar=.2)
   fast <- ChenThissen1997(grp, qpoints=13L, qwidth=4)
   got <- fast$pval[,'i1']
   names(got) <- NULL
 #  cat(deparse(round(fast$pval[,'i1'],2)))
-  expect_equal(got, c(2.18, -2.71, -4.15, -7.58), .1)
+  expect_equal(got, c(2.18, -2.71, -4.15, -7.58), tolerance=.1)
 })
 
 mxSimplify2Array <- function(x) {
