@@ -23,6 +23,6 @@ test_that("tpbw1995-table2", {
   grp$data <- rpf.sample(2, spec, param)
   scores <- EAPscores(grp)
   
-  expect_equal(scores[,1], c(0.084, -0.154), .01)
-  expect_equal(scores[,2], c(0.539, 0.572), .01)
+  expect_equal(scores[,1], c(0.084, -0.154), tolerance=.01)
+  expect_equal(scores[,2], c(0.539, 0.572), tolerance=.01)
 })
