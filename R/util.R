@@ -335,8 +335,14 @@ EAPscores <- function(grp, ..., naAction=NULL, compressed=FALSE) {
 
 #' Convert response function slopes to factor loadings
 #'
+#' All slopes are divided by the ogive constant. Then the following
+#' transformation is applied to the slope matrix,
+#' 
+#' \deqn{\frac{\mathrm{slope}}{\left[ 1 + \mathrm{rowSums}(\mathrm{slope}^2) \right]^\frac{1}{2}}}
+#'
 #' @param slope a matrix with items in the columns and slopes in the rows
 #' @param ogive the ogive constant (default rpf.ogive)
+#' @seealso \link{rpf.ogive}
 #' @return
 #' a factor loading matrix with items in the rows and factors in the columns
 toFactorLoading <- function(slope, ogive=rpf.ogive) {
