@@ -940,7 +940,7 @@ crosstabTest <- function(ob, ex, trials) {
 	.Call(crosstabTest_wrapper, ob, ex, trials)
 }
 
-pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, .twotier) {
+pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, .twotier=FALSE) {
 	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L, .twotier)
 }
 

@@ -4,12 +4,29 @@ library(mvtnorm)
 
 context("chen & thissen 1997")
 
+mxSimplify2Array <- function(x, higher=FALSE) {
+	if (higher) {
+		stop("higher=TRUE is not implemented. Consider using simplify2array")
+	}
+  len <- sapply(x, length)
+  biggest <- which(len == max(len))[1]
+  out <- matrix(NA, nrow=max(len), ncol=length(x))
+  for (iter in 1:length(x)) {
+	  if (len[iter] == 0) next
+    out[1:len[iter],iter] <- x[[iter]]
+  }
+  colnames(out) <- names(x)
+  rownames(out) <- names(x[[biggest]])
+  out
+}
+
 test_that("ct1997", {
   set.seed(1)
   
   spec <- list()
-  spec[1:6] <- rpf.grm(factors=2)
-  gen.param <- sapply(spec, rpf.rparam, version=1)
+  spec[1:5] <- rpf.grm(factors=2)
+  spec[6]   <- rpf.drm(factors=2)
+  gen.param <- mxSimplify2Array(lapply(spec, rpf.rparam, version=1))
   colnames(gen.param) <- paste("i", 1:ncol(gen.param), sep="")
   gen.param[2,] <- c(0,0,.5,.5,1,1)
   
@@ -18,22 +35,23 @@ test_that("ct1997", {
   
   # hide latent factor that we don't know about
   tspec <- list()
-  tspec[1:length(spec)] <- rpf.grm(factors=1)
+  tspec[1:length(spec)] <- lapply(spec, rpf.modify, factors=1)
   
   grp <- list(spec=tspec, param=gen.param[-2,], mean=c(0), cov=diag(1), data=resp)
   
   got <- ChenThissen1997(grp)
   #cat(deparse(round(got$pval[!is.na(got$pval)], 2)))
   expect_equal(got$pval[!is.na(got$pval)], 
-               c(-1.52, -1.74, -2.54, -6.01, -2.74, -1.06, 1.47, -5.77, 2.42,  1.77, 7.01,
-                 2.24, 11.01, 6.99, 21.95), tolerance=.001)
+               c(-1.31, -0.35, 3.15, 5.7, -5.66, 0.54, 3.43, -5.45, -0.57,
+                 7.5,  8.11, 1.78, 15.37, 2.79, 5.68), tolerance=.001)
   #cat(deparse(round(got$gamma[!is.na(got$gamma)], 3)))
   expect_equal(got$gamma[!is.na(got$gamma)],
-               c(-0.064, -0.056, -0.099, -0.002, -0.078, -0.022, 0.04, -0.002,
-                 0.061, 0.021, 0.085, 0.043, 0.18, 0.168, 0.3), tolerance=.01)
+               c(-0.064, -0.002, 0.058, 0.062, -0.197, 0.023, 0.055, -0.008,
+                 -0.025, 0.158, 0.13, 0.081, 0.232, 0.02, 0.052), tolerance=.01)
 })
 
 test_that("ct1997 2tier", {
+  set.seed(1)
   require(rpf)
 	spec <- list()
 	spec[1:5] <- rpf.drm(factors=3)
@@ -54,7 +72,7 @@ test_that("ct1997 2tier", {
   got <- fast$pval[,'i1']
   names(got) <- NULL
 #  cat(deparse(round(fast$pval[,'i1'],2)))
-  expect_equal(got, c(2.18, -2.71, -4.15, -7.58), tolerance=.1)
+  expect_equal(got, c(1.49, 1.34, 2.79, -1.54), tolerance=.1)
 })
 
 mxSimplify2Array <- function(x) {
