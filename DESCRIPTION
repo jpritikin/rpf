@@ -1,8 +1,8 @@
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.45
-Date: 2015-05-26
+Version: 0.48
+Date: 2015-08-11
 Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     role=c('cre','aut')), person("Jonathan",family="Weeks",
     email="weeksjp@gmail.com", role=c('ctb')),
@@ -28,14 +28,14 @@ VignetteBuilder: knitr
 Collate: 'init.R' 'classes.R' 'fit.R' 'drm.R' 'nrm.R' 'mcm.R' 'grm.R'
         'LSAT.R' 'sample.R' 'dataframe.R' 'diagnose.R' 'science.R'
         'kct.R' 'openmx.R' 'flexmirt.R' 'util.R'
-URL: https://gitorious.org/rpf
-Packaged: 2015-05-26 10:58:53 UTC; joshua
+URL: https://gitlab.com/rpf/rpf
+NeedsCompilation: yes
+Packaged: 2015-08-11 02:29:21 UTC; joshua
 Author: Joshua Pritikin [cre, aut],
   Jonathan Weeks [ctb],
   Li Cai [ctb],
   Carrie Houts [ctb],
   Phil Chalmers [ctb],
   Michael D. Hunter [ctb]
-NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2015-05-26 13:22:38
+Date/Publication: 2015-08-11 08:22:30

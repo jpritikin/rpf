@@ -526,7 +526,7 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwot
 	int outcomes1 = spec1[RPF_ISpecOutcomes];
 
 	const double *spec2 = grp.spec[i2];
-	int id2 = spec1[RPF_ISpecID];
+	int id2 = spec2[RPF_ISpecID];
 	int outcomes2 = spec2[RPF_ISpecOutcomes];
 
 	SEXP Rexpected;

@@ -1,4 +1,4 @@
-## ----, cache=FALSE, include=FALSE----------------------------------------
+## ---- cache=FALSE, include=FALSE-----------------------------------------
 library(knitr)
 library(rpf)
 library(ggplot2)
@@ -26,7 +26,7 @@ ChenThissen1997(grp)
 ## ------------------------------------------------------------------------
 (got <- SitemFit(grp))
 
-## ----, echo=FALSE,fig.height=2.5-----------------------------------------
+## ---- echo=FALSE,fig.height=2.5------------------------------------------
 SSplot <- function(sout, itemName, showSampleSize=TRUE) {
     s1 <- sout[[itemName]]
     obs <- s1$orig.observed
@@ -60,7 +60,7 @@ SSplot(got, "i6")
 ## ------------------------------------------------------------------------
 (got <- sumScoreEAP(grp))
 
-## ----, echo=FALSE,fig.height=2.5-----------------------------------------
+## ---- echo=FALSE,fig.height=2.5------------------------------------------
 got <- sumScoreEAPTest(grp)
 df <- data.frame(score=as.numeric(rownames(got$tbl)),
             expected=got$tbl[,'p'] * got$n, observed=got$observed)
