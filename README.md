@@ -14,8 +14,6 @@ install.packages("rpf")
 
 # Developer notes
 
-Source code is available from https://gitorious.org/rpf
-
 There are a number of useful scripts in the `util` subdir:
 
 * `install` -- Installs the package as quickly as possible. Skips
