@@ -329,7 +329,11 @@ SitemFit1Internal <- function(out) {
     mask <- apply(observed, 1, sum) != 0
     observed = observed[mask,,drop=FALSE]
     expected = expected[mask,,drop=FALSE]
-    if (!length(observed)) stop("No data for item")
+	if (!length(observed)) {
+		out$statistic <- NA
+		out$pval <- NA
+		return(out)
+	}
 
 	method <- out$method
     if (method == "pearson") {
@@ -646,8 +650,9 @@ ptw2011.gof.test <- function(observed, expected) {
   }
   if (any(c(expected)==0)) {
 	  zeros <- sum(c(expected)==0)
-	  stop(paste("There are", zeros, "zeros in the expected distribution.",
+	  warning(paste("There are", zeros, "zeros in the expected distribution.",
 		     "Did you swap the observed and expected arguments"))
+	  return(NA)
   }
   observed <- observed / orig.draws
   expected <- expected / orig.draws

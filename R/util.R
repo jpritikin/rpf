@@ -77,6 +77,8 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 }
 
 sumScoreEAPTestInternal <- function(result) {
+	class(result) <- "summary.sumScoreEAPTest"
+	if (result[['n']] == 0) return(result)
 	expected <- matrix(result$expected, ncol=1)
 	obs <- matrix(result$observed, ncol=1)
 
@@ -89,8 +91,6 @@ sumScoreEAPTestInternal <- function(result) {
 	result$pearson.chisq <- sum((obs[mask] - expected[mask])^2 / expected[mask])
 	result$pearson.df <- sum(mask)-1L
 	result$pearson.p <- pchisq(result$pearson.chisq, result$pearson.df, lower.tail=FALSE, log.p=TRUE)
-
-	class(result) <- "summary.sumScoreEAPTest"
 	result
 }
 
@@ -239,6 +239,9 @@ observedSumScore <- function(grp, ..., mask, summary=TRUE) {
 		return(ss)
 	}
 	got <- .Call(observedSumScore_wrapper, grp, mask)
+	if (got[['n']] == 0) {
+		warning("Some columns are all missing; cannot compute observedSumScore")
+	}
 	class(got) <- "summary.observedSumScore"
 	got
 }
