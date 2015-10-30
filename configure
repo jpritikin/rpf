@@ -9,5 +9,5 @@ fi
 REXEC=${R_HOME}/bin/R
 
 eval $(grep R_HOME_DIR $REXEC | head -1)
-Makeconf=$(find $R_HOME_DIR/etc -print | egrep 'Makeconf$' )
+Makeconf=~/.R/Makevars
 echo "Change default C/C++ compiler and default compile flags by editing $Makeconf"
