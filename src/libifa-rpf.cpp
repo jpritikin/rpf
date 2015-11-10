@@ -726,7 +726,7 @@ _nominal_rawprob2(const double *spec,
   int numOutcomes = spec[RPF_ISpecOutcomes];
   double maxZ;
   _nominal_rawprob1(spec, param, th, discr, ak, num, &maxZ);
-  
+
   double recenter = 0;
   if (maxZ > EXP_STABLE_DOMAIN) {
     recenter = maxZ - EXP_STABLE_DOMAIN;
@@ -808,7 +808,7 @@ static double makeOffterm(const double *dat, const double p, const double aTheta
   return(ret);
 }
 
-static double makeOffterm2(const double *dat, const double p1, const double p2, 
+static double makeOffterm2(const double *dat, const double p1, const double p2,
 			   const double aTheta, const int ncat, const int cat)
 {
   double ret = 0;
@@ -898,9 +898,9 @@ irt_rpf_nominal_deriv1(const double *spec,
       for (int i = 0; i < ncat; i++) {
 	tmpvec += dat_num[i] * (ak2[i] * where[j] * where[k] * P[i] -
 				ak[i] * where[j] * P[i] * numakDTheta_numsum[k] -
-				ak[i] * where[k] * P[i] * numakDTheta_numsum[j] + 
+				ak[i] * where[k] * P[i] * numakDTheta_numsum[j] +
 				2 * P[i] * numakD * where[j] * numakD * where[k] / numsum2 -
-				P[i] * numak2D2 * where[j] * where[k] / numsum) * numsum - 
+				P[i] * numak2D2 * where[j] * where[k] / numsum) * numsum -
 	  dat_num[i] * (ak[i] * where[j] * P[i] - P[i] * numakDTheta_numsum[j]) *
 	  numsum * ak[i] * where[k] +
 	  dat_num[i] * (ak[i] * where[j] * P[i] - P[i] * numakDTheta_numsum[j]) *
@@ -972,7 +972,7 @@ irt_rpf_nominal_deriv1(const double *spec,
       if(j > i) {
 	      if (nfact) {
 		      offterm = makeOffterm2(weight, P[j], P[i], aTheta2, ncat, i);
-		      tmpvec = dat_num[i] * (-aTheta2*P[i]*P[j] + 2*P2[i] *aTheta2*P[j])*numsum + 
+		      tmpvec = dat_num[i] * (-aTheta2*P[i]*P[j] + 2*P2[i] *aTheta2*P[j])*numsum +
 			      dat_num[i] * (aTheta*P[i] - P2[i] * aTheta)*aTheta*num[j]+offterm;
 		      out[akrow + nfact + i - 1] -= tmpvec;
 	      }
@@ -993,7 +993,7 @@ irt_rpf_nominal_deriv1(const double *spec,
 	out[dkrow + nfact + i - 1] -= tmpvec;
       } else {
 	offterm = makeOffterm2(weight, P[j], P[i], aTheta, ncat, i);
-	tmpvec = dat_num[i] * (-aTheta*P[i]*P[j] + 2*P2[i] *aTheta*P[j]) * numsum + 
+	tmpvec = dat_num[i] * (-aTheta*P[i]*P[j] + 2*P2[i] *aTheta*P[j]) * numsum +
 	  dat_num[i] * (P[i] - P2[i]) * aTheta * num[j] + offterm;
 	out[dkrow + nfact + i - 1] -= tmpvec;
       }
@@ -1193,6 +1193,287 @@ irt_rpf_mdim_nrm_rescale(const double *spec, double *param, const int *paramMask
   }
 }
 
+
+/********************************************************************************/
+// Experimenting with LMP model - by CFF
+
+static int
+irt_rpf_1dim_lmp_numSpec(const double *spec)
+{ return RPF_ISpecCount; }
+
+// This we'll need to get dynamically, depending on the order of the polynomial
+// Try 4 for now, however, as it maps onto k=1 or a 3rd order polynomial
+static int
+irt_rpf_1dim_lmp_numParam(const double *spec)
+{
+  int k = spec[RPF_ISpecCount];
+  return(2+2*k);
+}
+
+// not sure what this does
+static void
+irt_rpf_1dim_lmp_paramInfo(const double *spec, const int param,
+			   const char **type, double *upper, double *lower)
+{
+        //int k = spec[RPF_ISpecCount];
+	*upper = nan("unset");
+	*lower = nan("unset");
+
+	*type = NULL;
+	if (param == 0) {
+		*type = "omega";
+		//*lower = 1e-6;
+	} else if (param == 1) {
+		*type = "intercept";
+	} else if (param %2 == 0 ){
+		*type = "alpha";
+	} else {
+		*type = "tau";
+	}
+}
+
+// Original R version did for multiple theta or x values (mp.val.noxi)
+// Computes the value of m(x) given coefficients "b"
+// and value(s) for th, omitting the intercept
+static void
+irt_rpf_mp_val(const double *th, const double *b, const int k,  double *out)
+{
+  int order = 2*k+1;
+  out[0] = 0;
+  for(int i=0; i<order; i++){
+    out[0]+=b[i]*pow(*th,i+1);
+  }
+}
+
+// Converts "a" coefficients for m'(x) to "b" coefficients for m(x)
+// Omitting intercept xi
+static void
+irt_rpf_mp_getb (const double *a, const int k, double *b)
+{
+  int order = 2*k+1;
+  for(int i=0; i<order; i++){
+    b[i] = a[i]/(i+1);
+  }
+}
+
+// Given item parameters, compute coefficeints "a" for m'(x)
+// Does not include special case of k=0
+// k - controls order of polynomial
+// omega - sort of like slope parameter
+// alpha - vector of length k that has one set of parameters
+// tau - vector of length k that has another set of parameters
+// a_{k-1} - vector of lower order polynomial coefficients
+static void
+irt_rpf_mp_geta (const int k, const double *alpha, const double *tau, const Eigen::VectorXd *a, Eigen::VectorXd *newa)
+{
+  (*newa).setZero();
+  int i, j;
+  int indx = 0;
+  int indx2 = 0;
+
+  double beta = exp(*tau);
+  double t[] = {1, -2.0* (*alpha), pow(*alpha,2.0) + beta}; // Part of Tk; the rest is 0's
+  // a_k = T_k %*% a_{k-1} w/o saving T_k
+  for(i=0; i<2*k-1; i++){
+    for(j=0; j<2*k+1; j++){
+       // only multiply by non-zero entries
+      if(j>=indx && j<indx+3){
+        (*newa)[j]+=(*a)[i]*t[indx2];
+	indx2++;
+      }
+    }
+    indx++;
+    indx2=0;
+  }
+}
+
+// recursively compute a starting at k=0 until desired k
+static void
+irt_rpf_mp_getarec (const int k, const double *omega, const double *alpha, const double *tau, double *a)
+{
+  int i,j;
+  //double olda[1];//Eigen::VectorXd olda(1);
+  Eigen::VectorXd olda(1);
+  olda[0] = exp(*omega);
+  for(i=1;i<=k;i++){
+    Eigen::VectorXd newa(i*2+1);
+    irt_rpf_mp_geta(i,&alpha[i-1],&tau[i-1],&olda,&newa);
+
+    olda=newa; // need something like this after k=1
+    // This is not optimal
+    for(j=0;j<2*i+1;j++){
+      a[j]=newa[j];
+    }
+  }
+}
+
+// For now just assume k=1
+static void
+irt_rpf_1dim_lmp_prob(const double *spec,
+		      const double *param, const double *th,
+		      double *out)
+{
+  int k = spec[RPF_ISpecCount];
+  double omega = param[0];
+  double xi = param[1];
+  double alpha[k];
+  double tau[k];
+  for(int i = 0; i<k; i++){
+    alpha[i] = param[i*2+2];
+    tau[i] = param[i*2+3];
+  }
+
+  double a[2*k+1];
+  double b[2*k+1];
+  double athb = 0;
+
+  irt_rpf_mp_getarec(k, &omega, alpha, tau, a);
+  irt_rpf_mp_getb(a,k,b);
+  irt_rpf_mp_val(th,b,k,&athb);
+  athb+=xi;
+
+  if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
+  else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
+  double pp = 1 / (1 + exp(-athb));
+  out[0] = 1-pp;
+  out[1] = pp;
+}
+
+/*
+geta<-function(k,lnlambda,alpha=NULL,lnbeta=NULL,a=0,deriv=FALSE){
+  lambda<-exp(lnlambda)
+  if(k==0){
+    newa<-lambda
+  } else {
+    beta<-exp(lnbeta)
+    T<-matrix(0,nrow=2*k+1,ncol=2*k-1)
+    t<-c(1,-2*alpha,alpha^2+beta)
+    for (i in 1:(2*k-1)){
+      T[i:(i+2),i]<-t
+    }
+    newa<-T%*%(a)
+  }
+
+  ## derivatives of matrices
+  if (deriv==TRUE & k>0){
+    attr(newa,"T")<-T
+    dTalpha<-matrix(0,nrow=2*k+1,ncol=2*k-1)
+    dTlnbeta<-matrix(0,nrow=2*k+1,ncol=2*k-1)
+    d2Talpha<-matrix(0,nrow=2*k+1,ncol=2*k-1) ## 2nd order derivatives
+    d2Tlnbeta<-matrix(0,nrow=2*k+1,ncol=2*k-1)
+    talpha<-c(-2,2*alpha)
+    for (i in 1:(2*k-1)){
+      dTalpha[(i+1):(i+2),i]<-talpha
+      dTlnbeta[i+2,i]<-beta
+      d2Talpha[i+2,i]<-2      ## 2nd derivative added
+      d2Tlnbeta[i+2,i]<-beta
+    }
+    attr(newa,"dTalpha")<-dTalpha
+    attr(newa,"dTlnbeta")<-dTlnbeta
+    attr(newa,"d2Talpha")<-d2Talpha
+    attr(newa,"d2Tlnbeta")<-d2Tlnbeta
+  }
+  return(newa)
+}
+*/
+
+/* Copied from R
+
+## traceline for vanilla LMP model
+## modify to handle vector of u and theta as input
+trace.lmp<-function(theta,k,xi,lnlambda,alpha=NULL,lnbeta=NULL,deriv=FALSE,u=NULL){
+
+  ## convert parameters to traceline
+  a<-geta.rec(k,lnlambda,alpha,lnbeta)
+  b<-getb(xi,a)
+  z<-mpval(theta,b)
+  z[z>50]<-50
+  z[z<(-50)]<- (-50)
+  P<-1/(1+exp(-z))
+  QP<-cbind(1-P,P)
+  if(!is.null(u)){
+    tu<-cbind(u==0,u==1)
+    P<-rowSums(QP*tu)
+  } else {
+    P<-QP
+  }
+  P[P<1e-50]<-1e-50
+  return(P)
+}
+
+
+
+## Recursively constructs coefficients "a" for m'(x) from
+## reparameterized values (lnlambda, alpha, lnbeta).
+## Here alpha and beta should be vectors of length k.
+## Includes option for accumulating derivatives of T matrices
+geta.rec<-function(k,lnlambda,alpha=NULL,lnbeta=NULL,deriv=FALSE){
+  newa<-NULL
+  olda<-NULL
+  T<-list()
+  dTa<-list()
+  dTb<-list()
+  d2Ta<-list()
+  d2Tb<-list()
+  for (i in 0:k){
+    if(i==0){
+      newa<-geta(i,lnlambda)
+    } else {
+      newa<-geta(i,lnlambda,alpha[i],lnbeta[i],olda,deriv=deriv)
+      if(deriv){
+        T[[i]]<-attr(newa,"T")
+        dTa[[i]]<-attr(newa,"dTalpha")
+        dTb[[i]]<-attr(newa,"dTlnbeta")
+        d2Ta[[i]]<-attr(newa,"d2Talpha")
+        d2Tb[[i]]<-attr(newa,"d2Tlnbeta")
+      }
+    }
+    olda<-newa
+  }
+  if(deriv){
+    attr(newa,"T")<-T
+    attr(newa,"dTa")<-dTa
+    attr(newa,"dTb")<-dTb
+    attr(newa,"d2Ta")<-d2Ta
+    attr(newa,"d2Tb")<-d2Tb
+  }
+  return(newa)
+}
+
+
+## traceline for MP model using just b coefficients as input
+trace.mp.b <- function(b,theta,u=NULL) {
+  z<-mp.val(theta,b)
+  P <- 1/(1+exp(-z))
+  QP<-cbind(1-P,P)
+  QP[QP<1e-50]<-1e-50
+  if(!is.null(u)){
+  	tu<-cbind(u==0,u==1)
+  	P<-rowSums(QP*tu)
+  } else {
+  	P<-QP
+  }
+  return(P)
+}
+
+*/
+
+// Not edited yet
+static void
+irt_rpf_1dim_lmp_rescale(const double *spec, double *param, const int *paramMask,
+			 const double *mean, const double *cov)
+{
+  double thresh = param[1] * -param[0];
+  if (paramMask[0] >= 0) {
+    param[0] *= cov[0];
+  }
+  if (paramMask[1] >= 0) {
+    thresh += param[0] * mean[0];
+    param[1] = thresh / -param[0];
+  }
+}
+/********************************************************************************/
+
 //static void noop() {}
 static void notimplemented_deriv1(const double *spec,
 				  const double *param,
@@ -1249,6 +1530,17 @@ const struct rpf librpf_model[] = {
     irt_rpf_nominal_deriv2,
     irt_rpf_mdim_nrm_dTheta,
     irt_rpf_mdim_nrm_rescale,
+  },
+  { "lmp",
+    irt_rpf_1dim_lmp_numSpec,
+    irt_rpf_1dim_lmp_numParam,
+    irt_rpf_1dim_lmp_paramInfo,
+    irt_rpf_1dim_lmp_prob,
+    irt_rpf_logprob_adapter,
+    notimplemented_deriv1, // not done yet
+    notimplemented_deriv2,  // not done yet
+    irt_rpf_1dim_drm_dTheta, // not done yet
+    irt_rpf_1dim_lmp_rescale, // not done yet
   }
 };
 
