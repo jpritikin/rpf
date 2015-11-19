@@ -1,8 +1,8 @@
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.48
-Date: 2015-08-11
+Version: 0.49
+Date: 2015-11-19
 Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     role=c('cre','aut')), person("Jonathan",family="Weeks",
     email="weeksjp@gmail.com", role=c('ctb')),
@@ -54,3 +54,4 @@ Collate:
     'flexmirt.R'
     'util.R'
 URL: https://gitlab.com/rpf/rpf
+RoxygenNote: 5.0.0
