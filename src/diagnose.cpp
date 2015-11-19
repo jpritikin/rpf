@@ -47,7 +47,7 @@ void ssEAP::setup(SEXP robj, double qwidth, int qpts, int *_mask)
 	mask = _mask;
 
 	grp.setGridFineness(qwidth, qpts);
-	grp.import(robj);
+	grp.import(robj, true);
 }
 
 void ssEAP::setLastItem(int which)
@@ -494,7 +494,7 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwot
 
 	ifaGroup grp(1, Rf_asLogical(Rtwotier));
 	grp.setGridFineness(Rf_asReal(Rwidth), Rf_asInteger(Rpts));
-	grp.import(robj);
+	grp.import(robj, false); // lenient=true is probably okay, need to test
 	
 	ba81NormalQuad &quad = grp.quad;
 
@@ -761,7 +761,7 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 	omxManageProtectInsanity mpi;
 
 	ifaGroup grp(1, false);
-	grp.import(Rgrp);
+	grp.import(Rgrp, true);
 	if (grp.getNumUnique() == 0) Rf_error("observedSumScore requires data");
 
 	if (Rf_length(Rmask) != int(grp.spec.size())) {
@@ -796,7 +796,7 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 	omxManageProtectInsanity mpi;
 
 	ifaGroup grp(1, false);
-	grp.import(Rgrp);
+	grp.import(Rgrp, true);
 	if (grp.getNumUnique() == 0) Rf_error("itemOutcomeBySumScore requires data");
 
 	if (Rf_length(Rmask) != int(grp.spec.size())) {

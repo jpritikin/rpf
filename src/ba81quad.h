@@ -194,7 +194,7 @@ class ifaGroup {
 	ifaGroup(int cores, bool _twotier);
 	~ifaGroup();
 	void setGridFineness(double width, int points);
-	void import(SEXP Rlist);
+	void import(SEXP Rlist, bool lenient);
 	void importSpec(SEXP slotValue);
 	void learnMaxAbilities();
 	void setLatentDistribution(int dims, double *mean, double *cov);

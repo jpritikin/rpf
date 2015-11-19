@@ -112,4 +112,10 @@ test_that("2tier sumScoreEAP", {
   got <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=FALSE)
   tt <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=TRUE)
   expect_equal(tt, got[,c(1:2,5,8)], .001)
+  
+  grp2 <- omitItems(grp, c('i5','i6'))
+  got <- sumScoreEAP(grp2, qwidth=2, qpoints=5L)
+#  cat(deparse(round(log(got[,'p']), 2)))
+  expect_equal(log(got[,'p']), c(-3.19, -1.68, -1.07, -1.16, -2.14),
+               check.names=FALSE, tolerance=.01)
 })

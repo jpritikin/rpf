@@ -17,7 +17,7 @@ struct ch2012 {
 ch2012::ch2012(bool twotier, SEXP Rgrp)
 	: grp(1, twotier)
 {
-	grp.import(Rgrp);
+	grp.import(Rgrp, false);
 	rowMask.reserve(grp.getNumUnique());
 	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		bool missing = false;

@@ -319,7 +319,7 @@ void ifaGroup::learnMaxAbilities()
 	}
 }
 
-void ifaGroup::import(SEXP Rlist)
+void ifaGroup::import(SEXP Rlist, bool lenient)
 {
 	SEXP argNames;
 	Rf_protect(argNames = Rf_getAttrib(Rlist, R_NamesSymbol));
@@ -398,7 +398,11 @@ void ifaGroup::import(SEXP Rlist)
 		}
 	}
 
-	learnMaxAbilities();
+	if (lenient) {
+		maxAbilities = maxItemDims;
+	} else {
+		learnMaxAbilities();
+	}
 
 	if (maxAbilities < (int) factorNames.size())
 		factorNames.resize(maxAbilities);
