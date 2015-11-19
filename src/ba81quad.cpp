@@ -496,7 +496,10 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 		Rf_error("At least %d rows are required in the item parameter matrix, only %d found",
 			 impliedParamRows, paramRows);
 	}
+}
 
+void ifaGroup::setupQuadrature()
+{
 	Eigen::Map<Eigen::MatrixXd> fullCov(cov, maxAbilities, maxAbilities);
 	int dense = maxAbilities - numSpecific;
 	Eigen::MatrixXd priCov = fullCov.block(0, 0, dense, dense);

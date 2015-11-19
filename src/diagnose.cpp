@@ -48,6 +48,7 @@ void ssEAP::setup(SEXP robj, double qwidth, int qpts, int *_mask)
 
 	grp.setGridFineness(qwidth, qpts);
 	grp.import(robj, true);
+	grp.setupQuadrature();
 }
 
 void ssEAP::setLastItem(int which)
@@ -495,6 +496,7 @@ SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwot
 	ifaGroup grp(1, Rf_asLogical(Rtwotier));
 	grp.setGridFineness(Rf_asReal(Rwidth), Rf_asInteger(Rpts));
 	grp.import(robj, false); // lenient=true is probably okay, need to test
+	grp.setupQuadrature();
 	
 	ba81NormalQuad &quad = grp.quad;
 

@@ -18,6 +18,7 @@ ch2012::ch2012(bool twotier, SEXP Rgrp)
 	: grp(1, twotier)
 {
 	grp.import(Rgrp, false);
+	grp.setupQuadrature();
 	rowMask.reserve(grp.getNumUnique());
 	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		bool missing = false;

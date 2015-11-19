@@ -205,6 +205,7 @@ class ifaGroup {
 	inline const int *dataColumn(int col) { return dataColumns[col]; };
 	void detectTwoTier();
 	void buildRowSkip();
+	void setupQuadrature();
 	void sanityCheck();
 	inline void ba81OutcomeProb(double *param, bool wantLog);
 	inline void ba81LikelihoodSlow2(const int px, double *out);

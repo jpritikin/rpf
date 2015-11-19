@@ -73,6 +73,7 @@ SEXP eap_wrapper(SEXP Rgrp)
 
 	ifaGroup grp(GlobalNumberOfCores, true);
 	grp.import(Rgrp, false);
+	grp.setupQuadrature();
 	grp.buildRowSkip();
 	if (grp.getNumUnique() == 0) {
 		Rf_error("EAP requested but there are no data rows");
