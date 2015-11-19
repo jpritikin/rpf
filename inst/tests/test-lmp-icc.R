@@ -15,8 +15,7 @@ test_that("LMP", {
 
   ## Since not obtaining above from external code, there will be some minor
   ## differences if we compare to too many decimal places
-  expect_equal(round(lmp.k1.values,7),
-               round(rpf.prob(lmp.k1, par, c(-1,0,1)),7))
+  expect_equal(lmp.k1.values,rpf.prob(lmp.k1, par, c(-1,0,1)), tolerance=1e-7)
 
 
   lmp.k2 <- rpf.lmp(k=2)
@@ -29,7 +28,6 @@ test_that("LMP", {
 
   ## Since not obtaining above from external code, there will be some minor
   ## differences if we compare to too many decimal places
-  expect_equal(round(lmp.k2.values,7),
-               round(rpf.prob(lmp.k2, par, c(-1,0,1)),7))
+  expect_equal(lmp.k2.values,rpf.prob(lmp.k2, par, c(-1,0,1)), tolerance=1e-7)
 
 })

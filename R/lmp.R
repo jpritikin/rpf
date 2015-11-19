@@ -52,7 +52,6 @@
 ##' spec <- rpf.lmp(2) # 5th order polynomial
 ##' p<-rpf.prob(spec, c(.69,.71,-.5,-8.48,.52,-3.32),theta)
 
-## My own version
 rpf.lmp <- function(k=1, multidimensional=FALSE) {
   if(!(k%%1==0)|!(k>=1)){
     stop("k must be an integer > 0")
@@ -69,3 +68,15 @@ rpf.lmp <- function(k=1, multidimensional=FALSE) {
   m@spec <- c(id, 2, m@factors, k)
   m
 }
+
+setMethod("rpf.rparam", signature(m="rpf.lmp.drm"),
+          function(m, version) {
+            n <- 1
+            k<-m$spec[4] ## ok to hardcode this index?
+            ret<-c(omega=rnorm(n, 0, .5),xi=rnorm(n, 0, .75))
+            for(i in 1:k){
+                ret<-c(ret,runif(n,-1,1),log(runif(n,.0001,1)))
+                names(ret)[(3+(i-1)*2):(2+(i*2))]<-c(paste("alpha",i,sep=""),paste("tau",i,sep=""))
+            }
+            ret
+          })
