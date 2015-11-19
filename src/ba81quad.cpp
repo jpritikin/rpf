@@ -28,12 +28,6 @@ static inline void gramProduct(double *vec, size_t len, double *out)
 	}
 }
 
-struct sortAreaHelper {  // could be generalized with a template
-	std::vector<double> &target;
-	bool operator() (int i,int j) { return target[i] > target[j]; }
-	sortAreaHelper(std::vector<double> &tgt) : target(tgt) {}
-};
-
 ba81NormalQuad::ba81NormalQuad() :
 	quadGridSize(0), maxDims(-1), primaryDims(-1), numSpecific(-1),
 	maxAbilities(-1)
@@ -133,22 +127,12 @@ void ba81NormalQuad::setup(double Qwidth, int Qpoints, double *means,
 		}
 	}
 
-	std::vector<int> priOrder;
-	priOrder.reserve(totalPrimaryPoints);
-	for (int qx=0; qx < totalPrimaryPoints; qx++) {
-		priOrder.push_back(qx);
-	}
-	if (0) {
-		sortAreaHelper priCmp(tmpPriQarea);
-		std::sort(priOrder.begin(), priOrder.end(), priCmp);
-	}
-
 	priQarea.clear();
 	priQarea.reserve(totalPrimaryPoints);
 
 	double totalArea = 0;
 	for (int qx=0; qx < totalPrimaryPoints; qx++) {
-		double den = tmpPriQarea[priOrder[qx]];
+		double den = tmpPriQarea[qx];
 		priQarea.push_back(den);
 		//double prevTotalArea = totalArea;
 		totalArea += den;
@@ -188,14 +172,14 @@ void ba81NormalQuad::setup(double Qwidth, int Qpoints, double *means,
 
 	if (numSpecific == 0) {
 		for (int qx=0; qx < totalPrimaryPoints; qx++) {
-			int sortq = priOrder[qx] * maxDims;
+			int sortq = qx * maxDims;
 			for (int dx=0; dx < maxDims; ++dx) {
 				wherePrep.push_back(tmpWherePrep[sortq + dx]);
 			}
 		}
 	} else {
 		for (int qx=0; qx < totalPrimaryPoints; ++qx) {
-			int sortq = priOrder[qx] * quadGridSize;
+			int sortq = qx * quadGridSize;
 			for (int sx=0; sx < quadGridSize; ++sx) {
 				int base = (sortq + sx) * maxDims;
 				for (int dx=0; dx < maxDims; ++dx) {
