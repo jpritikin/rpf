@@ -98,23 +98,23 @@ sumScoreEAPTestInternal <- function(result) {
 ##' 
 ##' @param grp a list with spec, param, mean, and cov
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @param qwidth positive width of quadrature in Z units
+##' @param qpoints number of quadrature points
 ##' @param .twotier whether to enable the two-tier optimization
 ##' @references
 ##' Li, Z., & Cai, L. (2012, July). Summed score likelihood based indices for testing
 ##' latent variable distribution fit in Item Response Theory. Paper presented at
 ##' the annual International Meeting of the Psychometric Society, Lincoln,
 ##' NE. Retrieved from http://www.cse.ucla.edu/downloads/files/SD2-final-4.pdf
-sumScoreEAPTest <- function(grp, ..., .twotier=TRUE) {
+sumScoreEAPTest <- function(grp, ..., qwidth=6.0, qpoints=49L, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
 	if (is.null(grp$data)) {
 		stop("distributionTest cannot be conducted because there is no data")
 	}
-	qwidth <- grp$qwidth
-	if (is.null(qwidth)) { qwidth <- 6 }
-	qpoints <- grp$qpoints
-	if (is.null(qpoints)) { qpoints <- 49 }
+	if (missing(qwidth))  qwidth <- grp$qwidth
+	if (missing(qpoints)) qpoints <- grp$qpoints
 	tbl <- ssEAP(grp, qwidth, qpoints, twotier=.twotier)
 	rownames(tbl) <- 0:(nrow(tbl)-1)
 	result <- list(tbl=tbl)
