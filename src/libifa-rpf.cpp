@@ -32,6 +32,9 @@
                                                                    == log(pi)/2 */
 #endif
 
+extern const struct rpf librpf_model[];
+extern const int librpf_numModels;
+
 static const double EXP_STABLE_DOMAIN = 35;
 static const double SMALLEST_PROB = 6.305116760146989222002e-16;  // exp(-35), need constexpr
 

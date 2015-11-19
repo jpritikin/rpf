@@ -18,6 +18,9 @@
 #ifndef _BA81QUAD_H_
 #define _BA81QUAD_H_
 
+extern const struct rpf *Glibrpf_model;
+extern int Glibrpf_numModels;
+
 class ba81NormalQuad {
  private:
 	inline void pointToWhere(const int *quad, double *where, int upto);
@@ -223,7 +226,7 @@ void ifaGroup::ba81OutcomeProb(double *param, bool wantLog)
 		int dims = ispec[RPF_ISpecDims];
 		Eigen::VectorXd ptheta(dims);
 		double *iparam = param + paramRows * ix;
-		rpf_prob_t prob_fn = wantLog? librpf_model[id].logprob : librpf_model[id].prob;
+		rpf_prob_t prob_fn = wantLog? Glibrpf_model[id].logprob : Glibrpf_model[id].prob;
 
 		for (int qx=0; qx < quad.totalQuadPoints; qx++) {
 			double *where = quad.wherePrep.data() + qx * maxDims;

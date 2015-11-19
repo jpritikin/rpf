@@ -63,7 +63,4 @@ struct rpf {
 
 typedef void (*get_librpf_t)(int version, int *numModels, const struct rpf **model);
 
-extern const struct rpf librpf_model[];
-extern const int librpf_numModels;
-
 #endif

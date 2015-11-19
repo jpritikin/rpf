@@ -25,8 +25,8 @@ get_model_names(SEXP name)
   SEXP ret;
   Rf_protect(ret = Rf_allocVector(REALSXP, 1));
   REAL(ret)[0] = NA_REAL;
-  for (int sx=0; sx < librpf_numModels; sx++) {
-    if (strcmp(librpf_model[sx].name, target) == 0) {
+  for (int sx=0; sx < Glibrpf_numModels; sx++) {
+    if (strcmp(Glibrpf_model[sx].name, target) == 0) {
       REAL(ret)[0] = sx;
     }
   }
@@ -53,10 +53,10 @@ rpf_numSpec_wrapper(SEXP r_spec)
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
+  if (id < 0 || id >= Glibrpf_numModels)
     Rf_error("Item model %d out of range", id);
 
-  int numSpec = (*librpf_model[id].numSpec)(spec);
+  int numSpec = (*Glibrpf_model[id].numSpec)(spec);
 
   SEXP ret;
   Rf_protect(ret = Rf_allocVector(INTSXP, 1));
@@ -75,10 +75,10 @@ rpf_numParam_wrapper(SEXP r_spec)
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
+  if (id < 0 || id >= Glibrpf_numModels)
     Rf_error("Item model %d out of range", id);
 
-  int numParam = (*librpf_model[id].numParam)(spec);
+  int numParam = (*Glibrpf_model[id].numParam)(spec);
 
   SEXP ret;
   Rf_protect(ret = Rf_allocVector(INTSXP, 1));
@@ -97,16 +97,16 @@ rpf_paramInfo_wrapper(SEXP r_spec, SEXP r_paramNum)
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
+  if (id < 0 || id >= Glibrpf_numModels)
     Rf_error("Item model %d out of range", id);
 
   int pnum = Rf_asInteger(r_paramNum);
-  int numParam = (*librpf_model[id].numParam)(spec);
+  int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (pnum < 0 || pnum >= numParam) Rf_error("Item model %d has %d parameters", id, numParam);
 
   const char *type;
   double upper, lower;
-  (*librpf_model[id].paramInfo)(spec, pnum, &type, &upper, &lower);
+  (*Glibrpf_model[id].paramInfo)(spec, pnum, &type, &upper, &lower);
 
   int len = 3;
   SEXP names, ans;
@@ -159,14 +159,14 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
+  if (id < 0 || id >= Glibrpf_numModels)
     Rf_error("Item model %d out of range", id);
 
-  int numSpec = (*librpf_model[id].numSpec)(spec);
+  int numSpec = (*Glibrpf_model[id].numSpec)(spec);
   if (Rf_length(r_spec) < numSpec)
     Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
     
-  int numParam = (*librpf_model[id].numParam)(spec);
+  int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (Rf_length(r_param) < numParam)
     Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
@@ -197,7 +197,7 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 		  }
 		  continue;
 	  }
-	  (*librpf_model[id].prob)(spec, param, thBuf.data(), out+px*numOutcomes);
+	  (*Glibrpf_model[id].prob)(spec, param, thBuf.data(), out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
       double prob = out[px*numOutcomes + ox];
       if (!std::isfinite(prob)) {
@@ -219,14 +219,14 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
+  if (id < 0 || id >= Glibrpf_numModels)
     Rf_error("Item model %d out of range", id);
 
-  int numSpec = (*librpf_model[id].numSpec)(spec);
+  int numSpec = (*Glibrpf_model[id].numSpec)(spec);
   if (Rf_length(r_spec) < numSpec)
     Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
     
-  int numParam = (*librpf_model[id].numParam)(spec);
+  int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (Rf_length(r_param) < numParam)
     Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
@@ -257,7 +257,7 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 		  }
 		  continue;
 	  }
-	  (*librpf_model[id].logprob)(spec, param, thBuf.data(), out+px*numOutcomes);
+	  (*Glibrpf_model[id].logprob)(spec, param, thBuf.data(), out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
       double prob = out[px*numOutcomes + ox];
       if (!std::isfinite(prob)) {
@@ -279,14 +279,14 @@ rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
+  if (id < 0 || id >= Glibrpf_numModels)
     Rf_error("Item model %d out of range", id);
 
-  int numSpec = (*librpf_model[id].numSpec)(spec);
+  int numSpec = (*Glibrpf_model[id].numSpec)(spec);
   if (Rf_length(r_spec) < numSpec)
     Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
     
-  int numParam = (*librpf_model[id].numParam)(spec);
+  int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (Rf_length(r_param) < numParam)
     Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
@@ -307,12 +307,12 @@ rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
   SEXP ret;
   Rf_protect(ret = Rf_allocVector(REALSXP, numDeriv));
   memset(REAL(ret), 0, sizeof(double) * numDeriv);
-  (*librpf_model[id].dLL1)(spec, REAL(r_param),
+  (*Glibrpf_model[id].dLL1)(spec, REAL(r_param),
 			    where, REAL(r_weight), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
     if (!std::isfinite(REAL(ret)[px])) Rf_error("Deriv %d not finite at step 1", px);
   }
-  (*librpf_model[id].dLL2)(spec, REAL(r_param), REAL(ret));
+  (*Glibrpf_model[id].dLL2)(spec, REAL(r_param), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
 	  //if (!std::isfinite(REAL(ret)[px])) Rf_error("Deriv %d not finite at step 2", px);
   }
@@ -329,14 +329,14 @@ rpf_dTheta_wrapper(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
+  if (id < 0 || id >= Glibrpf_numModels)
     Rf_error("Item model %d out of range", id);
 
-  int numSpec = (*librpf_model[id].numSpec)(spec);
+  int numSpec = (*Glibrpf_model[id].numSpec)(spec);
   if (Rf_length(r_spec) < numSpec)
     Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
     
-  int numParam = (*librpf_model[id].numParam)(spec);
+  int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (Rf_length(r_param) < numParam)
     Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
@@ -359,7 +359,7 @@ rpf_dTheta_wrapper(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
   Rf_protect(hess = Rf_allocVector(REALSXP, outcomes));
   memset(REAL(grad), 0, sizeof(double) * outcomes);
   memset(REAL(hess), 0, sizeof(double) * outcomes);
-  (*librpf_model[id].dTheta)(spec, REAL(r_param), REAL(r_where), REAL(r_dir),
+  (*Glibrpf_model[id].dTheta)(spec, REAL(r_param), REAL(r_where), REAL(r_dir),
 			     REAL(grad), REAL(hess));
   SET_VECTOR_ELT(ret, 0, grad);
   SET_VECTOR_ELT(ret, 1, hess);
@@ -379,14 +379,14 @@ rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
-  if (id < 0 || id >= librpf_numModels)
+  if (id < 0 || id >= Glibrpf_numModels)
     Rf_error("Item model %d out of range", id);
 
-  int numSpec = (*librpf_model[id].numSpec)(spec);
+  int numSpec = (*Glibrpf_model[id].numSpec)(spec);
   if (Rf_length(r_spec) < numSpec)
     Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
     
-  int numParam = (*librpf_model[id].numParam)(spec);
+  int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (Rf_length(r_param) < numParam)
     Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
@@ -408,7 +408,7 @@ rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
   SEXP ret;
   Rf_protect(ret = Rf_allocVector(REALSXP, numParam));
   memcpy(REAL(ret), REAL(r_param), sizeof(double) * numParam);
-  (*librpf_model[id].rescale)(spec, REAL(ret), mask.data(),
+  (*Glibrpf_model[id].rescale)(spec, REAL(ret), mask.data(),
 			      REAL(r_mean), REAL(r_cov));
   UNPROTECT(1);
   return ret;
@@ -462,6 +462,9 @@ static R_CallMethodDef flist[] = {
   {NULL, NULL, 0}
 };
 
+extern const struct rpf librpf_model[];
+extern const int librpf_numModels;
+
 static void
 get_librpf_models(int version, int *numModels, const struct rpf **model)
 {
@@ -470,7 +473,12 @@ get_librpf_models(int version, int *numModels, const struct rpf **model)
   *model = librpf_model;
 }
 
+const struct rpf *Glibrpf_model;
+int Glibrpf_numModels;
+
 extern "C" void R_init_rpf(DllInfo *info) {
 	R_registerRoutines(info, NULL, flist, NULL, NULL);
 	R_RegisterCCallable("rpf", "get_librpf_model_GPL", (DL_FUNC) get_librpf_models);
+	Glibrpf_numModels = librpf_numModels;
+	Glibrpf_model = librpf_model;
 }
