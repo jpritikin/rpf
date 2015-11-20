@@ -57,7 +57,7 @@ rpf.lmp <- function(k=1, multidimensional=FALSE) {
     stop("k must be an integer > 0")
   }
   if(multidimensional){
-      stop("Multidimensional LMPA model is not yet supported")
+      stop("Multidimensional LMP model is not yet supported")
   }
   m <- NULL
   id <- -1
@@ -79,4 +79,4 @@ setMethod("rpf.rparam", signature(m="rpf.lmp.drm"),
                 names(ret)[(3+(i-1)*2):(2+(i*2))]<-c(paste("alpha",i,sep=""),paste("tau",i,sep=""))
             }
             ret
-          })
+        })

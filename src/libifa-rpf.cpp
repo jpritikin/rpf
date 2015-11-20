@@ -1472,10 +1472,10 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   _mp_dmda(k,where,dmda);
 
   // dldxi
-  out[1] = - r1yP_r0yP;
+  out[1] += - r1yP_r0yP;
 
   // d2ld2xi
-  out[hessianIndex(indxParam,1,1)] = r1PQ_r0PQ;
+  out[hessianIndex(indxParam,1,1)] += r1PQ_r0PQ;
 
   // dldomega
   //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
@@ -1483,13 +1483,13 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
   dmdomega = dotprod(dmda, a, ord);
   d2md2omega = dmdomega; // same thing, at least with this parameterization
-  out[0] = -r1yP_r0yP*dmdomega;
+  out[0] += -r1yP_r0yP*dmdomega;
 
   //d2ldxidomega
-  out[hessianIndex(indxParam,1,0)] = r1PQ_r0PQ*dmdomega;
+  out[hessianIndex(indxParam,1,0)] += r1PQ_r0PQ*dmdomega;
 
   //d2ld2omega
-  out[hessianIndex(indxParam,0,0)] = -r1yP_r0yP*d2md2omega + r1PQ_r0PQ*dmdomega*dmdomega;
+  out[hessianIndex(indxParam,0,0)] += -r1yP_r0yP*d2md2omega + r1PQ_r0PQ*dmdomega*dmdomega;
 
 
   for(i = 0; i<k; i++){
@@ -1501,13 +1501,13 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
     _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
     dalpha[i]=0;
     dmdalpha1 = dotprod(dmda, a, ord);
-    out[i*2+2] = -r1yP_r0yP*dmdalpha1;
+    out[i*2+2] += -r1yP_r0yP*dmdalpha1;
 
     //d2ldalphadomega
-    out[hessianIndex(indxParam,i*2+2,0)] = -r1yP_r0yP*dmdalpha1+r1PQ_r0PQ*dmdalpha1*dmdomega;
+    out[hessianIndex(indxParam,i*2+2,0)] += -r1yP_r0yP*dmdalpha1+r1PQ_r0PQ*dmdalpha1*dmdomega;
 
     //d2ldxidalpha
-    out[hessianIndex(indxParam,i*2+2,1)] = r1PQ_r0PQ*dmdalpha1;
+    out[hessianIndex(indxParam,i*2+2,1)] += r1PQ_r0PQ*dmdalpha1;
 
     // d2ld2alpha
     dalpha[i] = 2;
@@ -1517,7 +1517,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
     _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
     dalpha[i] = 0;
     d2md2alpha = dotprod(dmda, a, ord);
-    out[hessianIndex(indxParam,i*2+2,i*2+2)] = -r1yP_r0yP*d2md2alpha + r1PQ_r0PQ*dmdalpha1*dmdalpha1;
+    out[hessianIndex(indxParam,i*2+2,i*2+2)] += -r1yP_r0yP*d2md2alpha + r1PQ_r0PQ*dmdalpha1*dmdalpha1;
 
     for(j = i+1; j<k; j++){
       //d2ldalpha1dalpha2
@@ -1534,7 +1534,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
       _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
       d2mdalpha1dalpha2 = dotprod(dmda, a, ord);
 
-      out[hessianIndex(indxParam,j*2+2,i*2+2)] = -r1yP_r0yP*d2mdalpha1dalpha2 + r1PQ_r0PQ*dmdalpha1*dmdalpha2;
+      out[hessianIndex(indxParam,j*2+2,i*2+2)] += -r1yP_r0yP*d2mdalpha1dalpha2 + r1PQ_r0PQ*dmdalpha1*dmdalpha2;
 
       dalpha[i]=0;
       dalpha[j]=0;
@@ -1557,9 +1557,9 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
       d2mdtaudalpha = dotprod(dmda, a, ord);
 
       if(j>=i){
-	out[hessianIndex(indxParam,j*2+3,i*2+2)] = -r1yP_r0yP*d2mdtaudalpha+r1PQ_r0PQ*dmdalpha1*dmdtau1;
+	out[hessianIndex(indxParam,j*2+3,i*2+2)] += -r1yP_r0yP*d2mdtaudalpha+r1PQ_r0PQ*dmdalpha1*dmdtau1;
       } else {
-	out[hessianIndex(indxParam,i*2+2,j*2+3)] = -r1yP_r0yP*d2mdtaudalpha+r1PQ_r0PQ*dmdalpha1*dmdtau1;
+	out[hessianIndex(indxParam,i*2+2,j*2+3)] += -r1yP_r0yP*d2mdtaudalpha+r1PQ_r0PQ*dmdalpha1*dmdtau1;
       }
 
       dtau[j]=0;
@@ -1578,13 +1578,13 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
     _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
     dtau[i] = 0;
     dmdtau1 = dotprod(dmda, a, ord);
-    out[i*2+3] = -r1yP_r0yP*dmdtau1;
+    out[i*2+3] += -r1yP_r0yP*dmdtau1;
 
     //d2ldtaudomega
-    out[hessianIndex(indxParam,i*2+3,0)] = -r1yP_r0yP*dmdtau1+r1PQ_r0PQ*dmdtau1*dmdomega;
+    out[hessianIndex(indxParam,i*2+3,0)] += -r1yP_r0yP*dmdtau1+r1PQ_r0PQ*dmdtau1*dmdomega;
 
     //d2ldxidtau
-    out[hessianIndex(indxParam,i*2+3,1)] = r1PQ_r0PQ*dmdtau1;
+    out[hessianIndex(indxParam,i*2+3,1)] += r1PQ_r0PQ*dmdtau1;
 
     // d2ld2tau
     dtau[i] = 2;
@@ -1594,7 +1594,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
     _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
     dtau[i] = 0;
     d2md2tau = dotprod(dmda, a, ord);
-    out[hessianIndex(indxParam,i*2+3,i*2+3)] = -r1yP_r0yP*d2md2tau + r1PQ_r0PQ*dmdtau1*dmdtau1;
+    out[hessianIndex(indxParam,i*2+3,i*2+3)] += -r1yP_r0yP*d2md2tau + r1PQ_r0PQ*dmdtau1*dmdtau1;
 
     for(j = i+1; j<k; j++){
       //d2ldtau1dtau2
@@ -1611,7 +1611,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
       _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
       d2mdtau1dtau2 = dotprod(dmda, a, ord);
 
-      out[hessianIndex(indxParam,j*2+3,i*2+3)] = -r1yP_r0yP*d2mdtau1dtau2 + r1PQ_r0PQ*dmdtau1*dmdtau2;
+      out[hessianIndex(indxParam,j*2+3,i*2+3)] += -r1yP_r0yP*d2mdtau1dtau2 + r1PQ_r0PQ*dmdtau1*dmdtau2;
 
       dtau[i]=0;
       dtau[j]=0;
@@ -1628,33 +1628,11 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   a = NULL;
 }
 
-// Not sure what this does either, copied internal code from drm_deriv2
 static void irt_rpf_1dim_lmp_deriv2(const double *spec,
 				  const double *param,
 				  double *out)
 {
-  //int numDims = spec[RPF_ISpecDims];
-  //if (numDims == 0) return;
-  //const double *aa = param;
-  //double gg = param[numDims+1];
-  //double uu = param[numDims+2];
 
-  //for (int dx=0; dx < numDims; dx++) {
-  //  if (aa[dx] < 0) {
-  //    set_deriv_nan(spec, out);
-  //    return;
-  //  }
-  //}
-  //if (gg == -INFINITY) {
-  //  out[numDims+1] = nan("I");
-  //}
-  //if (uu == INFINITY) {
-  //  out[numDims+2] = nan("I");
-  //}
-  //if (gg > uu) {
-  //  out[numDims+1] = nan("I");
-  //  out[numDims+2] = nan("I");
-  //}
 }
 
 
