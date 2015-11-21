@@ -1208,19 +1208,16 @@ irt_rpf_1dim_lmp_numParam(const double *spec)
   return(2+2*k);
 }
 
-// not sure what this does
 static void
 irt_rpf_1dim_lmp_paramInfo(const double *spec, const int param,
 			   const char **type, double *upper, double *lower)
 {
-        //int k = spec[RPF_ISpecCount];
 	*upper = nan("unset");
 	*lower = nan("unset");
 
 	*type = NULL;
 	if (param == 0) {
 		*type = "omega";
-		//*lower = 1e-6;
 	} else if (param == 1) {
 		*type = "xi";
 	} else if (param %2 == 0 ){
@@ -1230,11 +1227,10 @@ irt_rpf_1dim_lmp_paramInfo(const double *spec, const int param,
 	}
 }
 
-// Original R version did for multiple theta or x values (mp.val.noxi)
-// Computes the value of m(x) given coefficients "b"
+// Computes the value of a polynomial m(th) given coefficients "b"
 // and value(s) for th, omitting the intercept
 static void
-_mp_val(const double *th, const double *b, const int k,  double *out)
+_poly_val(const double *th, const double *b, const int k,  double *out)
 {
   int order = 2*k+1;
   out[0] = 0;
@@ -1243,10 +1239,10 @@ _mp_val(const double *th, const double *b, const int k,  double *out)
   }
 }
 
-// Converts "a" coefficients for m'(x) to "b" coefficients for m(x)
+// Converts "a" coefficients for m'(th) to "b" coefficients for m(th)
 // Omitting intercept xi
 static void
-_mp_getb (const double *a, const int k, double *b)
+_poly_getb (const double *a, const int k, double *b)
 {
   int order = 2*k+1;
   for(int i=0; i<order; i++){
@@ -1254,7 +1250,8 @@ _mp_getb (const double *a, const int k, double *b)
   }
 }
 
-// Given item parameters, compute coefficeints "a" for m'(x)
+// Given item parameters, compute coefficeints "a" for
+// The derivative, m'(th), of the monotonic polynomial, m(th)
 // Does not include special case of k=0
 // k - controls order of polynomial
 // omega - sort of like slope parameter
@@ -1265,8 +1262,8 @@ _mp_getb (const double *a, const int k, double *b)
 // a_{k-1} - vector of lower order polynomial coefficients
 static void
 _mp_geta (const int k, const double *alpha, const double *tau,
-	  //	  const int dalpha, const int dtau, const double *a, double *newa)
-const int dalpha, const int dtau, const Eigen::VectorXd *a, Eigen::VectorXd *newa)
+	  	  const int dalpha, const int dtau, const double *a, double *newa)
+//const int dalpha, const int dtau, const Eigen::VectorXd *a, Eigen::VectorXd *newa)
 {
   //(*newa).setZero();
   int i, j;
@@ -1274,34 +1271,29 @@ const int dalpha, const int dtau, const Eigen::VectorXd *a, Eigen::VectorXd *new
   int indx2 = 0;
 
   const double beta = exp(*tau);
-  //double *t;
-  Eigen::VectorXd t(3);
 
   // Part of Tk; the rest is 0's
   // optionally use derivatives wrt item parameters
+  Eigen::VectorXd t(3);
   if(dalpha>0 && dtau>0){
-    //t = new double[3]{0, 0, 0};
     t << 0, 0, 0;
   } else if (dalpha==1){
-    //t = new double[3]{0,-2,2.0*(*alpha)};
     t << 0, -2, 2.0*(*alpha);
   } else if (dalpha==2){
-    //t = new double[3]{0,0,2};
     t << 0, 0, 2;
   } else if (dtau==1||dtau==2){
-    //t = new double[3]{0,0,beta};
     t << 0, 0, beta;
   } else {
-    //t = new double[3]{1, -2.0* (*alpha), pow(*alpha,2.0) + beta};
     t << 1, -2.0*(*alpha), pow(*alpha,2.0) + beta;
   }
+
   // a_k = T_k %*% a_{k-1} w/o saving T_k
   for(i=0; i<2*k-1; i++){
     for(j=0; j<2*k+1; j++){
        // only multiply by non-zero entries (unless derivatives are used, of course)
       if(j>=indx && j<indx+3){
-        //(*newa)[j]+=(*a)[i]*t[indx2];
-	(*newa)[j]+=(*a)[i]*t[indx2];
+	//(*newa)[j]+=(*a)[i]*t[indx2];
+	newa[j]+=a[i]*t[indx2];
 	indx2++;
       }
     }
@@ -1318,28 +1310,30 @@ static void
 _mp_getarec (const int k, const double *omega, const double *alpha, const double *tau,
 	     const int *dalpha, const int *dtau, double *a)
 {
-  int i,j;
+  int i;//,j;
   Eigen::VectorXd olda(1);
   olda[0] = exp(*omega);
   for(i=1;i<=k;i++){
     Eigen::VectorXd newa(i*2+1);
     newa.setZero();
-    //_mp_geta(i,&alpha[i-1],&tau[i-1],dalpha[i-1],dtau[i-1],olda.data(),newa.data());
-    _mp_geta(i,&alpha[i-1],&tau[i-1],dalpha[i-1],dtau[i-1],&olda,&newa);
+    _mp_geta(i,&alpha[i-1],&tau[i-1],dalpha[i-1],dtau[i-1],olda.data(),newa.data());
+    //_mp_geta(i,&alpha[i-1],&tau[i-1],dalpha[i-1],dtau[i-1],&olda,&newa);
 
     olda=newa; // need something like this after k=1
-    // This is not optimal
-    for(j=0;j<2*i+1;j++){
-      a[j]=newa[j];
-    }
+
+    // This is not optimal, but for some reason pulling this out of the loop
+    // as is commented out below causes problems
+    //for(j=0;j<2*i+1;j++){
+    //  a[j]=newa[j];
+    //}
   }
-  //for(i=0;i<=2*k+1;i++){
-  //  a[i] = olda[i];
-  //}
+  for(i=0;i<2*k+1;i++){
+    a[i] = olda[i];
+  }
 }
 
 static void
-_mp_dmda (const int k, const double *th, double *dmda)
+_poly_dmda (const int k, const double *th, double *dmda)
 {
   for(int i=0;i<(2*k+1);i++){
     dmda[i] = (1.0/(i+1.0))*pow(*th,i+1);
@@ -1354,53 +1348,45 @@ irt_rpf_1dim_lmp_prob(const double *spec,
   int k = spec[RPF_ISpecCount];
   const double omega = param[0];
   const double xi = param[1];
-  double alpha[k];
-  double tau[k];
-  //Eigen::VectorXd alpha(k);
-  //Eigen::VectorXd tau(k);
+  //double alpha[k];
+  //double tau[k];
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
   for(int i = 0; i<k; i++){
     alpha[i] = param[i*2+2];
     tau[i] = param[i*2+3];
   }
 
-  double a[2*k+1];
-  double b[2*k+1];
-  //Eigen::VectorXd a(2*k+1);
-  //Eigen::VectorXd b(2*k+1);
-  //a.setZero();
-  //b.setZero();
+  //double a[2*k+1];
+  //double b[2*k+1];
+  Eigen::VectorXd a(2*k+1);
+  Eigen::VectorXd b(2*k+1);
+  a.setZero();
+  b.setZero();
 
   double athb = 0;
   // VectorXi is a vector with int data type
-  int* dalpha = new int[k];
-  int* dtau = new int[k];
-  std::fill(dalpha, dalpha+k,0);
-  std::fill(dtau, dtau+k,0);
-  //Eigen::VectorXi dalpha(k);
-  //Eigen::VectorXi dtau(k);
-  //dalpha.setZero();
-  //dtau.setZero();
+  //int* dalpha = new int[k];
+  //int* dtau = new int[k];
+  //std::fill(dalpha, dalpha+k,0);
+  //std::fill(dtau, dtau+k,0);
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
 
   //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-  //_mp_getb(a.data(),k,b.data());
-  //_mp_val(th,b.data(),k,&athb);
-  _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
-  _mp_getb(a,k,b);
-  _mp_val(th,b,k,&athb);
+  //_poly_getb(a.data(),k,b.data());
+  //_poly_val(th,b.data(),k,&athb);
+  _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+  _poly_getb(a.data(),k,b.data());
+  _poly_val(th,b.data(),k,&athb);
   athb+=xi;
 
-  //delete a;
-  //delete b;
-  delete dalpha;
-  delete dtau;
-  //delete alpha;
-  //delete tau;
-  //a = NULL;
-  //b = NULL;
-  dalpha = NULL;
-  dtau = NULL;
-  //alpha = NULL;
-  //tau = NULL;
+  //delete dalpha;
+  //delete dtau;
+  //dalpha = NULL;
+  //dtau = NULL;
 
   if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
   else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
@@ -1421,10 +1407,10 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   const int indxParam = 2+2*k;
   const double omega = param[0];
   //double xi = param[1];
-  //Eigen::VectorXd alpha(k);
-  //Eigen::VectorXd tau(k);
-  double alpha[k];
-  double tau[k];
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
+  //double alpha[k];
+  //double tau[k];
   for(i = 0; i<k; i++){
     alpha[i] = param[i*2+2];
     tau[i] = param[i*2+3];
@@ -1454,22 +1440,27 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   double d2md2alpha;
   double d2md2tau;
   // VectorXi is a vector with int data type
-  int* dalpha = new int[k];
-  int* dtau = new int[k];
-  std::fill(dalpha, dalpha+k,0);
-  std::fill(dtau, dtau+k,0);
-  //Eigen::VectorXi dalpha(k);
-  //Eigen::VectorXi dtau(k);
-  //dalpha.setZero();
-  //dtau.setZero();
+  //int* dalpha = new int[k];
+  //int* dtau = new int[k];
+  //int dalpha[k]; // variable-length arrays like this might only work with g++ compiler
+  // thus, perhaps better not to use; switch back to Eigen::VectorXi
+  //int dtau[k];
+  //std::fill(dalpha, dalpha+k,0);
+  //std::fill(dtau, dtau+k,0);
+  //std::fill(dalpha, dalpha+k,0);
+  //std::fill(dtau, dtau+k,0);
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
 
 
-  double* a = new double[ord];
-  //Eigen::VectorXd a(ord);
-  std::fill(a, a+ord, 0);
+  //double* a = new double[ord];
+  Eigen::VectorXd a(ord);
+  //std::fill(a, a+ord, 0);
 
   double dmda[ord];
-  _mp_dmda(k,where,dmda);
+  _poly_dmda(k,where,dmda);
 
   // dldxi
   out[1] += - r1yP_r0yP;
@@ -1478,10 +1469,10 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   out[hessianIndex(indxParam,1,1)] += r1PQ_r0PQ;
 
   // dldomega
-  //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+  _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+  dmdomega = dotprod(dmda, a.data(), ord);
+  //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
   //dmdomega = dotprod(dmda, a.data(), ord);
-  _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
-  dmdomega = dotprod(dmda, a, ord);
   d2md2omega = dmdomega; // same thing, at least with this parameterization
   out[0] += -r1yP_r0yP*dmdomega;
 
@@ -1495,12 +1486,12 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   for(i = 0; i<k; i++){
     // dldalpha
     dalpha[i] = 1;
-    //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+    _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
     //dalpha[i]=0;
-    //dmdalpha1 = dotprod(dmda, a.data(), ord);
-    _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
+    dmdalpha1 = dotprod(dmda, a.data(), ord);
+    //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
     dalpha[i]=0;
-    dmdalpha1 = dotprod(dmda, a, ord);
+    //dmdalpha1 = dotprod(dmda, a.data(), ord);
     out[i*2+2] += -r1yP_r0yP*dmdalpha1;
 
     //d2ldalphadomega
@@ -1511,28 +1502,28 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
 
     // d2ld2alpha
     dalpha[i] = 2;
-    //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+    _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
     //dalpha[i] = 0;
-    //d2md2alpha = dotprod(dmda, a.data(), ord);
-    _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
+    d2md2alpha = dotprod(dmda, a.data(), ord);
+    //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
     dalpha[i] = 0;
-    d2md2alpha = dotprod(dmda, a, ord);
+    //d2md2alpha = dotprod(dmda, a.data(), ord);
     out[hessianIndex(indxParam,i*2+2,i*2+2)] += -r1yP_r0yP*d2md2alpha + r1PQ_r0PQ*dmdalpha1*dmdalpha1;
 
     for(j = i+1; j<k; j++){
       //d2ldalpha1dalpha2
       dalpha[i]=0;
       dalpha[j]=1;
-      //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      dmdalpha2 = dotprod(dmda, a.data(), ord);
+      //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
       //dmdalpha2 = dotprod(dmda, a.data(), ord);
-      _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
-      dmdalpha2 = dotprod(dmda, a, ord);
 
       dalpha[i]=1;
-      //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      d2mdalpha1dalpha2 = dotprod(dmda, a.data(), ord);
+      //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
       //d2mdalpha1dalpha2 = dotprod(dmda, a.data(), ord);
-      _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
-      d2mdalpha1dalpha2 = dotprod(dmda, a, ord);
 
       out[hessianIndex(indxParam,j*2+2,i*2+2)] += -r1yP_r0yP*d2mdalpha1dalpha2 + r1PQ_r0PQ*dmdalpha1*dmdalpha2;
 
@@ -1545,16 +1536,16 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
     for(j=0; j<k; j++){
       dalpha[i] = 0;
       dtau[j] = 1;
-      //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      dmdtau1 = dotprod(dmda, a.data(), ord);
+      //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
       //dmdtau1 = dotprod(dmda, a.data(), ord);
-      _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
-      dmdtau1 = dotprod(dmda, a, ord);
 
       dalpha[i]=1;
-      //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      d2mdtaudalpha = dotprod(dmda, a.data(), ord);
+      //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
       //d2mdtaudalpha = dotprod(dmda, a.data(), ord);
-      _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
-      d2mdtaudalpha = dotprod(dmda, a, ord);
 
       if(j>=i){
 	out[hessianIndex(indxParam,j*2+3,i*2+2)] += -r1yP_r0yP*d2mdtaudalpha+r1PQ_r0PQ*dmdalpha1*dmdtau1;
@@ -1572,12 +1563,12 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   // dldtau
   for(i = 0; i<k; i++){
     dtau[i] = 1;
-    //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+    _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
     //dtau[i] = 0;
-    //dmdtau1 = dotprod(dmda, a.data(), ord);
-    _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
+    dmdtau1 = dotprod(dmda, a.data(), ord);
+    //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
     dtau[i] = 0;
-    dmdtau1 = dotprod(dmda, a, ord);
+    //dmdtau1 = dotprod(dmda, a.data(), ord);
     out[i*2+3] += -r1yP_r0yP*dmdtau1;
 
     //d2ldtaudomega
@@ -1588,28 +1579,28 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
 
     // d2ld2tau
     dtau[i] = 2;
-    //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+    _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
     //dtau[i] = 0;
-    //d2md2tau = dotprod(dmda, a.data(), ord);
-    _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
+    d2md2tau = dotprod(dmda, a.data(), ord);
+    //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
     dtau[i] = 0;
-    d2md2tau = dotprod(dmda, a, ord);
+    //d2md2tau = dotprod(dmda, a.data(), ord);
     out[hessianIndex(indxParam,i*2+3,i*2+3)] += -r1yP_r0yP*d2md2tau + r1PQ_r0PQ*dmdtau1*dmdtau1;
 
     for(j = i+1; j<k; j++){
       //d2ldtau1dtau2
       dtau[i]=0;
       dtau[j]=1;
-      _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
-      dmdtau2 = dotprod(dmda, a, ord);
-      //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
       //dmdtau2 = dotprod(dmda, a.data(), ord);
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      dmdtau2 = dotprod(dmda, a.data(), ord);
 
       dtau[i]=1;
-      //_mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      d2mdtau1dtau2 = dotprod(dmda, a.data(), ord);
+      //_mp_getarec(k, &omega, alpha, tau, dalpha.data(), dtau.data(), a.data());
       //d2mdtau1dtau2 = dotprod(dmda, a.data(), ord);
-      _mp_getarec(k, &omega, alpha, tau, dalpha, dtau, a);
-      d2mdtau1dtau2 = dotprod(dmda, a, ord);
 
       out[hessianIndex(indxParam,j*2+3,i*2+3)] += -r1yP_r0yP*d2mdtau1dtau2 + r1PQ_r0PQ*dmdtau1*dmdtau2;
 
@@ -1620,14 +1611,15 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
     //dtau[i] = 0;
   }
 
-  delete dalpha;
-  delete dtau;
-  delete a;
-  dalpha = NULL;
-  dtau = NULL;
-  a = NULL;
+  //delete dalpha;
+  //delete dtau;
+  //delete a;
+  //dalpha = NULL;
+  //dtau = NULL;
+  //a = NULL;
 }
 
+// I don't think we need this for anything
 static void irt_rpf_1dim_lmp_deriv2(const double *spec,
 				  const double *param,
 				  double *out)
@@ -1722,7 +1714,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_lmp_prob,
     irt_rpf_logprob_adapter,
     irt_rpf_1dim_lmp_deriv1,
-    irt_rpf_1dim_lmp_deriv2,  // not done yet
+    irt_rpf_1dim_lmp_deriv2,
     notimplemented_dTheta, // not done yet
     irt_rpf_1dim_lmp_rescale, // not done yet
   }
