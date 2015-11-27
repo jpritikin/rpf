@@ -1330,6 +1330,17 @@ _poly_dmda (const int k, const double *th, double *dmda)
 }
 
 static void
+_poly_dmdTheta (const int k, const double *b, const double *th, double *dmdTheta, double *d2md2Theta)
+{
+  for(int i=0;i<(2*k+1);i++){
+    *dmdTheta += (i+1)*b[i]*pow(*th,i);
+    if(i>0){
+      *d2md2Theta += i*(i+1)*b[i]*pow(*th,i-1);
+    }
+  }
+}
+
+static void
 irt_rpf_1dim_lmp_prob(const double *spec,
 		      const double *param, const double *th,
 		      double *out)
@@ -1359,6 +1370,46 @@ irt_rpf_1dim_lmp_prob(const double *spec,
   _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
   _poly_getb(a.data(),k,b.data());
   _poly_val(th,b.data(),k,&athb);
+  athb+=xi;
+
+  if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
+  else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
+  double pp = 1 / (1 + exp(-athb));
+  out[0] = 1-pp;
+  out[1] = pp;
+}
+
+// version that also returns coefficients b
+static void
+irt_rpf_1dim_lmp_prob2(const double *spec,
+		      const double *param, const double *th,
+		      double *b, double *out)
+{
+  int k = spec[RPF_ISpecCount];
+  const double omega = param[0];
+  const double xi = param[1];
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
+  for(int i = 0; i<k; i++){
+    alpha[i] = param[i*2+2];
+    tau[i] = param[i*2+3];
+  }
+
+  Eigen::VectorXd a(2*k+1);
+  //Eigen::VectorXd b(2*k+1);
+  a.setZero();
+  //b.setZero();
+
+  double athb = 0;
+
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
+
+  _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+  _poly_getb(a.data(),k,b);
+  _poly_val(th,b,k,&athb);
   athb+=xi;
 
   if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
@@ -1550,6 +1601,30 @@ static void irt_rpf_1dim_lmp_deriv2(const double *spec,
 
 }
 
+static void irt_rpf_1dim_lmp_dTheta(const double *spec, const double *param,
+			const double *where, const double *dir,
+			double *grad, double *hess)
+{
+  int numDims = spec[RPF_ISpecDims];
+  int k = spec[RPF_ISpecCount];
+  double PQ[2];
+  double dmdTheta = 0;
+  double d2md2Theta = 0;
+  Eigen::VectorXd b(2*k+1);
+  b.setZero();
+  irt_rpf_1dim_lmp_prob2(spec, param, where, b.data(), PQ);
+  _poly_dmdTheta(k, b.data(), where, &dmdTheta, &d2md2Theta);
+
+  double piece = dir[0]*PQ[0]*PQ[1]*dmdTheta;
+  grad[1] += piece;
+  grad[0] -= piece;
+
+  piece = dir[0]*(1-2*PQ[1])*PQ[0]*PQ[1]*dmdTheta*dmdTheta + PQ[0]*PQ[1]*d2md2Theta;
+
+  hess[1] += piece;
+  hess[0] -= piece;
+
+}
 
 // Not edited yet
 static void
@@ -1638,7 +1713,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     irt_rpf_1dim_lmp_deriv1,
     irt_rpf_1dim_lmp_deriv2,
-    notimplemented_dTheta, // not done yet
+    irt_rpf_1dim_lmp_dTheta,
     irt_rpf_1dim_lmp_rescale, // not done yet
   }
 };
