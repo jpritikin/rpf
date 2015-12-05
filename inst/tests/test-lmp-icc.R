@@ -5,6 +5,15 @@ library(rpf)
 context("lmp ICC")
 
 test_that("LMP", {
+
+  ## Check vs. 2PL from same package
+  lmp.k0<-rpf.lmp(k=0)
+  twopl<-rpf.drm()
+  par<-c(.7,-.1)
+  par2<-c(exp(.7),-.1,logit(0),logit(1))
+  expect_equal(rpf.prob(lmp.k0, par, c(-1,0,1)), rpf.prob(twopl, par2, c(-1,0,1)))
+
+  ## 3rd order polynomial
   lmp.k1 <- rpf.lmp(k=1)
 
   ## Response probabilities manually copied from code used for Falk & Cai
@@ -17,7 +26,7 @@ test_that("LMP", {
   ## differences if we compare to too many decimal places
   expect_equal(lmp.k1.values,rpf.prob(lmp.k1, par, c(-1,0,1)), tolerance=1e-7)
 
-
+  ## 5th order polynomial
   lmp.k2 <- rpf.lmp(k=2)
 
   ## Response probabilities manually copied from code used for Falk & Cai

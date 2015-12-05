@@ -9,15 +9,17 @@ items <- list(rpf.drm(),
               rpf.drm(factors=2),
               rpf.grm(outcomes=3, factors=2),
               rpf.nrm(outcomes=4, factors=2, T.a="random", T.c="random"),
-              rpf.nrm(outcomes=4, factors=3, T.a="random", T.c="random"))
+              rpf.nrm(outcomes=4, factors=3, T.a="random", T.c="random"),
+              rpf.lmp(k=0),
+              rpf.lmp(k=1))
 
 triSize <- function(sz) sz*(sz + 1) / 2
 
 for (ii in items) {
-  test_that(class(ii), {    
+  test_that(class(ii), {
     dir <- runif(ii$factors)
     dir <- dir / sqrt(sum(dir^2))
-    
+
     ii.p <- rpf.rparam(ii)
     at <- rnorm(ii$factors)
     analytic <- rpf.dTheta(ii, ii.p, at, dir)

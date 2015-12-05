@@ -27,11 +27,10 @@
 ##' models with k>1.
 ##'
 ##' At the lowest order polynomial (k=0) the model reduces to the
-##' two-parameter logistic model. Due to this, k=0 may not currently be
-##' supported.
+##' two-parameter logistic model.
 ##'
 ##' @param k a non-negative integer that controls the order of the
-##' polynomial (2k*1) with a default of k=1 (3rd order polynomial).
+##' polynomial (2k*1) with a default of k=0 (1st order polynomial = 2PL).
 ##' @param multidimensional whether to use a multidimensional model.
 ##' Defaults to \code{FALSE}. The multidimensional version is not yet
 ##' available.
@@ -53,8 +52,8 @@
 ##' p<-rpf.prob(spec, c(.69,.71,-.5,-8.48,.52,-3.32),theta)
 
 rpf.lmp <- function(k=1, multidimensional=FALSE) {
-  if(!(k%%1==0)|!(k>=1)){
-    stop("k must be an integer > 0")
+  if(!(k%%1==0)){
+    stop("k must be an integer >= 0")
   }
   if(multidimensional){
       stop("Multidimensional LMP model is not yet supported")
@@ -74,9 +73,11 @@ setMethod("rpf.rparam", signature(m="rpf.lmp.drm"),
             n <- 1
             k<-m$spec[4] ## ok to hardcode this index?
             ret<-c(omega=rnorm(n, 0, .5),xi=rnorm(n, 0, .75))
-            for(i in 1:k){
-                ret<-c(ret,runif(n,-1,1),log(runif(n,.0001,1)))
-                names(ret)[(3+(i-1)*2):(2+(i*2))]<-c(paste("alpha",i,sep=""),paste("tau",i,sep=""))
+            if(k>0){
+                for(i in 1:k){
+                    ret<-c(ret,runif(n,-1,1),log(runif(n,.0001,1)))
+                    names(ret)[(3+(i-1)*2):(2+(i*2))]<-c(paste("alpha",i,sep=""),paste("tau",i,sep=""))
+                }
             }
             ret
         })

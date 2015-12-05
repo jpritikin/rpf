@@ -9,7 +9,10 @@ Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     person("Li", family="Cai", role=c('ctb')), person("Carrie",
     family="Houts", role=c('ctb')), person("Phil", "Chalmers", email =
     "rphilip.chalmers@gmail.com", role = c("ctb")),
-    person(c("Michael", "D."), "Hunter", role="ctb"))
+    person(c("Michael", "D."), "Hunter", role="ctb"),
+    person(c("Carl", "F."), "Falk", email =
+    "falkcarl@msu.edu", role = c("ctb"))
+    )
 Maintainer: Joshua Pritikin <jpritikin@pobox.com>
 Description: The purpose of this package is to factor out logic and math common
     to Item Factor Analysis fitting, diagnostics, and analysis. It is
@@ -40,4 +43,3 @@ Collate: 'init.R' 'classes.R' 'fit.R' 'drm.R' 'nrm.R' 'mcm.R' 'grm.R'
         'LSAT.R' 'sample.R' 'dataframe.R' 'diagnose.R' 'science.R'
         'kct.R' 'openmx.R' 'flexmirt.R' 'util.R' 'lmp.R'
 URL: https://gitlab.com/rpf/rpf
-RoxygenNote: 5.0.0

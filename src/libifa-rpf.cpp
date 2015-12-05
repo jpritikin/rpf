@@ -1195,7 +1195,10 @@ irt_rpf_mdim_nrm_rescale(const double *spec, double *param, const int *paramMask
 
 
 /********************************************************************************/
-// Experimenting with LMP model - by CFF
+// Experimenting with LMP model - by Carl F. Falk
+// Some functions could be useful for GPCMP, LMPA
+// Some could also be modified for later use with polynomials that are not
+// necessarily monotonic.
 
 static int
 irt_rpf_1dim_lmp_numSpec(const double *spec)
@@ -1593,7 +1596,6 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   }
 }
 
-// I don't think we need this for anything
 static void irt_rpf_1dim_lmp_deriv2(const double *spec,
 				  const double *param,
 				  double *out)
@@ -1626,20 +1628,14 @@ static void irt_rpf_1dim_lmp_dTheta(const double *spec, const double *param,
 
 }
 
-// Not edited yet
 static void
 irt_rpf_1dim_lmp_rescale(const double *spec, double *param, const int *paramMask,
 			 const double *mean, const double *cov)
 {
-  /*double thresh = param[1] * -param[0];
-  if (paramMask[0] >= 0) {
-    param[0] *= cov[0];
-  }
-  if (paramMask[1] >= 0) {
-    thresh += param[0] * mean[0];
-    param[1] = thresh / -param[0];
-    }*/
+  error("Rescale for LMP model not implemented");
 }
+
+// End of LMP functions
 /********************************************************************************/
 
 //static void noop() {}
