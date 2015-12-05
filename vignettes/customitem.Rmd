@@ -55,7 +55,7 @@ For example, ```librpf_model[]``` towards the end of the
 file contains available item models with associated C++
 functions required to implement each item model. As a
 concrete example, the following code chunk
-effectively lists all functions used by the 
+effectively lists all functions used by the
 unidimensional LMP item model:
 
 ```
@@ -72,16 +72,16 @@ unidimensional LMP item model:
 }
 ```
 
-To add a novel item model, one would need to add an 
-analogous chunk of code to ```librpf_model[]``` with 
-the given functions pertaining to those used by the 
+To add a novel item model, one would need to add an
+analogous chunk of code to ```librpf_model[]``` with
+the given functions pertaining to those used by the
 novel item model. Each type of function takes input
 in the same way regardless of the item model. This
 is a feature that helps make rpf modular.
 
 It is easiest to understand the purpose of each function by
 focusing on the suffixes for the functions above. These
-suffixes are referenced below. The prefixes often tell us 
+suffixes are referenced below. The prefixes often tell us
 which item model the function pertains to.
 Below also effectively contains stubs that could be
 used to start constructing a new item model.
@@ -106,7 +106,7 @@ irt_rpf_1dim_lmp_numSpec(const double *spec)
 ### ```numParam```
 Based only on information in the item specification,
 return an integer that indicates how many parameters
-the item has. For example, the LMP model has a 
+the item has. For example, the LMP model has a
 user-specified integer *k* that determines the
 number of parameters and appears as the last element
 in the specification vector.
@@ -126,7 +126,7 @@ item parameter based on the item specification ```*spec```,
 the index of the item parameter ```param```. This generally assumes
 that the item parameters always appear in a particular
 order for the item model, which can be determined based
-only on the item specification. For instance, a 
+only on the item specification. For instance, a
 two-parameter logistic item model will always have a
 slope and intercept term, which appear in that order,
 and the number of slopes depends on the number of factors.
@@ -206,11 +206,11 @@ quadrature node, or if complete data were available it
 might represent a single respondent's score on the
 latent trait.
 
-```*weight``` is a vector that determines how much 
+```*weight``` is a vector that determines how much
 weight to give to each response category. If input to
 the function were to assume a single respondent, this
 vector is effectively an indicator function that will
-have a "1" in the proper location indicating the 
+have a "1" in the proper location indicating the
 person's response. In the case of EM, the weight vector
 may contain expected counts at this particular quadrature
 node for each of the item's possible response categories.
@@ -234,7 +234,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
 				  const double *weight, double *out)
 {
   // Code implementing deriv1 goes here
-  
+
 }
 ```
 
@@ -335,10 +335,10 @@ rpf.grm <- function(outcomes=2, factors=1, multidimensional=TRUE) {
 ```
 
 Note that input to the function may be item specific,
-however, what the function returns ought to be in a 
+however, what the function returns ought to be in a
 standard format. Specifically, a list containing the id
 of the item model (as determined by ```rpf.id_of```, which
-requires a String that matches that added to the end 
+requires a String that matches that added to the end
 of ```librpf_model[]```), the number of categories (or
 outcomes), and number of factors is required. Additional
 optional elements may be appended to the specification
@@ -359,7 +359,7 @@ rpf.lmp <- function(k=1, multidimensional=FALSE) {
   m <- NULL
   id <- -1
   id <- rpf.id_of("lmp")
-  m <- new("rpf.lmp.drm",
+  m <- new("rpf.1dim.lmp",
            outcomes=2,
            factors=1)
   m@spec <- c(id, 2, m@factors, k)
@@ -374,7 +374,7 @@ parameters be generated for the item model, e.g.,
 to create a similar item model ```rpf.modify```
 
 Note also that the top of file ought to have documentation
-for the item model that is in a format usable by 
+for the item model that is in a format usable by
 [roxygen2](https://cran.r-project.org/web/packages/roxygen2/index.html)
 
 ### Edit DESCRIPTION
@@ -385,7 +385,7 @@ added to the "Collate" statement in the DESCRIPTION file.
 A class ought to be added to this file for the item model.
 This will allow generic functions or wrappers to access
 item specific C++ code. It is difficult to provide specific
-recommendations on how to add the class other than to 
+recommendations on how to add the class other than to
 look at other examples. For instance, the following
 code snippet defines the LMP dichotomous response model,
 "rpf.lmp.drm", as a subclass of the unidimensional
@@ -395,11 +395,11 @@ response model superclass, "rpf.1dim".
 ##' Unidimensional logistic function of a monotonic polynomial
 ##'
 ##' @export
-##' @name Class rpf.lmp.drm
-##' @rdname rpf.lmp.drm-class
-##' @aliases rpf.lmp.drm-class
+##' @name Class rpf.1dim.lmp
+##' @rdname rpf.1dim.lmp-class
+##' @aliases rpf.1dim.lmp-class
 ##'
-setClass("rpf.lmp.drm", contains='rpf.1dim')
+setClass("rpf.1dim.lmp", contains='rpf.1dim')
 ```
 
 Thus, the above is all that was required to add a
@@ -471,7 +471,7 @@ round(rpf.dLL(lmp.item, par, theta[1], weight=c(5,7)),2)
 ```
 
 For latent traits, with cheap ways of testing
-accuracy against numerical derivatives - at 
+accuracy against numerical derivatives - at
 least for a unidimensional model.
 
 ```{r}

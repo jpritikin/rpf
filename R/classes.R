@@ -482,6 +482,7 @@ rpf.info <- function(ii, ii.p, where, basis=1) {
 ##' rpf.rparam,rpf.mdim.graded-method
 ##' rpf.rparam,rpf.mdim.nrm-method
 ##' rpf.rparam,rpf.mdim.mcm-method
+##' rpf.rparam,rpf.1dim.lmp-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -596,14 +597,14 @@ setClass("rpf.mdim.nrm", contains='rpf.mdim')
 ##' @aliases rpf.mdim.mcm-class
 setClass("rpf.mdim.mcm", contains='rpf.mdim')
 
-##' Unidimensional logistic function of a monotonic polynomial
+##' Unidimensional logistic function of a monotonic polynomial.
 ##'
 ##' @export
-##' @name Class rpf.lmp.drm
-##' @rdname rpf.lmp.drm-class
-##' @aliases rpf.lmp.drm-class
+##' @name Class rpf.1dim.lmp
+##' @rdname rpf.1dim.lmp-class
+##' @aliases rpf.1dim.lmp-class
 ##'
-setClass("rpf.lmp.drm", contains='rpf.1dim')
+setClass("rpf.1dim.lmp", contains='rpf.1dim')
 
 ##' Convert an rpf item model name to an ID
 ##'
