@@ -39,7 +39,22 @@ Depends:
     parallel,
     R (>= 2.14.0)
 VignetteBuilder: knitr
-Collate: 'init.R' 'classes.R' 'fit.R' 'drm.R' 'nrm.R' 'mcm.R' 'grm.R'
-        'LSAT.R' 'sample.R' 'dataframe.R' 'diagnose.R' 'science.R'
-        'kct.R' 'openmx.R' 'flexmirt.R' 'util.R' 'lmp.R'
+Collate:
+    'init.R'
+    'classes.R'
+    'fit.R'
+    'drm.R'
+    'nrm.R'
+    'mcm.R'
+    'grm.R'
+    'LSAT.R'
+    'sample.R'
+    'dataframe.R'
+    'diagnose.R'
+    'science.R'
+    'kct.R'
+    'openmx.R'
+    'flexmirt.R'
+    'util.R'
+    'lmp.R'
 URL: https://gitlab.com/rpf/rpf
