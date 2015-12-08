@@ -8,8 +8,9 @@
 This document describes the process of adding custom
 item models to rpf as was done by a contributor to
 the rpf package (Carl F. Falk) with assistance from
-the package author (Joshua N. Pritikin) for the LMP
-item model.
+the package author (Joshua N. Pritikin) for the logistic
+function of a monotonic polynomial (LMP)
+item model [(Falk & Cai, in press)](https://dx.doi.org/10.1007/s11336-014-9428-7).
 
 This document assumes experience in editing R and C++ code and
 installing R packages from source. In addition, use of
@@ -87,7 +88,7 @@ Below also effectively contains stubs that could be
 used to start constructing a new item model.
 
 ### ```numSpec```
-Each item model, e.g., when created by R, contains
+Each item model (e.g., when created by R) contains
 a vector that contains a specification for the item
 model. This will contain information such as the
 number of categories, factors, and other item-specific
@@ -189,7 +190,7 @@ irt_rpf_logprob_adapter(const double *spec,
 ### ```deriv1```
 
 This function computes first *and* second-order complete
-data derivatives the negative(?) log-likelihood for a
+data derivatives the negative log-likelihood for a
 single item with respect to item parameters.
 e.g., for use in optimization at the M-Step of the EM
 algorithm.
@@ -289,7 +290,7 @@ static void irt_rpf_1dim_lmp_dTheta(const double *spec, const double *param,
 
 Currently this function is not *yet* used and could go
 unimplemented. However, the intuition behind it was based
-on Schilling & Bock (2005), equations 22 and 23 for
+on [Schilling & Bock (2005)](https://dx.doi.org/10.1007/s11336-003-1141-x), equations 22 and 23 for
 implementation of adaptive quadrature.
 
 ```
@@ -373,7 +374,7 @@ parameters be generated for the item model, e.g.,
 ```rpf.rparam```, or how an item model may be modified
 to create a similar item model ```rpf.modify```
 
-Note also that the top of file ought to have documentation
+Note also that these functions ought to have documentation
 for the item model that is in a format usable by
 [roxygen2](https://cran.r-project.org/web/packages/roxygen2/index.html)
 
@@ -457,7 +458,7 @@ plot(theta, P[2,], type="l", ylim=c(0,1), xlab="Theta", ylab="P(Theta)")
 ```
 
 The plot above should look like Example 2 from
-Falk and Cai (in press, *Psychometrika*).
+[Falk and Cai (in press)](https://dx.doi.org/10.1007/s11336-014-9428-7).
 
 Access to derivatives w.r.t. item parameters and
 latent traits is also possible. Note that ```rpf.dLL```
@@ -470,13 +471,15 @@ C++ functions.
 round(rpf.dLL(lmp.item, par, theta[1], weight=c(5,7)),2)
 ```
 
-For latent traits, with cheap ways of testing
+For latent traits, with easy ways of testing
 accuracy against numerical derivatives - at
 least for a unidimensional model.
 
 ```{r}
+## Analytical derivatives "deriv1" followed by "deriv2"
 rpf.dTheta(lmp.item, par, where=-.5, dir=1)
 
+## Numerical derivatives
 library(numDeriv)
 dTheta.wrap<-function(theta, spec, par, cat=1){
   rpf.prob(spec, par, theta)[cat]
@@ -509,15 +512,11 @@ be added to inst/tests/
 
 ### Testing estimation
 
-TO DO.
+Forthcoming.
 
 ### Generating documentation
 
-TO DO.
-
-## References
-
-TO DO.
+Forthcoming.
 
 
 
