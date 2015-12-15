@@ -23,7 +23,7 @@
 ##' and .75 for correct.  A polytomous model will have the most
 ##' incorrect probability at index 1 and the most correct probability
 ##' at the maximum index.
-##' 
+##'
 ##' All models are always in the logistic metric. To obtain normal
 ##' ogive discrimination parameters, divide slope parameters by
 ##' \code{\link{rpf.ogive}}. Item models are estimated in
@@ -49,7 +49,7 @@ NULL
 ##' The base class for response probability functions.
 ##'
 ##' Item specifications should not be modified after creation.
-##' 
+##'
 ##' @name Class rpf.base
 ##' @rdname rpf.base-class
 ##' @aliases rpf.base-class
@@ -219,7 +219,7 @@ setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
 ##'
 ##' Evaluate the partial derivatives of the response probability with
 ##' respect to ability. See \link{rpf.info} for an application.
-##' 
+##'
 ##' @param m item model
 ##' @param param item parameters
 ##' @param where location in the latent distribution
@@ -252,7 +252,7 @@ setMethod("rpf.dTheta", signature(m="rpf.base", param="numeric",
 ##'
 ##' Adjust item parameters for changes in mean and covariance of the
 ##' latent distribution.
-##' 
+##'
 ##' @param m item model
 ##' @param param item parameters
 ##' @param mean vector of means
@@ -324,7 +324,7 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' Note that in general, exp(rpf.logprob(..)) != rpf.prob(..) because
 ##' the range of logits is much wider than the range of probabilities
 ##' due to limitations of floating point numerical precision.
-##' 
+##'
 ##' @param m an item model
 ##' @param param item parameters
 ##' @param theta the trait score(s)
@@ -470,7 +470,7 @@ rpf.info <- function(ii, ii.p, where, basis=1) {
 ##' This function generates random item parameters. The version
 ##' argument is available if you are writing a test that depends on
 ##' reproducable random parameters (using \code{set.seed}).
-##' 
+##'
 ##' @param m an item model
 ##' @param version the version of random parameters
 ##' @return item parameters
@@ -482,6 +482,7 @@ rpf.info <- function(ii, ii.p, where, basis=1) {
 ##' rpf.rparam,rpf.mdim.graded-method
 ##' rpf.rparam,rpf.mdim.nrm-method
 ##' rpf.rparam,rpf.mdim.mcm-method
+##' rpf.rparam,rpf.1dim.lmp-method
 ##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
@@ -495,16 +496,16 @@ setGeneric("rpf.rparam", function(m, version=2L) standardGeneric("rpf.rparam"))
 ##' cumulative distribution function (Haley, 1952; Molenaar, 1974).
 ##' Recently, Savalei (2006) proposed a new constant of 1.749 based on
 ##' Kullback-Leibler information.
-##' 
+##'
 ##' In recent years, the logistic has grown in favor, and therefore,
 ##' this package does not offer any special support for this
 ##' transformation (Baker & Kim, 2004, pp. 14-18).
-##' 
+##'
 ##' @export
 ##' @references Camilli, G. (1994). Teacher's corner: Origin of the
 ##' scaling constant d=1.7 in Item Response Theory. \emph{Journal of
 ##' Educational and Behavioral Statistics, 19}(3), 293-295.
-##' 
+##'
 ##' Baker & Kim (2004). \emph{Item Response Theory: Parameter
 ##' Estimation Techniques.} Marcel Dekker, Inc.
 ##'
@@ -522,7 +523,7 @@ setGeneric("rpf.rparam", function(m, version=2L) standardGeneric("rpf.rparam"))
 rpf.ogive <- 1.702
 
 ##' The base class for 1 dimensional graded response probability functions.
-##' 
+##'
 ##' This class contains methods common to both the generalized partial
 ##' credit model and the graded response model.
 ##'
@@ -595,6 +596,15 @@ setClass("rpf.mdim.nrm", contains='rpf.mdim')
 ##' @rdname rpf.mdim.mcm-class
 ##' @aliases rpf.mdim.mcm-class
 setClass("rpf.mdim.mcm", contains='rpf.mdim')
+
+##' Unidimensional logistic function of a monotonic polynomial.
+##'
+##' @export
+##' @name Class rpf.1dim.lmp
+##' @rdname rpf.1dim.lmp-class
+##' @aliases rpf.1dim.lmp-class
+##'
+setClass("rpf.1dim.lmp", contains='rpf.1dim')
 
 ##' Convert an rpf item model name to an ID
 ##'

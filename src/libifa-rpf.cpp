@@ -726,7 +726,7 @@ _nominal_rawprob2(const double *spec,
   int numOutcomes = spec[RPF_ISpecOutcomes];
   double maxZ;
   _nominal_rawprob1(spec, param, th, discr, ak, num, &maxZ);
-  
+
   double recenter = 0;
   if (maxZ > EXP_STABLE_DOMAIN) {
     recenter = maxZ - EXP_STABLE_DOMAIN;
@@ -808,7 +808,7 @@ static double makeOffterm(const double *dat, const double p, const double aTheta
   return(ret);
 }
 
-static double makeOffterm2(const double *dat, const double p1, const double p2, 
+static double makeOffterm2(const double *dat, const double p1, const double p2,
 			   const double aTheta, const int ncat, const int cat)
 {
   double ret = 0;
@@ -898,9 +898,9 @@ irt_rpf_nominal_deriv1(const double *spec,
       for (int i = 0; i < ncat; i++) {
 	tmpvec += dat_num[i] * (ak2[i] * where[j] * where[k] * P[i] -
 				ak[i] * where[j] * P[i] * numakDTheta_numsum[k] -
-				ak[i] * where[k] * P[i] * numakDTheta_numsum[j] + 
+				ak[i] * where[k] * P[i] * numakDTheta_numsum[j] +
 				2 * P[i] * numakD * where[j] * numakD * where[k] / numsum2 -
-				P[i] * numak2D2 * where[j] * where[k] / numsum) * numsum - 
+				P[i] * numak2D2 * where[j] * where[k] / numsum) * numsum -
 	  dat_num[i] * (ak[i] * where[j] * P[i] - P[i] * numakDTheta_numsum[j]) *
 	  numsum * ak[i] * where[k] +
 	  dat_num[i] * (ak[i] * where[j] * P[i] - P[i] * numakDTheta_numsum[j]) *
@@ -972,7 +972,7 @@ irt_rpf_nominal_deriv1(const double *spec,
       if(j > i) {
 	      if (nfact) {
 		      offterm = makeOffterm2(weight, P[j], P[i], aTheta2, ncat, i);
-		      tmpvec = dat_num[i] * (-aTheta2*P[i]*P[j] + 2*P2[i] *aTheta2*P[j])*numsum + 
+		      tmpvec = dat_num[i] * (-aTheta2*P[i]*P[j] + 2*P2[i] *aTheta2*P[j])*numsum +
 			      dat_num[i] * (aTheta*P[i] - P2[i] * aTheta)*aTheta*num[j]+offterm;
 		      out[akrow + nfact + i - 1] -= tmpvec;
 	      }
@@ -993,7 +993,7 @@ irt_rpf_nominal_deriv1(const double *spec,
 	out[dkrow + nfact + i - 1] -= tmpvec;
       } else {
 	offterm = makeOffterm2(weight, P[j], P[i], aTheta, ncat, i);
-	tmpvec = dat_num[i] * (-aTheta*P[i]*P[j] + 2*P2[i] *aTheta*P[j]) * numsum + 
+	tmpvec = dat_num[i] * (-aTheta*P[i]*P[j] + 2*P2[i] *aTheta*P[j]) * numsum +
 	  dat_num[i] * (P[i] - P2[i]) * aTheta * num[j] + offterm;
 	out[dkrow + nfact + i - 1] -= tmpvec;
       }
@@ -1193,6 +1193,451 @@ irt_rpf_mdim_nrm_rescale(const double *spec, double *param, const int *paramMask
   }
 }
 
+
+/********************************************************************************/
+// Experimenting with LMP model - by Carl F. Falk
+// Some functions could be useful for GPCMP, LMPA
+// Some could also be modified for later use with polynomials that are not
+// necessarily monotonic.
+
+static int
+irt_rpf_1dim_lmp_numSpec(const double *spec)
+{ return RPF_ISpecCount; }
+
+static int
+irt_rpf_1dim_lmp_numParam(const double *spec)
+{
+  int k = spec[RPF_ISpecCount];
+  return(2+2*k);
+}
+
+static void
+irt_rpf_1dim_lmp_paramInfo(const double *spec, const int param,
+			   const char **type, double *upper, double *lower)
+{
+	*upper = nan("unset");
+	*lower = nan("unset");
+
+	*type = NULL;
+	if (param == 0) {
+		*type = "omega";
+	} else if (param == 1) {
+		*type = "xi";
+	} else if (param %2 == 0 ){
+		*type = "alpha";
+	} else {
+		*type = "tau";
+	}
+}
+
+// Computes the value of a polynomial m(th) given coefficients "b"
+// and value(s) for th, omitting the intercept
+static void
+_poly_val(const double *th, const double *b, const int k,  double *out)
+{
+  int order = 2*k+1;
+  out[0] = 0;
+  for(int i=0; i<order; i++){
+    out[0]+=b[i]*pow(*th,i+1);
+  }
+}
+
+// Converts "a" coefficients for m'(th) to "b" coefficients for m(th)
+// Omitting intercept xi
+static void
+_poly_getb (const double *a, const int k, double *b)
+{
+  int order = 2*k+1;
+  for(int i=0; i<order; i++){
+    b[i] = a[i]/(i+1);
+  }
+}
+
+// Given item parameters, compute coefficeints "a" for
+// The derivative, m'(th), of the monotonic polynomial, m(th)
+// Does not include special case of k=0
+// k - controls order of polynomial
+// omega - sort of like slope parameter
+// alpha - vector of length k that has one set of parameters
+// tau - vector of length k that has another set of parameters
+// dalpha - use derivative of T w.r.t. alpha in computations (0=no;1=first order; 2=second order)
+// dtau - use derivative of T w.r.t. tau in computations (0=no;1=first order;2=second order)
+// a_{k-1} - vector of lower order polynomial coefficients
+static void
+_mp_geta (const int k, const double *alpha, const double *tau,
+	  	  const int dalpha, const int dtau, const double *a, double *newa)
+
+{
+  int i, j;
+  int indx = 0;
+  int indx2 = 0;
+
+  const double beta = exp(*tau);
+
+  // Part of Tk; the rest is 0's
+  // optionally use derivatives wrt item parameters
+  Eigen::VectorXd t(3);
+  if(dalpha>0 && dtau>0){
+    t << 0, 0, 0;
+  } else if (dalpha==1){
+    t << 0, -2, 2.0*(*alpha);
+  } else if (dalpha==2){
+    t << 0, 0, 2;
+  } else if (dtau==1||dtau==2){
+    t << 0, 0, beta;
+  } else {
+    t << 1, -2.0*(*alpha), pow(*alpha,2.0) + beta;
+  }
+
+  // a_k = T_k %*% a_{k-1} w/o saving T_k
+  for(i=0; i<2*k-1; i++){
+    for(j=0; j<2*k+1; j++){
+      if(j>=indx && j<indx+3){
+	newa[j]+=a[i]*t[indx2];
+	indx2++;
+      }
+    }
+    indx++;
+    indx2=0;
+  }
+}
+
+// Recursively compute "a" starting at k=0 until desired k
+// Optionally use derivatives in computation for da/deta where eta is an item parameter
+// i.e., dalpha and dtau should be vectors with values 0-2 that determine
+// which parameter derivatives are desired and what order of derivative
+static void
+_mp_getarec (const int k, const double *omega, const double *alpha, const double *tau,
+	     const int *dalpha, const int *dtau, double *a)
+{
+  int i;
+  Eigen::VectorXd olda(1);
+  olda[0] = exp(*omega);
+  for(i=1;i<=k;i++){
+    Eigen::VectorXd newa(i*2+1);
+    newa.setZero();
+    _mp_geta(i,&alpha[i-1],&tau[i-1],dalpha[i-1],dtau[i-1],olda.data(),newa.data());
+    olda=newa;
+  }
+  for(i=0;i<2*k+1;i++){
+    a[i] = olda[i];
+  }
+}
+
+static void
+_poly_dmda (const int k, const double *th, double *dmda)
+{
+  for(int i=0;i<(2*k+1);i++){
+    dmda[i] = (1.0/(i+1.0))*pow(*th,i+1);
+  }
+}
+
+static void
+_poly_dmdTheta (const int k, const double *b, const double *th, double *dmdTheta, double *d2md2Theta)
+{
+  for(int i=0;i<(2*k+1);i++){
+    *dmdTheta += (i+1)*b[i]*pow(*th,i);
+    if(i>0){
+      *d2md2Theta += i*(i+1)*b[i]*pow(*th,i-1);
+    }
+  }
+}
+
+static void
+irt_rpf_1dim_lmp_prob(const double *spec,
+		      const double *param, const double *th,
+		      double *out)
+{
+  int k = spec[RPF_ISpecCount];
+  const double omega = param[0];
+  const double xi = param[1];
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
+  for(int i = 0; i<k; i++){
+    alpha[i] = param[i*2+2];
+    tau[i] = param[i*2+3];
+  }
+
+  Eigen::VectorXd a(2*k+1);
+  Eigen::VectorXd b(2*k+1);
+  a.setZero();
+  b.setZero();
+
+  double athb = 0;
+
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
+
+  _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+  _poly_getb(a.data(),k,b.data());
+  _poly_val(th,b.data(),k,&athb);
+  athb+=xi;
+
+  if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
+  else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
+  double pp = 1 / (1 + exp(-athb));
+  out[0] = 1-pp;
+  out[1] = pp;
+}
+
+// version that also returns coefficients b
+static void
+irt_rpf_1dim_lmp_prob2(const double *spec,
+		      const double *param, const double *th,
+		      double *b, double *out)
+{
+  int k = spec[RPF_ISpecCount];
+  const double omega = param[0];
+  const double xi = param[1];
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
+  for(int i = 0; i<k; i++){
+    alpha[i] = param[i*2+2];
+    tau[i] = param[i*2+3];
+  }
+
+  Eigen::VectorXd a(2*k+1);
+  //Eigen::VectorXd b(2*k+1);
+  a.setZero();
+  //b.setZero();
+
+  double athb = 0;
+
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
+
+  _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+  _poly_getb(a.data(),k,b);
+  _poly_val(th,b,k,&athb);
+  athb+=xi;
+
+  if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
+  else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
+  double pp = 1 / (1 + exp(-athb));
+  out[0] = 1-pp;
+  out[1] = pp;
+}
+
+static void
+irt_rpf_1dim_lmp_deriv1(const double *spec,
+				  const double *param,
+				  const double *where,
+				  const double *weight, double *out)
+{
+  int i, j;
+  const int k = spec[RPF_ISpecCount];
+  const int ord = 2*k+1;
+  const int indxParam = 2+2*k;
+  const double omega = param[0];
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
+  for(i = 0; i<k; i++){
+    alpha[i] = param[i*2+2];
+    tau[i] = param[i*2+3];
+  }
+
+  double QP[2];
+  irt_rpf_1dim_lmp_prob(spec, param, where, QP);
+  const double r1 = weight[1];
+  const double r0 = weight[0];
+  const double r1yP = QP[0]*r1;
+  const double r0yP = -QP[1]*r0;
+  const double PQ = QP[0]*QP[1];
+  const double r1PQ = r1*PQ;
+  const double r0PQ = r0*PQ;
+  const double r1yP_r0yP = r1yP + r0yP;
+  const double r1PQ_r0PQ = r1PQ + r0PQ;
+
+  double dmdomega;
+  double dmdalpha1;
+  double dmdalpha2;
+  double d2mdalpha1dalpha2;
+  double dmdtau1;
+  double dmdtau2;
+  double d2mdtau1dtau2;
+  double d2mdtaudalpha;
+  double d2md2omega;
+  double d2md2alpha;
+  double d2md2tau;
+
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
+
+  Eigen::VectorXd a(ord);
+
+  double dmda[ord];
+  _poly_dmda(k,where,dmda);
+
+  // dldxi
+  out[1] += - r1yP_r0yP;
+
+  // d2ld2xi
+  out[hessianIndex(indxParam,1,1)] += r1PQ_r0PQ;
+
+  // dldomega
+  _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+  dmdomega = dotprod(dmda, a.data(), ord);
+  d2md2omega = dmdomega; // same thing w/ this parameterization
+  out[0] += -r1yP_r0yP*dmdomega;
+
+  //d2ldxidomega
+  out[hessianIndex(indxParam,1,0)] += r1PQ_r0PQ*dmdomega;
+
+  //d2ld2omega
+  out[hessianIndex(indxParam,0,0)] += -r1yP_r0yP*d2md2omega + r1PQ_r0PQ*dmdomega*dmdomega;
+
+
+  for(i = 0; i<k; i++){
+    // dldalpha
+    dalpha[i] = 1;
+    _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+    dmdalpha1 = dotprod(dmda, a.data(), ord);
+    dalpha[i]=0;
+    out[i*2+2] += -r1yP_r0yP*dmdalpha1;
+
+    //d2ldalphadomega
+    out[hessianIndex(indxParam,i*2+2,0)] += -r1yP_r0yP*dmdalpha1+r1PQ_r0PQ*dmdalpha1*dmdomega;
+
+    //d2ldxidalpha
+    out[hessianIndex(indxParam,i*2+2,1)] += r1PQ_r0PQ*dmdalpha1;
+
+    // d2ld2alpha
+    dalpha[i] = 2;
+    _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+    d2md2alpha = dotprod(dmda, a.data(), ord);
+    dalpha[i] = 0;
+    out[hessianIndex(indxParam,i*2+2,i*2+2)] += -r1yP_r0yP*d2md2alpha + r1PQ_r0PQ*dmdalpha1*dmdalpha1;
+
+    for(j = i+1; j<k; j++){
+      //d2ldalpha1dalpha2
+      dalpha[i]=0;
+      dalpha[j]=1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      dmdalpha2 = dotprod(dmda, a.data(), ord);
+
+      dalpha[i]=1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      d2mdalpha1dalpha2 = dotprod(dmda, a.data(), ord);
+
+      out[hessianIndex(indxParam,j*2+2,i*2+2)] += -r1yP_r0yP*d2mdalpha1dalpha2 + r1PQ_r0PQ*dmdalpha1*dmdalpha2;
+
+      dalpha[i]=0;
+      dalpha[j]=0;
+
+    }
+
+    // d2ldalpha1dalphatau
+    for(j=0; j<k; j++){
+      dalpha[i] = 0;
+      dtau[j] = 1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      dmdtau1 = dotprod(dmda, a.data(), ord);
+
+      dalpha[i]=1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      d2mdtaudalpha = dotprod(dmda, a.data(), ord);
+
+      if(j>=i){
+	out[hessianIndex(indxParam,j*2+3,i*2+2)] += -r1yP_r0yP*d2mdtaudalpha+r1PQ_r0PQ*dmdalpha1*dmdtau1;
+      } else {
+	out[hessianIndex(indxParam,i*2+2,j*2+3)] += -r1yP_r0yP*d2mdtaudalpha+r1PQ_r0PQ*dmdalpha1*dmdtau1;
+      }
+
+      dtau[j]=0;
+      dalpha[i]=0;
+    }
+
+  }
+
+  // dldtau
+  for(i = 0; i<k; i++){
+    dtau[i] = 1;
+    _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+    dmdtau1 = dotprod(dmda, a.data(), ord);
+    dtau[i] = 0;
+    out[i*2+3] += -r1yP_r0yP*dmdtau1;
+
+    //d2ldtaudomega
+    out[hessianIndex(indxParam,i*2+3,0)] += -r1yP_r0yP*dmdtau1+r1PQ_r0PQ*dmdtau1*dmdomega;
+
+    //d2ldxidtau
+    out[hessianIndex(indxParam,i*2+3,1)] += r1PQ_r0PQ*dmdtau1;
+
+    // d2ld2tau
+    dtau[i] = 2;
+    _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+    d2md2tau = dotprod(dmda, a.data(), ord);
+    dtau[i] = 0;
+    out[hessianIndex(indxParam,i*2+3,i*2+3)] += -r1yP_r0yP*d2md2tau + r1PQ_r0PQ*dmdtau1*dmdtau1;
+
+    for(j = i+1; j<k; j++){
+      //d2ldtau1dtau2
+      dtau[i]=0;
+      dtau[j]=1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      dmdtau2 = dotprod(dmda, a.data(), ord);
+
+      dtau[i]=1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      d2mdtau1dtau2 = dotprod(dmda, a.data(), ord);
+
+      out[hessianIndex(indxParam,j*2+3,i*2+3)] += -r1yP_r0yP*d2mdtau1dtau2 + r1PQ_r0PQ*dmdtau1*dmdtau2;
+
+      dtau[i]=0;
+      dtau[j]=0;
+
+    }
+  }
+}
+
+static void irt_rpf_1dim_lmp_deriv2(const double *spec,
+				  const double *param,
+				  double *out)
+{
+
+}
+
+static void irt_rpf_1dim_lmp_dTheta(const double *spec, const double *param,
+			const double *where, const double *dir,
+			double *grad, double *hess)
+{
+  int numDims = spec[RPF_ISpecDims];
+  int k = spec[RPF_ISpecCount];
+  double PQ[2];
+  double dmdTheta = 0;
+  double d2md2Theta = 0;
+  Eigen::VectorXd b(2*k+1);
+  b.setZero();
+  irt_rpf_1dim_lmp_prob2(spec, param, where, b.data(), PQ);
+  _poly_dmdTheta(k, b.data(), where, &dmdTheta, &d2md2Theta);
+
+  double piece = dir[0]*PQ[0]*PQ[1]*dmdTheta;
+  grad[1] += piece;
+  grad[0] -= piece;
+
+  piece = dir[0]*(1-2*PQ[1])*PQ[0]*PQ[1]*dmdTheta*dmdTheta + PQ[0]*PQ[1]*d2md2Theta;
+
+  hess[1] += piece;
+  hess[0] -= piece;
+
+}
+
+static void
+irt_rpf_1dim_lmp_rescale(const double *spec, double *param, const int *paramMask,
+			 const double *mean, const double *cov)
+{
+  error("Rescale for LMP model not implemented");
+}
+
+// End of LMP functions
+/********************************************************************************/
+
 //static void noop() {}
 static void notimplemented_deriv1(const double *spec,
 				  const double *param,
@@ -1204,6 +1649,12 @@ static void notimplemented_deriv2(const double *spec,
 				  const double *param,
 				  double *out)
 { error("Not implemented"); }
+
+static void notimplemented_dTheta(const double *spec, const double *param,
+			const double *where, const double *dir,
+			double *grad, double *hess)
+{ error("Not implemented"); }
+
 
 const struct rpf librpf_model[] = {
   { "drm1-",
@@ -1249,6 +1700,17 @@ const struct rpf librpf_model[] = {
     irt_rpf_nominal_deriv2,
     irt_rpf_mdim_nrm_dTheta,
     irt_rpf_mdim_nrm_rescale,
+  },
+  { "lmp",
+    irt_rpf_1dim_lmp_numSpec,
+    irt_rpf_1dim_lmp_numParam,
+    irt_rpf_1dim_lmp_paramInfo,
+    irt_rpf_1dim_lmp_prob,
+    irt_rpf_logprob_adapter,
+    irt_rpf_1dim_lmp_deriv1,
+    irt_rpf_1dim_lmp_deriv2,
+    irt_rpf_1dim_lmp_dTheta,
+    irt_rpf_1dim_lmp_rescale, // not done yet
   }
 };
 
