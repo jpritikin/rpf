@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2014 Joshua Nathaniel Pritikin and contributors
+  Copyright 2012-2015 Joshua Nathaniel Pritikin and contributors
 
   libifa-rpf is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -1324,8 +1324,8 @@ _mp_getarec (const int k, const double *omega, const double *alpha, const double
   }
 }
 
-static void
-_poly_dmda (const int k, const double *th, double *dmda)
+template <typename T> static void
+_poly_dmda (const int k, const double *th, Eigen::MatrixBase<T> &dmda)
 {
   for(int i=0;i<(2*k+1);i++){
     dmda[i] = (1.0/(i+1.0))*pow(*th,i+1);
@@ -1471,7 +1471,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
 
   Eigen::VectorXd a(ord);
 
-  double dmda[ord];
+  Eigen::VectorXd dmda(ord);
   _poly_dmda(k,where,dmda);
 
   // dldxi
@@ -1482,7 +1482,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
 
   // dldomega
   _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-  dmdomega = dotprod(dmda, a.data(), ord);
+  dmdomega = dmda.transpose() * a;
   d2md2omega = dmdomega; // same thing w/ this parameterization
   out[0] += -r1yP_r0yP*dmdomega;
 
@@ -1497,7 +1497,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
     // dldalpha
     dalpha[i] = 1;
     _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-    dmdalpha1 = dotprod(dmda, a.data(), ord);
+    dmdalpha1 = dmda.transpose() * a;
     dalpha[i]=0;
     out[i*2+2] += -r1yP_r0yP*dmdalpha1;
 
@@ -1510,7 +1510,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
     // d2ld2alpha
     dalpha[i] = 2;
     _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-    d2md2alpha = dotprod(dmda, a.data(), ord);
+    d2md2alpha = dmda.transpose() * a;
     dalpha[i] = 0;
     out[hessianIndex(indxParam,i*2+2,i*2+2)] += -r1yP_r0yP*d2md2alpha + r1PQ_r0PQ*dmdalpha1*dmdalpha1;
 
@@ -1519,11 +1519,11 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
       dalpha[i]=0;
       dalpha[j]=1;
       _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-      dmdalpha2 = dotprod(dmda, a.data(), ord);
+      dmdalpha2 = dmda.transpose() * a;
 
       dalpha[i]=1;
       _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-      d2mdalpha1dalpha2 = dotprod(dmda, a.data(), ord);
+      d2mdalpha1dalpha2 = dmda.transpose() * a;
 
       out[hessianIndex(indxParam,j*2+2,i*2+2)] += -r1yP_r0yP*d2mdalpha1dalpha2 + r1PQ_r0PQ*dmdalpha1*dmdalpha2;
 
@@ -1537,11 +1537,11 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
       dalpha[i] = 0;
       dtau[j] = 1;
       _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-      dmdtau1 = dotprod(dmda, a.data(), ord);
+      dmdtau1 = dmda.transpose() * a;
 
       dalpha[i]=1;
       _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-      d2mdtaudalpha = dotprod(dmda, a.data(), ord);
+      d2mdtaudalpha = dmda.transpose() * a;
 
       if(j>=i){
 	out[hessianIndex(indxParam,j*2+3,i*2+2)] += -r1yP_r0yP*d2mdtaudalpha+r1PQ_r0PQ*dmdalpha1*dmdtau1;
@@ -1559,7 +1559,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
   for(i = 0; i<k; i++){
     dtau[i] = 1;
     _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-    dmdtau1 = dotprod(dmda, a.data(), ord);
+    dmdtau1 = dmda.transpose() * a;
     dtau[i] = 0;
     out[i*2+3] += -r1yP_r0yP*dmdtau1;
 
@@ -1572,7 +1572,7 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
     // d2ld2tau
     dtau[i] = 2;
     _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-    d2md2tau = dotprod(dmda, a.data(), ord);
+    d2md2tau = dmda.transpose() * a;
     dtau[i] = 0;
     out[hessianIndex(indxParam,i*2+3,i*2+3)] += -r1yP_r0yP*d2md2tau + r1PQ_r0PQ*dmdtau1*dmdtau1;
 
@@ -1581,11 +1581,11 @@ irt_rpf_1dim_lmp_deriv1(const double *spec,
       dtau[i]=0;
       dtau[j]=1;
       _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-      dmdtau2 = dotprod(dmda, a.data(), ord);
+      dmdtau2 = dmda.transpose() * a;
 
       dtau[i]=1;
       _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-      d2mdtau1dtau2 = dotprod(dmda, a.data(), ord);
+      d2mdtau1dtau2 = dmda.transpose() * a;
 
       out[hessianIndex(indxParam,j*2+3,i*2+3)] += -r1yP_r0yP*d2mdtau1dtau2 + r1PQ_r0PQ*dmdtau1*dmdtau2;
 

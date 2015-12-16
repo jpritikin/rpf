@@ -32,7 +32,7 @@ possible via use of an external package
 
 ## Outline
 
-Obtain rpf source code from [CRAN](https://cran.r-project.org/web/packages/rpf/index.html)
+Obtain rpf source code from [CRAN](https://cran.r-project.org/package=rpf)
 or another source such as [GitHub](https://github.com/cran/rpf).
 I used the latter as I wanted to use git to track my own changes
 and then later merge with the rpf package.
@@ -376,7 +376,7 @@ to create a similar item model ```rpf.modify```
 
 Note also that these functions ought to have documentation
 for the item model that is in a format usable by
-[roxygen2](https://cran.r-project.org/web/packages/roxygen2/index.html)
+[roxygen2](https://cran.r-project.org/package=roxygen2)
 
 ### Edit DESCRIPTION
 Any new files created in the previous step ought to be
