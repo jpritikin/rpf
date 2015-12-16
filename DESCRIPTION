@@ -18,7 +18,7 @@ Description: The purpose of this package is to factor out logic and math common
     to Item Factor Analysis fitting, diagnostics, and analysis. It is
     envisioned as core support code suitable for more specialized IRT packages
     to build upon. Complete access to optimized C functions are made available
-    with R_RegisterCCallable.
+    with R_RegisterCCallable().
 LazyData: yes
 LazyDataCompression: bzip2
 License: GPL (>= 3)
