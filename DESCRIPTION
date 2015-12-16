@@ -57,5 +57,5 @@ Collate:
     'flexmirt.R'
     'util.R'
     'lmp.R'
-URL: https://gitlab.com/rpf/rpf
+URL: https://github.com/jpritikin/rpf
 RoxygenNote: 5.0.0
