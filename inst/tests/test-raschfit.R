@@ -84,7 +84,7 @@ test_that("mirt", {
   data <- data[-c(446, 455, 538, 616, 630, 687, 882, 894, 923),]  # exclude min or max responses
   raschfit <- mirt(data, 1, itemtype='Rasch', D=1, verbose=FALSE)
   # coef(raschfit)  # item parameters
-  mirt.fit <- itemfit(raschfit)
+  mirt.fit <- itemfit(raschfit, infit=TRUE)
   scores.full <- fscores(raschfit, full.scores=TRUE)
 
   spec <- list()
