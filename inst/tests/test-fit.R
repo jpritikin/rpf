@@ -9,7 +9,7 @@ test_that("simple case", {
   set.seed(1)
 
   spec <- list()
-  spec[1:3] <- rpf.drm()
+  spec[1:3] <- list(rpf.drm())
 
   gen.p <- matrix(c(1,0,0,1,
                     1,-1,0,1,
@@ -37,7 +37,7 @@ test_that("orlando-thissen-2000", {
   require(rpf)
   set.seed(7)
   grp <- list(spec=list())
-  grp$spec[1:20] <- rpf.grm()
+  grp$spec[1:20] <- list(rpf.grm())
   grp$param <- sapply(grp$spec, rpf.rparam, version=1L)
   colnames(grp$param) <- paste("i", 1:20, sep="")
   grp$mean <- 0
@@ -84,7 +84,7 @@ test_that("fit w/ mcar", {
   require(testthat)
   set.seed(7)
   grp <- list(spec=list(), qwidth=5, qpoints=31)
-  grp$spec[1:20] <- rpf.grm()
+  grp$spec[1:20] <- list(rpf.grm())
   grp$param <- sapply(grp$spec, rpf.rparam, version=1L)
   colnames(grp$param) <- paste("i", 1:20, sep="")
   grp$free <- grp$param != 0
@@ -123,7 +123,7 @@ test_that("2tier fit", {
   require(rpf)
   numItems <- 6
   spec <- list()
-  spec[1:numItems] <- rpf.drm(factors=3)
+  spec[1:numItems] <- list(rpf.drm(factors=3))
   param <- sapply(spec, rpf.rparam, version=1)
   gsize <- numItems/3
   for (gx in 0:2) {
@@ -160,7 +160,7 @@ if (0) {
   
   library(rpf)
   spec <- list()
-  spec[1:5] <- rpf.drm()
+  spec[1:5] <- list(rpf.drm())
   param <- sapply(coef(mod)[-6], function(x) x)
   param[3:4,] <- rpf::logit(param[3:4,])
   dat2 <- as.data.frame(lapply(as.data.frame(dat), ordered, levels=0:1))

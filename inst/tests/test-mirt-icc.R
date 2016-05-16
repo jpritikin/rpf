@@ -13,7 +13,7 @@ i.count <- 5
 spec <- list()
 
 test_that("3PL", {
-  spec[1:i.count] <- rpf.drm()
+  spec[1:i.count] <- list(rpf.drm())
   data <- rpf.sample(100, spec)
   data <- simplify2array(lapply(data, unclass)) - 1
 
@@ -27,7 +27,7 @@ test_that("3PL", {
   }
 })
 
-spec[1:i.count] <- rpf.grm(outcomes=3, multidimensional=TRUE)
+spec[1:i.count] <- list(rpf.grm(outcomes=3, multidimensional=TRUE))
 
 data <- rpf.sample(100, spec)
 data <- simplify2array(lapply(data, unclass)) - 1
@@ -49,9 +49,9 @@ test_that("GRM", {
 })
 
 test_that("nominal", {
-  spec[1:i.count] <- rpf.nrm(outcomes=3,
+  spec[1:i.count] <- list(rpf.nrm(outcomes=3,
                              T.a=rbind(0, diag(2)),
-                             T.c=rbind(0, diag(2)))
+                             T.c=rbind(0, diag(2))))
 
   suppressWarnings(fit <- mirt(data, 1, rep('nominal',i.count),
                                verbose=FALSE, D=1, technical=list(NCYCLES=1)))

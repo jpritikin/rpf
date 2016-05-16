@@ -14,7 +14,7 @@ test_that("kct", {
   params <- cbind(1, kct.items$MEASURE, logit(0), logit(1))
   rownames(params) <- kct.items$NAME
   items<-list()
-  items[1:18] <- rpf.drm()
+  items[1:18] <- list(rpf.drm())
   params[,2] <- -params[,2]
 
   expect_warning(fit <- rpf.1dim.fit(items, t(params), responses, scores, 2, wh.exact=TRUE),
@@ -47,7 +47,7 @@ plot.icc <- function(ii, ii.p, width=7) {
 test_that("sf", {
   data(science)
   spec <- list()
-  spec[1:25] <- rpf.nrm(outcomes=3, T.c = lower.tri(diag(2),TRUE) * -1)
+  spec[1:25] <- list(rpf.nrm(outcomes=3, T.c = lower.tri(diag(2),TRUE) * -1))
   
   param <- rbind(a=1, alf1=1, alf2=0,
         gam1=sfif$MEASURE + sfsf[sfsf$CATEGORY==1,"Rasch.Andrich.threshold.MEASURE"],
@@ -88,7 +88,7 @@ test_that("mirt", {
   scores.full <- fscores(raschfit, full.scores=TRUE)
 
   spec <- list()
-  spec[1:20] <- rpf.drm()
+  spec[1:20] <- list(rpf.drm())
   params <- simplify2array(coef(raschfit)[1:20])[1,,]
   params[c('g', 'u'),] <- logit(params[c('g','u'),])
   scores <- scores.full[,'F1']

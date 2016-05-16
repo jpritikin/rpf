@@ -8,7 +8,7 @@ test_that("multinomialFit full info, simple", {
   require(rpf)
   set.seed(7)
   grp <- list(spec=list())
-  grp$spec[1:10] <- rpf.grm()
+  grp$spec[1:10] <- list(rpf.grm())
   grp$param <- sapply(grp$spec, rpf.rparam)
   colnames(grp$param) <- paste("i", 1:10, sep="")
   grp$mean <- 0
@@ -38,7 +38,7 @@ test_that("multinomialFit full info, simple w/ missingness", {
   
   set.seed(7)
   grp <- list(spec=list())
-  grp$spec[1:10] <- rpf.grm()
+  grp$spec[1:10] <- list(rpf.grm())
   grp$param <- sapply(grp$spec, rpf.rparam)
   colnames(grp$param) <- paste("i", 1:10, sep="")
   grp$mean <- 0
@@ -71,7 +71,7 @@ test_that("multinomialFit full info, simple w/ missingness", {
 test_that("multinomialFit full info, two-tier", {
   require(rpf)
   spec <- list()
-  spec[1:5] <- rpf.drm(factors=3)
+  spec[1:5] <- list(rpf.drm(factors=3))
   gen.param <- sapply(spec, rpf.rparam)
   gen.param['a2', 1:2] <- 0
   gen.param['a3', 3] <- 0

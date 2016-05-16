@@ -24,8 +24,8 @@ test_that("ct1997", {
   set.seed(1)
   
   spec <- list()
-  spec[1:5] <- rpf.grm(factors=2)
-  spec[6]   <- rpf.drm(factors=2)
+  spec[1:5] <- list(rpf.grm(factors=2))
+  spec[6]   <- list(rpf.drm(factors=2))
   gen.param <- mxSimplify2Array(lapply(spec, rpf.rparam, version=1))
   colnames(gen.param) <- paste("i", 1:ncol(gen.param), sep="")
   gen.param[2,] <- c(0,0,.5,.5,1,1)
@@ -54,7 +54,7 @@ test_that("ct1997 2tier", {
   set.seed(1)
   require(rpf)
 	spec <- list()
-	spec[1:5] <- rpf.drm(factors=3)
+	spec[1:5] <- list(rpf.drm(factors=3))
 	gen.param <- sapply(spec, rpf.rparam)
   gen.param['a2', 1:2] <- 0
   gen.param['a3', 3] <- 0

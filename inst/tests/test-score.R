@@ -7,7 +7,7 @@ context("score")
 test_that("tpbw1995-table2", {
   set.seed(1)
   spec <- list()
-  spec[1:3] <- rpf.grm(outcomes=4)
+  spec[1:3] <- list(rpf.grm(outcomes=4))
   
   param <- matrix(c(1.87, .65, 1.97, 3.14,
                     2.66, .12, 1.57, 2.69,

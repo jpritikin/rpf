@@ -8,7 +8,7 @@ test_that("observedSumScore", {
   require(rpf)
   set.seed(1)
   spec <- list()
-  spec[1:3] <- rpf.grm(outcomes=3)
+  spec[1:3] <- list(rpf.grm(outcomes=3))
   param <- sapply(spec, rpf.rparam, version=1)
   data <- rpf.sample(5, spec, param)
   colnames(param) <- colnames(data)
@@ -27,7 +27,7 @@ test_that("observedSumScore", {
 test_that("itemOutcomeBySumScore", {
   set.seed(1)
   spec <- list()
-  spec[1:3] <- rpf.grm(outcomes=3)
+  spec[1:3] <- list(rpf.grm(outcomes=3))
   param <- sapply(spec, rpf.rparam, version=1)
   data <- rpf.sample(5, spec, param)
   colnames(param) <- colnames(data)
@@ -43,7 +43,7 @@ test_that("itemOutcomeBySumScore", {
 # Thissen, Pommerich, Billeaud, & Williams (1995)
 test_that("tpbw1995-table2", {
   spec <- list()
-  spec[1:3] <- rpf.grm(outcomes=4)
+  spec[1:3] <- list(rpf.grm(outcomes=4))
   
   param <- matrix(c(1.87, .65, 1.97, 3.14,
                     2.66, .12, 1.57, 2.69,
@@ -94,7 +94,7 @@ test_that("2tier sumScoreEAP", {
   require(rpf)
   numItems <- 6
   spec <- list()
-  spec[1:numItems] <- rpf.drm(factors=3)
+  spec[1:numItems] <- list(rpf.drm(factors=3))
   param <- sapply(spec, rpf.rparam, version=1)
   gsize <- numItems/3
   for (gx in 0:2) {

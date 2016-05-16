@@ -8,7 +8,7 @@ data(LSAT6)
 LSAT6[1:5] <- as.data.frame(lapply(LSAT6[1:5], ordered, 0:1))
 LSAT6$Freq <- as.numeric(LSAT6$Freq)
 spec <- list()
-spec[1:5] <- rpf.grm()
+spec[1:5] <- list(rpf.grm())
 names(spec) <- colnames(LSAT6)[1:5]
 param <- matrix(c(1.0,0.0), nrow=2, ncol=5, dimnames=list(c('a','b'), names(spec)))
 
