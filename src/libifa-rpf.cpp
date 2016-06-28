@@ -204,6 +204,9 @@ irt_rpf_mdim_drm_prob2(const double *spec,
   out2[1] = tmp;
 }
 
+// TODO: Items with zero loadings can be replaced with equivalent items
+// with fewer factors. This would speed up calculation of derivatives.
+
 static void
 irt_rpf_mdim_drm_deriv1(const double *spec,
 		       const double *param,
