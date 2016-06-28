@@ -1,8 +1,8 @@
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.52
-Date: 2016-05-03
+Version: 0.53
+Date: 2016-06-28
 Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     role=c('cre','aut')), person("Jonathan",family="Weeks",
     email="weeksjp@gmail.com", role=c('ctb')),
@@ -58,4 +58,4 @@ Collate:
     'util.R'
     'lmp.R'
 URL: https://github.com/jpritikin/rpf
-RoxygenNote: 5.0.0
+RoxygenNote: 5.0.1
