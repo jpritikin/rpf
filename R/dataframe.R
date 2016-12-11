@@ -102,7 +102,7 @@ compressDataFrame <- function(tabdata, freqColName="freq") {
 		stop(paste("Frequency column", freqColName, "already appears as a column:",
 			   paste(colnames(tabdata), collapse=", ")))
 	}
-	tabdata <- tabdata[orderCompletely(tabdata),]
+	tabdata <- tabdata[orderCompletely(tabdata),,drop=FALSE]
 	# freqs must be in numeric format, OpenMx expects integers to be factors
 	freq <- as.numeric(tabulateRows(tabdata))
 	tabdata <- unique(tabdata)
