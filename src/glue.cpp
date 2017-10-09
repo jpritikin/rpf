@@ -478,6 +478,7 @@ int Glibrpf_numModels;
 
 extern "C" void R_init_rpf(DllInfo *info) {
 	R_registerRoutines(info, NULL, flist, NULL, NULL);
+	R_useDynamicSymbols(info, FALSE);
 	R_RegisterCCallable("rpf", "get_librpf_model_GPL", (DL_FUNC) get_librpf_models);
 	Glibrpf_numModels = librpf_numModels;
 	Glibrpf_model = librpf_model;
