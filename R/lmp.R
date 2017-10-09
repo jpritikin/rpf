@@ -72,7 +72,6 @@
 ##' Defaults to \code{FALSE}. The multidimensional version is not yet
 ##' available.
 ##' @return an item model
-##' @export
 ##' @references Falk, C. F., & Cai, L. (in press). Maximum marginal likelihood
 ##' estimation of a monotonic polynomial generalized partial credit model with
 ##' applications to multiple group analysis. \emph{Psychometrika}.

@@ -23,7 +23,6 @@
 ##' @param multidimensional whether to use a multidimensional model.
 ##' Defaults to \code{TRUE}.
 ##' @return an item model
-##' @export
 ##' @examples
 ##' spec <- rpf.grm()
 ##' rpf.prob(spec, rpf.rparam(spec), 0)

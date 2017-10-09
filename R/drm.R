@@ -20,7 +20,6 @@
 ##' @param poor if TRUE, use the traditional parameterization of
 ##' the 1d model instead of the slope-intercept parameterization
 ##' @return an item model
-##' @export
 ##' @references Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
 ##' Full-Information Item Bifactor Analysis.  \emph{Psychological
 ##' Methods, 16}(3), 221-248.

@@ -9,7 +9,6 @@
 ##' @param numChoices the number of choices available
 ##' @param factors the number of factors
 ##' @return an item model
-##' @export
 ##' @author Jonathan Weeks <weeksjp@@gmail.com>
 rpf.mcm <- function(outcomes=2, numChoices=5, factors=1) {
   stop("Not implemented")

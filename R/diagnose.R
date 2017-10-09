@@ -8,7 +8,6 @@
 ##' @param m which moment
 ##' @return moment matrix
 ##' @docType methods
-##' @export
 rpf.1dim.moment <- function(spec, params, scores, m) {
   out <- array(dim=c(length(scores), length(spec)))
   for (ix in 1:length(spec)) {
@@ -29,7 +28,6 @@ rpf.1dim.moment <- function(spec, params, scores, m) {
 ##' @param scores model derived person scores
 ##' @return residuals
 ##' @docType methods
-##' @export
 rpf.1dim.residual <- function(spec, params, responses, scores) {
   Zscore <- array(dim=c(length(scores), length(spec)))
   for (ix in 1:length(spec)) {
@@ -56,7 +54,6 @@ rpf.1dim.residual <- function(spec, params, responses, scores) {
 ##' @param scores model derived person scores
 ##' @return standardized residuals
 ##' @docType methods
-##' @export
 rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
   res <- rpf.1dim.residual(spec, params, responses, scores)
   variance <- rpf.1dim.moment(spec, params, scores, 2)
@@ -95,7 +92,6 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' 
 ##' Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
 ##' Analysis.} Chicago: Mesa Press.
-##' @export
 ##' @examples
 ##' data(kct)
 ##' responses <- kct.people[,paste("V",2:19, sep="")]

@@ -24,7 +24,6 @@
 ##'
 ##' @param fname file name
 ##' @return a list of groups each with item parameters and the latent distribution
-##' @export
 read.flexmirt <- function(fname) {
   groups <- list()
 

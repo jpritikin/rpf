@@ -39,7 +39,6 @@
 ##' @docType package
 ##' @rdname rpf.introduction
 ##' @name An introduction
-##' @useDynLib rpf
 ##' @references Thissen, D. and Steinberg, L. (1986). A taxonomy of
 ##' item response models. \emph{Psychometrika 51}(4), 567-577.
 ##' @seealso
@@ -55,7 +54,6 @@ NULL
 ##' @aliases rpf.base-class
 ##' $,rpf.base-method
 ##' $<-,rpf.base-method
-##' @export
 setClass("rpf.base",
          representation(spec="numeric",
                         outcomes="numeric",
@@ -80,7 +78,6 @@ setReplaceMethod("$", "rpf.base", function(x, name, value) {
 ##' @name Class rpf.1dim
 ##' @rdname rpf.1dim-class
 ##' @aliases rpf.1dim-class
-##' @export
 setClass("rpf.1dim", contains='rpf.base',
          representation("VIRTUAL"))
 
@@ -88,7 +85,6 @@ setClass("rpf.1dim", contains='rpf.base',
 ##' @name Class rpf.mdim
 ##' @rdname rpf.mdim-class
 ##' @aliases rpf.mdim-class
-##' @export
 setClass("rpf.mdim", contains='rpf.base',
          representation("VIRTUAL"))
 
@@ -310,7 +306,6 @@ setMethod("rpf.rescale", signature(m="rpf.base", param="numeric",
 ##' rpf.prob,rpf.mdim.mcm,numeric,matrix-method
 ##' rpf.prob,rpf.mdim.grm,numeric,matrix-method
 ##' rpf_prob_wrapper
-##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
 ##' i1.p <- rpf.rparam(i1)
@@ -341,7 +336,6 @@ setGeneric("rpf.prob", function(m, param, theta) standardGeneric("rpf.prob"))
 ##' rpf.logprob,rpf.mdim,numeric,numeric-method
 ##' rpf.logprob,rpf.mdim,numeric,NULL-method
 ##' rpf_logprob_wrapper
-##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
 ##' i1.p <- rpf.rparam(i1)
@@ -446,7 +440,6 @@ setMethod("rpf.prob", signature(m="rpf.mdim", param="numeric", theta="numeric"),
 ##' @param where the location in the latent distribution
 ##' @param basis if more than 1 factor, a positive basis vector
 ##' @return Fisher information
-##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
 ##' i1.p <- c(.6,1,.1,.95)
@@ -483,7 +476,6 @@ rpf.info <- function(ii, ii.p, where, basis=1) {
 ##' rpf.rparam,rpf.mdim.nrm-method
 ##' rpf.rparam,rpf.mdim.mcm-method
 ##' rpf.rparam,rpf.1dim.lmp-method
-##' @export
 ##' @examples
 ##' i1 <- rpf.drm()
 ##' rpf.rparam(i1)
@@ -501,7 +493,6 @@ setGeneric("rpf.rparam", function(m, version=2L) standardGeneric("rpf.rparam"))
 ##' this package does not offer any special support for this
 ##' transformation (Baker & Kim, 2004, pp. 14-18).
 ##'
-##' @export
 ##' @references Camilli, G. (1994). Teacher's corner: Origin of the
 ##' scaling constant d=1.7 in Item Response Theory. \emph{Journal of
 ##' Educational and Behavioral Statistics, 19}(3), 293-295.
@@ -530,7 +521,6 @@ rpf.ogive <- 1.702
 ##' @name Class rpf.1dim.graded
 ##' @rdname rpf.1dim.graded-class
 ##' @aliases rpf.1dim.graded-class
-##' @export
 setClass("rpf.1dim.graded", contains='rpf.1dim',
          representation("VIRTUAL"))
 
@@ -543,13 +533,11 @@ setClass("rpf.1dim.graded", contains='rpf.1dim',
 ##' @name Class rpf.mdim.graded
 ##' @rdname rpf.mdim.graded-class
 ##' @aliases rpf.mdim.graded-class
-##' @export
 setClass("rpf.mdim.graded", contains='rpf.mdim',
          representation("VIRTUAL"))
 
 ##' The unidimensional graded response item model.
 ##'
-##' @export
 ##' @name Class rpf.1dim.grm
 ##' @rdname rpf.1dim.grm-class
 ##' @aliases rpf.1dim.grm-class
@@ -557,7 +545,6 @@ setClass("rpf.1dim.grm", contains='rpf.1dim.graded')
 
 ##' Unidimensional dichotomous item models (1PL, 2PL, and 3PL).
 ##'
-##' @export
 ##' @name Class rpf.1dim.drm
 ##' @rdname rpf.1dim.drm-class
 ##' @aliases rpf.1dim.drm-class
@@ -565,7 +552,6 @@ setClass("rpf.1dim.drm", contains='rpf.1dim')
 
 ##' Multidimensional dichotomous item models (M1PL, M2PL, and M3PL).
 ##'
-##' @export
 ##' @name Class rpf.mdim.drm
 ##' @rdname rpf.mdim.drm-class
 ##' @aliases rpf.mdim.drm-class
@@ -573,7 +559,6 @@ setClass("rpf.mdim.drm", contains='rpf.mdim')
 
 ##' The multidimensional graded response item model.
 ##'
-##' @export
 ##' @name Class rpf.mdim.grm
 ##' @rdname rpf.mdim.grm-class
 ##' @aliases rpf.mdim.grm-class
@@ -582,7 +567,6 @@ setClass("rpf.mdim.grm", contains='rpf.mdim.graded')
 ##' The nominal response item model (both unidimensional and
 ##' multidimensional models have the same parameterization).
 ##'
-##' @export
 ##' @name Class rpf.mdim.nrm
 ##' @rdname rpf.mdim.nrm-class
 ##' @aliases rpf.mdim.nrm-class
@@ -591,7 +575,6 @@ setClass("rpf.mdim.nrm", contains='rpf.mdim')
 ##' The multiple-choice response item model (both unidimensional and
 ##' multidimensional models have the same parameterization).
 ##'
-##' @export
 ##' @name Class rpf.mdim.mcm
 ##' @rdname rpf.mdim.mcm-class
 ##' @aliases rpf.mdim.mcm-class
@@ -599,7 +582,6 @@ setClass("rpf.mdim.mcm", contains='rpf.mdim')
 
 ##' Unidimensional logistic function of a monotonic polynomial.
 ##'
-##' @export
 ##' @name Class rpf.1dim.lmp
 ##' @rdname rpf.1dim.lmp-class
 ##' @aliases rpf.1dim.lmp-class

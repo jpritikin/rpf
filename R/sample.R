@@ -20,7 +20,6 @@
 ##' @param mcar proportion of generated data to set to NA (missing completely at random)
 ##' @param grp a list with spec, param, mean, and cov
 ##' @return Returns a data frame of response patterns
-##' @export
 ##' @examples
 ##' # 1 dimensional items
 ##' i1 <- rpf.drm()
