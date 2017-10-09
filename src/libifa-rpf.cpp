@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2015 Joshua Nathaniel Pritikin and contributors
+  Copyright 2012-2017 Joshua Nathaniel Pritikin and contributors
 
   libifa-rpf is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -1640,6 +1640,8 @@ irt_rpf_1dim_lmp_rescale(const double *spec, double *param, const int *paramMask
 
 // End of LMP functions
 /********************************************************************************/
+
+// replace with forward difference numeric approx TODO
 
 //static void noop() {}
 static void notimplemented_deriv1(const double *spec,
