@@ -108,7 +108,7 @@ SEXP eap_wrapper(SEXP Rgrp)
 		eapContext.scoresOut.push_back(REAL(vec));
 	}
 
-	const int SMALLBUF = 10;
+	const int SMALLBUF = 20;
 	char buf[SMALLBUF];
 	SEXP names;
 	Rf_protect(names = Rf_allocVector(STRSXP, cols));

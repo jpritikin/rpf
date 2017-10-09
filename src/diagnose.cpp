@@ -445,14 +445,14 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 	Rf_protect(names = Rf_allocVector(STRSXP, outCols));
 	SET_STRING_ELT(names, 0, Rf_mkChar("p"));
 	for (int ax=0; ax < quad.primaryDims; ++ax) {
-		const int SMALLBUF = 10;
+		const int SMALLBUF = 20;
 		char buf[SMALLBUF];
 		SET_STRING_ELT(names, 1+ax, Rf_mkChar(grp.factorNames[ax].c_str()));
 		snprintf(buf, SMALLBUF, "se%d", 1+ax);
 		SET_STRING_ELT(names, 1+quad.primaryDims+ax, Rf_mkChar(buf));
 	}
 	for (int cx=0; cx < triangleLoc1(quad.primaryDims); ++cx) {
-		const int SMALLBUF = 10;
+		const int SMALLBUF = 20;
 		char buf[SMALLBUF];
 		snprintf(buf, SMALLBUF, "cov%d", 1+cx);
 		SET_STRING_ELT(names, 1+2*quad.primaryDims+cx, Rf_mkChar(buf));
