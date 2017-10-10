@@ -218,24 +218,25 @@ void ifaGroup::ba81OutcomeProb(double *param, bool wantLog)
 {
 	const int maxDims = quad.maxDims;
 	outcomeProb = Realloc(outcomeProb, totalOutcomes * quad.totalQuadPoints, double);
+	Eigen::MatrixXd ptheta(maxDims, numThreads);
 
 #pragma omp parallel for num_threads(numThreads)
 	for (int ix=0; ix < numItems(); ix++) {
+		int thrId = omp_get_thread_num();
 		double *qProb = outcomeProb + cumItemOutcomes[ix] * quad.totalQuadPoints;
 		const double *ispec = spec[ix];
 		int id = ispec[RPF_ISpecID];
 		int dims = ispec[RPF_ISpecDims];
-		Eigen::VectorXd ptheta(dims);
 		double *iparam = param + paramRows * ix;
 		rpf_prob_t prob_fn = wantLog? Glibrpf_model[id].logprob : Glibrpf_model[id].prob;
 
 		for (int qx=0; qx < quad.totalQuadPoints; qx++) {
 			double *where = quad.wherePrep.data() + qx * maxDims;
 			for (int dx=0; dx < dims; dx++) {
-				ptheta[dx] = where[std::min(dx, maxDims-1)];
+				ptheta(dx, thrId) = where[std::min(dx, maxDims-1)];
 			}
 
-			(*prob_fn)(ispec, iparam, ptheta.data(), qProb);
+			(*prob_fn)(ispec, iparam, &ptheta.coeffRef(0,thrId), qProb);
 			qProb += itemOutcomes[ix];
 		}
 	}
