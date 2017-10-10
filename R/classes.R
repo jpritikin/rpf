@@ -1,6 +1,6 @@
 ##' rpf - Response Probability Functions
 ##'
-##' The purpose of this package is to factor out logic and math common
+##' Factor out logic and math common
 ##' to Item Factor Analysis fitting, diagnostics, and analysis.  It is
 ##' envisioned as core support code suitable for more specialized IFA
 ##' packages to build upon.
