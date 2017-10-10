@@ -39,7 +39,12 @@
 ##' @docType package
 ##' @rdname rpf.introduction
 ##' @name An introduction
-##' @references Thissen, D. and Steinberg, L. (1986). A taxonomy of
+##' @references
+##' Pritikin, J. N., Hunter, M. D., & Boker, S. M.
+##' (2015). Modular open-source software for Item Factor Analysis.
+##' Educational and Psychological Measurement, 75(3), 458-474
+##'
+##' Thissen, D. and Steinberg, L. (1986). A taxonomy of
 ##' item response models. \emph{Psychometrika 51}(4), 567-577.
 ##' @seealso
 ##' See \code{\link{rpf.rparam}} to create item parameters.
