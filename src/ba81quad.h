@@ -218,7 +218,7 @@ void ifaGroup::ba81OutcomeProb(double *param, bool wantLog)
 {
 	const int maxDims = quad.maxDims;
 	outcomeProb = Realloc(outcomeProb, totalOutcomes * quad.totalQuadPoints, double);
-	Eigen::MatrixXd ptheta(maxDims, numThreads);
+	Eigen::MatrixXd ptheta(quad.maxAbilities, numThreads);
 
 #pragma omp parallel for num_threads(numThreads)
 	for (int ix=0; ix < numItems(); ix++) {
