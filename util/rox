@@ -17,6 +17,8 @@ if [ "$descVersion" != "$Version" ]; then
                s/^Version\:.*$/Version: $Version/;" DESCRIPTION
 fi
 
+cp src/Makevars.in src/Makevars
+
 rm -f man/*.Rd
 R --no-restore --no-save --no-readline <<EOF
 library(roxygen2)

@@ -16,4 +16,9 @@ if [ -f /proc/cpuinfo ]; then
   CPUS=$(grep ^processor /proc/cpuinfo  | wc -l)
 fi
 
+cp src/Makevars.in src/Makevars
+echo >> src/Makevars
+# The '-include' thing is a GNU extension so we can't leave it in all the time
+echo "-include autodep" >> src/Makevars
+
 MAKEFLAGS="-j $CPUS" R CMD INSTALL .

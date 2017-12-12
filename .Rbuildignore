@@ -7,6 +7,7 @@
 ^vignettes/*.md
 ^vignettes/figure
 ^src/autodep$
+^src/Makevars.in$
 ^util/
 ^staging
 .dir-locals.el
