@@ -675,13 +675,11 @@ SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
   }
 
   SEXP r_observed, r_expected;
-  Rf_protect(r_observed = Rf_allocMatrix(REALSXP, rows, cols));
-  Rf_protect(r_expected = Rf_allocMatrix(REALSXP, rows, cols));
+  Rf_protect(r_observed = Rf_duplicate(r_observed_orig));
+  Rf_protect(r_expected = Rf_duplicate(r_expected_orig));
 
   double *observed = REAL(r_observed);
   double *expected = REAL(r_expected);
-  memcpy(observed, REAL(r_observed_orig), sizeof(double) * rows * cols);
-  memcpy(expected, REAL(r_expected_orig), sizeof(double) * rows * cols);
 
   ManhattenCollapse mcollapse(rows, cols, observed, expected);
   int collapsed = mcollapse.run();
