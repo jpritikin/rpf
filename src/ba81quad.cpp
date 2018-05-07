@@ -393,7 +393,7 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 
 	if (!factorNames.size()) {
 		factorNames.reserve(maxAbilities);
-		const int SMALLBUF = 10;
+		const int SMALLBUF = 16;
 		char buf[SMALLBUF];
 		for (int sx=0; sx < maxAbilities; ++sx) {
 			snprintf(buf, SMALLBUF, "s%d", sx+1);
