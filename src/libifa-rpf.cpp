@@ -1368,6 +1368,7 @@ irt_rpf_1dim_lmp_prob(const double *spec,
 
   double athb = 0;
 
+  // Why do I have VectorXi here? Should it be VectorXd (and does it matter?)
   Eigen::VectorXi dalpha(k);
   Eigen::VectorXi dtau(k);
   dalpha.setZero();
@@ -2063,11 +2064,12 @@ static void
                          const double *param, const double *th,
                          double *out)
   {
-    /*
+    
     const int k = spec[RPF_ISpecCount];
     const int numOutcomes = spec[RPF_ISpecOutcomes];
     
     const double omega = param[0];
+
     Eigen::VectorXd xi(numOutcomes-1);
     for(int i = 0; i<(numOutcomes-1); i++){
       xi[i] = param[i+1];
@@ -2096,41 +2098,32 @@ static void
     _poly_getb(a.data(),k,b.data());
     _poly_val(th,b.data(),k,&poly);
     
-    // copied from grm_prob
-    // looks to initialize first couple of entries in output
-    double athb = poly + xi[0];
-    if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
-    else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
-    double tmp = 1 / (1 + exp(-athb));
-    out[0] = 1-tmp;
-    out[1] = tmp;
-    
-    for (int kx=2; kx < numOutcomes; kx++) {
-      // copied from grm_prob
-      // this next bit looks like what happens when intercepts are not in order?
-      if (1e-6 + xi[kx-1] >= xi[kx-2]) {
-        for (int ky=0; ky < numOutcomes; ky++) {
-          out[ky] = nan("I");
-        }
-        return;
-      }
-      
-      double athb = poly + xi[kx-1];
-      if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
-      else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
-      double tmp = 1 / (1 + exp(-athb));
-      out[kx-1] -= tmp;
-      out[kx] = tmp;
+    Eigen::VectorXd Z(numOutcomes);
+    Z[0] = poly;
+    for (int i = 1; i < numOutcomes; i++)
+    {
+      Z[i] = xi[i-1] + poly + Z[i-1];
     }
     
-    for (int kx=0; kx < numOutcomes; kx++) {
-      if (out[kx] <= 0) {
-        _grm_fix_crazy_stuff(spec, numOutcomes, out); // not sure what this does
-        return;
-      }
+    // Transform for more numerical stability
+    // Somewhat clumsily coded for now
+    double rowMax = Z.maxCoeff();
+    for (int i = 0; i < numOutcomes; i++)
+    {
+      out[i] = Z[i];
+      Z[i] = exp(Z[i]-rowMax);
     }
-     */
+    
+    double rowSum = Z.sum();
+    for (int i = 0; i < numOutcomes; i++)
+    {
+      double tmp = out[i] - (rowMax + log(rowSum));
+      if (tmp < -EXP_STABLE_DOMAIN) tmp = -EXP_STABLE_DOMAIN;
+      else if (tmp > EXP_STABLE_DOMAIN) tmp = EXP_STABLE_DOMAIN;
+      out[i] = exp(tmp);
+    }
   }
+
 /*
 static void
   irt_rpf_1dim_gpcmp_rawprob(const double *spec,
