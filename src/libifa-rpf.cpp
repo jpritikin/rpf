@@ -1641,18 +1641,18 @@ irt_rpf_1dim_lmp_rescale(const double *spec, double *param, const int *paramMask
 
 // GRM-MP
 static int
-  irt_rpf_1dim_grmmp_numSpec(const double *spec)
+  irt_rpf_1dim_grmp_numSpec(const double *spec)
   { return RPF_ISpecCount; }
 
 static int
-  irt_rpf_1dim_grmmp_numParam(const double *spec)
+  irt_rpf_1dim_grmp_numParam(const double *spec)
   {
     int k = spec[RPF_ISpecCount];
     return(spec[RPF_ISpecOutcomes]+2*k);
   }
 
 static void
-  irt_rpf_1dim_grmmp_paramInfo(const double *spec, const int param,
+  irt_rpf_1dim_grmp_paramInfo(const double *spec, const int param,
                                const char **type, double *upper, double *lower)
   {
     *upper = nan("unset");
@@ -1674,7 +1674,7 @@ static void
   }
 
 static void
-  irt_rpf_1dim_grmmp_prob(const double *spec,
+  irt_rpf_1dim_grmp_prob(const double *spec,
                         const double *param, const double *th,
                         double *out)
   {
@@ -1746,7 +1746,7 @@ static void
   }
 
 static void
-  irt_rpf_1dim_grmmp_rawprob(const double *spec,
+  irt_rpf_1dim_grmp_rawprob(const double *spec,
                              const double *param, const double *th,
                              double *out)
   {
@@ -1794,7 +1794,7 @@ static void
     
   }
 
-static void irt_rpf_1dim_grmmp_deriv1(const double *spec,
+static void irt_rpf_1dim_grmp_deriv1(const double *spec,
                         const double *param,
                         const double *where,
                         const double *weight, double *out)
@@ -1821,11 +1821,11 @@ static void irt_rpf_1dim_grmmp_deriv1(const double *spec,
 
   // Category response functions
   Eigen::VectorXd P(numOutcomes);
-  irt_rpf_1dim_grmmp_prob(spec, param, where, P.data());
+  irt_rpf_1dim_grmp_prob(spec, param, where, P.data());
   
   // Boundary characteristic functions (used w/ some derivatives)
   Eigen::VectorXd Pstar(numOutcomes+1);
-  irt_rpf_1dim_grmmp_rawprob(spec, param, where, Pstar.data());
+  irt_rpf_1dim_grmp_rawprob(spec, param, where, Pstar.data());
   
   // Pre-compute PQ and P(1-P)(1-2P)
   Eigen::VectorXd PQfull(numOutcomes+1);
@@ -2170,14 +2170,14 @@ static void irt_rpf_1dim_grmmp_deriv1(const double *spec,
 
 }
 
-static void irt_rpf_1dim_grmmp_deriv2(const double *spec,
+static void irt_rpf_1dim_grmp_deriv2(const double *spec,
                                     const double *param,
                                     double *out)
 {
   
 }
 
-static void irt_rpf_1dim_grmmp_dTheta(const double *spec, const double *param,
+static void irt_rpf_1dim_grmp_dTheta(const double *spec, const double *param,
                                     const double *where, const double *dir,
                                     double *grad, double *hess)
 {
@@ -2185,7 +2185,7 @@ static void irt_rpf_1dim_grmmp_dTheta(const double *spec, const double *param,
 }
 
 static void
-  irt_rpf_1dim_grmmp_rescale(const double *spec, double *param, const int *paramMask,
+  irt_rpf_1dim_grmp_rescale(const double *spec, double *param, const int *paramMask,
                            const double *mean, const double *cov)
   {
     error("Rescale for GRM-MP model not implemented");
@@ -2270,16 +2270,16 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_lmp_dTheta,
     irt_rpf_1dim_lmp_rescale, // not done yet
   },
-  { "grmmp",
-    irt_rpf_1dim_grmmp_numSpec,
-    irt_rpf_1dim_grmmp_numParam,
-    irt_rpf_1dim_grmmp_paramInfo,
-    irt_rpf_1dim_grmmp_prob,
+  { "grmp",
+    irt_rpf_1dim_grmp_numSpec,
+    irt_rpf_1dim_grmp_numParam,
+    irt_rpf_1dim_grmp_paramInfo,
+    irt_rpf_1dim_grmp_prob,
     irt_rpf_logprob_adapter,
-    irt_rpf_1dim_grmmp_deriv1,
-    irt_rpf_1dim_grmmp_deriv2,
-    irt_rpf_1dim_grmmp_dTheta,
-    irt_rpf_1dim_grmmp_rescale, // not done yet
+    irt_rpf_1dim_grmp_deriv1,
+    irt_rpf_1dim_grmp_deriv2,
+    irt_rpf_1dim_grmp_dTheta,
+    irt_rpf_1dim_grmp_rescale, // not done yet
   }
 };
 

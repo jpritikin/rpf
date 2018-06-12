@@ -481,7 +481,7 @@ rpf.info <- function(ii, ii.p, where, basis=1) {
 ##' rpf.rparam,rpf.mdim.nrm-method
 ##' rpf.rparam,rpf.mdim.mcm-method
 ##' rpf.rparam,rpf.1dim.lmp-method
-##' rpf.rparam,rpf.1dim.grmmp-method
+##' rpf.rparam,rpf.1dim.grmp-method
 ##' @examples
 ##' i1 <- rpf.drm()
 ##' rpf.rparam(i1)
@@ -596,11 +596,11 @@ setClass("rpf.1dim.lmp", contains='rpf.1dim')
 
 ##' Unidimensional graded response monotonic polynomial.
 ##'
-##' @name Class rpf.1dim.grmmp
-##' @rdname rpf.1dim.grmmp-class
-##' @aliases rpf.1dim.grmmp-class
+##' @name Class rpf.1dim.grmp
+##' @rdname rpf.1dim.grmp-class
+##' @aliases rpf.1dim.grmp-class
 ##'
-setClass("rpf.1dim.grmmp", contains='rpf.1dim')
+setClass("rpf.1dim.grmp", contains='rpf.1dim')
 
 ##' Convert an rpf item model name to an ID
 ##'

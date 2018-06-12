@@ -88,24 +88,24 @@
 ##' spec <- rpf.lmp(2) # 5th order polynomial
 ##' p<-rpf.prob(spec, c(.69,.71,-.5,-8.48,.52,-3.32),theta)
 
-rpf.grmmp <- function(outcomes=2, k=0, multidimensional=FALSE) {
+rpf.grmp <- function(outcomes=2, k=0, multidimensional=FALSE) {
   if(!(k%%1==0)){
     stop("k must be an integer >= 0")
   }
   if(multidimensional){
-      stop("Multidimensional GRMMP model is not yet supported")
+      stop("Multidimensional grmp model is not yet supported")
   }
   m <- NULL
   id <- -1
-  id <- rpf.id_of("grmmp")
-  m <- new("rpf.1dim.grmmp",
+  id <- rpf.id_of("grmp")
+  m <- new("rpf.1dim.grmp",
            outcomes=outcomes,
            factors=1)
   m@spec <- c(id, m@outcomes, m@factors, k)
   m
 }
 
-setMethod("rpf.rparam", signature(m="rpf.1dim.grmmp"),
+setMethod("rpf.rparam", signature(m="rpf.1dim.grmp"),
           function(m, version) {
             n <- 1
             k<-m$spec[4] ## ok to hardcode this index?
