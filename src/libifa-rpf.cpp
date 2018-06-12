@@ -1865,6 +1865,11 @@ static void irt_rpf_1dim_grmmp_deriv1(const double *spec,
     if (Pk_1Pk < 1e-10) Pk_1Pk = 1e-10;
     double dif1 = weight[jx] / Pk_1Pk;
     double dif1sq = dif1 / Pk_1Pk;
+    
+    double Pk_1Pk2 = Pstar[jx-1] - Pk_1;
+    if (Pk_1Pk2 < 1e-10) Pk_1Pk2 = 1e-10;
+    double dif2 = weight[jx-1]/Pk_1Pk2;
+    double dif2sq = dif2/Pk_1Pk2;
 
     //printf("%3.3f\n", Pk_1);
     //printf("%3.3f\n", Pk);
@@ -1878,46 +1883,133 @@ static void irt_rpf_1dim_grmmp_deriv1(const double *spec,
     
     // dl2domega2
     double d2md2omega = dmdomega; // just for this parameter
-    // first part
-    //-dif1sq*(PQ_1 - PQ)*dmdomega*(PQ_1 - PQ)*dmdomega;
-    // second part
-    // dif1*(PQ2_1 - PQ2)*dmdomega*dmdomega + (PQ_1 - PQ)*d2md2omega;
     out[hessianIndex(indxParam,0,0)] -= -dif1sq*(PQ_1 - PQ)*dmdomega*(PQ_1 - PQ)*dmdomega + dif1*((PQ2_1 - PQ2)*dmdomega*dmdomega + (PQ_1 - PQ)*d2md2omega);
     
     if(jx > 0)
     {
-      // dldc
-      double Pk_1Pk2 = Pstar[jx-1] - Pk_1;
-      if (Pk_1Pk2 < 1e-10) Pk_1Pk2 = 1e-10;
-      double dldc = (dif1-weight[jx-1]/Pk_1Pk2)*PQfull[jx];
+      // dldc      
+      //double dldc = (dif1-dif2)*PQfull[jx];
+      double dldc = (dif1-dif2)*PQ_1;
       out[jx] -= dldc;
+
+      // d2d2c
+      out[hessianIndex(indxParam,jx,jx)] -= (dif1-dif2)*PQ2_1 + (-dif1sq - dif2sq)*PQ_1*PQ_1;
+      
+      // d2dckomega
+      out[hessianIndex(indxParam,jx,0)] -= (-dif1sq*(PQ_1 - PQ)*dmdomega + dif2sq*(PQfull[jx-1] - PQ_1)*dmdomega)*PQ_1 + (dif1 - dif2)*PQ2_1*dmdomega;
+      
+      //d2dckct - cross derivatives with other threshold or intercept parameters
+      out[hessianIndex(indxParam,jx+1,jx)] -= dif1sq*PQ_1*PQ;
+      
+
     }
     
-    for(i = 0; i<k; i++){
+    for(i = 0; i<k; i++)
+    {
       
       // dldalpha
       dalpha[i] = 1;
       _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-      double dmdalpha1 = dmda.transpose() * a;
+      double dmdalpha = dmda.transpose() * a;
       dalpha[i]=0;
-      out[i*2+numOutcomes] -= dif1*(PQ_1 - PQ)*dmdalpha1;
+      out[i*2+numOutcomes] -= dif1*(PQ_1 - PQ)*dmdalpha;
       
+      // d2dalphaomega
+      out[hessianIndex(indxParam,i*2+numOutcomes,0)] -= -dif1sq*(PQ_1 - PQ)*dmdomega*(PQ_1 - PQ)*dmdalpha + dif1*(PQ2_1 - PQ2)*dmdomega*dmdalpha + dif1*(PQ_1-PQ)*dmdalpha;//dmda.transpose() *a;
+      
+      if(jx > 0)
+      {
+        // d2dckalpha
+        out[hessianIndex(indxParam,i*2+numOutcomes,jx)] -= (-dif1sq*(PQ_1 - PQ)*dmdalpha + dif2sq*(PQfull[jx-1] - PQ_1)*dmdalpha)*PQ_1 + (dif1 - dif2)*PQ2_1*dmdalpha;
+      }
+      
+      // d2dalpha1alpha2
+      for(j = i+1; j<k; j++){
+        dalpha[j] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double dmdalpha2 = dmda.transpose() * a;
+
+        dalpha[i] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double d2mdalpha1alpha2 = dmda.transpose() * a;
+        dalpha[i]=0;
+        dalpha[j]=0;        
+        
+        out[hessianIndex(indxParam,j*2+numOutcomes,i*2+numOutcomes)] -= -dif1sq*(PQ_1 - PQ)*dmdalpha*(PQ_1 - PQ)*dmdalpha2 + dif1*(PQ2_1 - PQ2)*dmdalpha*dmdalpha2 + dif1*(PQ_1-PQ)*d2mdalpha1alpha2;
+      }
+      
+      // d2ld2alpha
+      dalpha[i] = 2;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      double d2md2alpha = dmda.transpose() * a;
+      dalpha[i] = 0;
+      out[hessianIndex(indxParam,i*2+numOutcomes,i*2+numOutcomes)] -= -dif1sq*(PQ_1 - PQ)*dmdalpha*(PQ_1 - PQ)*dmdalpha + dif1*((PQ2_1 - PQ2)*dmdalpha*dmdalpha + (PQ_1 - PQ)*d2md2alpha);
+      
+      // d2ldalpha1dalphatau
+      for(j=0; j<k; j++){
+        dalpha[i] = 0;
+        dtau[j] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double dmdtau = dmda.transpose() * a;
+        
+        dalpha[i]=1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double d2mdtaudalpha = dmda.transpose() * a;
+        
+        if(j>=i){
+          out[hessianIndex(indxParam,j*2+numOutcomes+1,i*2+numOutcomes)] -= -dif1sq*(PQ_1 - PQ)*dmdalpha*(PQ_1 - PQ)*dmdtau + dif1*(PQ2_1 - PQ2)*dmdalpha*dmdtau + dif1*(PQ_1-PQ)*d2mdtaudalpha;
+        } else {
+          out[hessianIndex(indxParam,i*2+numOutcomes,j*2+numOutcomes+1)] -= -dif1sq*(PQ_1 - PQ)*dmdalpha*(PQ_1 - PQ)*dmdtau + dif1*(PQ2_1 - PQ2)*dmdalpha*dmdtau + dif1*(PQ_1-PQ)*d2mdtaudalpha;
+        }
+        
+        dtau[j]=0;
+        dalpha[i]=0;
+      }
+
     }
     
-    for(i = 0; i<k; i++){
+    for(i = 0; i<k; i++)
+    {
       
       // dldtau
       dtau[i] = 1;
       _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-      double dmdtau1 = dmda.transpose() * a;
+      double dmdtau = dmda.transpose() * a;
       dtau[i]=0;
-      out[i*2+numOutcomes+1] -= dif1*(PQ_1 - PQ)*dmdtau1;
+      out[i*2+numOutcomes+1] -= dif1*(PQ_1 - PQ)*dmdtau;
+      
+      // d2dtauomega
+      out[hessianIndex(indxParam,i*2+numOutcomes+1,0)] -= -dif1sq*(PQ_1 - PQ)*dmdomega*(PQ_1 - PQ)*dmdtau + dif1*(PQ2_1 - PQ2)*dmdomega*dmdtau + dif1*(PQ_1-PQ)*dmdtau;//dmda.transpose() *a;
+      
+      if(jx > 0)
+      {
+        // d2dcktau
+        out[hessianIndex(indxParam,i*2+numOutcomes+1,jx)] -= (-dif1sq*(PQ_1 - PQ)*dmdtau + dif2sq*(PQfull[jx-1] - PQ_1)*dmdtau)*PQ_1 + (dif1 - dif2)*PQ2_1*dmdtau;
+      }
+      
+      // d2dtau1tau2
+      for(j = i+1; j<k; j++){
+        dtau[j] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double dmdtau2 = dmda.transpose() * a;
+        
+        dtau[i] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double dmdtau1tau2 = dmda.transpose() * a;
+        dtau[i]=0;
+        dtau[j]=0;        
+        
+        out[hessianIndex(indxParam,j*2+numOutcomes+1,i*2+numOutcomes+1)] -= -dif1sq*(PQ_1 - PQ)*dmdtau*(PQ_1 - PQ)*dmdtau2 + dif1*(PQ2_1 - PQ2)*dmdtau*dmdtau2 + dif1*(PQ_1-PQ)*dmdtau1tau2;
+      }
+      
+      // d2ld2tau
+      dtau[i] = 2;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      double d2md2tau = dmda.transpose() * a;
+      dtau[i] = 0;
+      out[hessianIndex(indxParam,i*2+numOutcomes+1,i*2+numOutcomes+1)] -= -dif1sq*(PQ_1 - PQ)*dmdtau*(PQ_1 - PQ)*dmdtau + dif1*((PQ2_1 - PQ2)*dmdtau*dmdtau + (PQ_1 - PQ)*d2md2tau);
       
     }
-    
-
-    //}
-      
   }
    
 
