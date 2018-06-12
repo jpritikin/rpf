@@ -58,5 +58,6 @@ Collate:
     'util.R'
     'lmp.R'
     'grmp.R'
+    'gpcmp.R'
 URL: https://github.com/jpritikin/rpf
 RoxygenNote: 6.0.1.9000
