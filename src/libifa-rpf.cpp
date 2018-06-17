@@ -1230,6 +1230,7 @@ irt_rpf_1dim_lmp_paramInfo(const double *spec, const int param,
 		*type = "alpha";
 	} else {
 		*type = "tau";
+	  *lower = -EXP_STABLE_DOMAIN;
 	}
 }
 
@@ -1671,6 +1672,7 @@ static void
       *type = "alpha";
     } else {
       *type = "tau";
+      *lower = -EXP_STABLE_DOMAIN;
     }
   }
 
@@ -2059,6 +2061,7 @@ static void
       *type = "alpha";
     } else {
       *type = "tau";
+      *lower = -EXP_STABLE_DOMAIN;
     }
   }
 
