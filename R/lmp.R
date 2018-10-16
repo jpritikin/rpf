@@ -1,8 +1,8 @@
 ##' Create logistic function of a monotonic polynomial (LMP) model
-##'
+##' 
 ##' This model is a dichotomous response model originally proposed by
 ##' Liang (2007) and is implemented using the parameterization by
-##' Falk & Cai (in press).
+##' Falk & Cai (2016).
 ##'
 ##' The LMP model replaces the linear predictor part of the
 ##' two-parameter logistic function with a monotonic polynomial,
@@ -17,7 +17,7 @@
 ##'
 ##' The order of the polynomial is always odd and is controlled by
 ##' the user specified non-negative integer, k. The model contains
-##' 2+2*k parameters and are used as input to the \code{rpf.prob}
+##' 2+2*k parameters and are used as input to the \code{\link{rpf.prob}}
 ##' function in the following order:
 ##' \eqn{\omega}{omega} - the natural log of the slope of the item model when k=0,
 ##' \eqn{\xi}{xi} - the intercept,
@@ -27,7 +27,7 @@
 ##' parameter vector of: \eqn{\omega, \xi, \alpha_1, \tau_1, \alpha_2, \tau_2}{
 ##' omega, xi, alpha1, tau1, alpha2, tau2}.
 ##'
-##' See Falk & Cai (in press) for more details as to how the
+##' See Falk & Cai (2016) for more details as to how the
 ##' polynomial is constructed. In general, the polynomial looks like the
 ##' following, but coefficients, b, are not directly estimated, but
 ##' are a function of the item parameters.
@@ -72,14 +72,15 @@
 ##' Defaults to \code{FALSE}. The multidimensional version is not yet
 ##' available.
 ##' @return an item model
-##' @references Falk, C. F., & Cai, L. (in press). Maximum marginal likelihood
+##' @references Falk, C. F., & Cai, L. (2016). Maximum marginal likelihood
 ##' estimation of a monotonic polynomial generalized partial credit model with
-##' applications to multiple group analysis. \emph{Psychometrika}.
+##' applications to multiple group analysis. \emph{Psychometrika, 81}, 434-460.
 ##' \url{http://dx.doi.org/10.1007/s11336-014-9428-7}
 ##'
 ##' Liang (2007). \emph{A semi-parametric approach to estimating item response
 ##' functions}. Unpublished doctoral dissertation, Department of Psychology,
 ##' The Ohio State University.
+##' @seealso \code{\link{rpf.gpcmp}} \code{\link{rpf.grmp}}
 ##' @examples
 ##' spec <- rpf.lmp(1) # 3rd order polynomial
 ##' theta<-seq(-3,3,.1)
