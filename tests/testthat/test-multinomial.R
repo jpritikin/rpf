@@ -14,7 +14,7 @@ test_that("multinomialFit full info, simple", {
   grp$mean <- 0
   grp$cov <- diag(1)
   grp$uniqueFree <- sum(grp$param != 0)
-  grp$data <- compressDataFrame(rpf.sample(1500, grp=grp))
+  grp$data <- compressDataFrame(rpf.sample(1500, grp=grp), .asNumeric=TRUE)
   grp$weightColumn <- 'freq'
   grp$observedStats <- nrow(grp$data) - 1
   
@@ -46,7 +46,7 @@ test_that("multinomialFit full info, simple w/ missingness", {
   grp$free <- grp$param != 0
   grp$labels <- matrix(NA, nrow(grp$param), ncol(grp$param))
   grp$uniqueFree <- sum(grp$param != 0)
-  grp$data <- compressDataFrame(rpf.sample(1500, grp=grp, mcar=.1))
+  grp$data <- compressDataFrame(rpf.sample(1500, grp=grp, mcar=.1), .asNumeric=TRUE)
   grp$weightColumn <- 'freq'
   grp$observedStats <- nrow(grp$data) - 1
   

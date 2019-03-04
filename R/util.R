@@ -48,7 +48,7 @@ omitItems <- function(grp, excol) {
 	# we removed are now the same.
 	if (!is.null(grp$weightColumn)) {
 		data <- expandDataFrame(grp$data, grp$weightColumn)
-		grp$data <- compressDataFrame(data)
+		grp$data <- compressDataFrame(data, .asNumeric=TRUE)
 	}
 
 	if (!is.null(grp$observedStats)) {
