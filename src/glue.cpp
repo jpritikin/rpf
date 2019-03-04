@@ -152,7 +152,6 @@ int unpack_theta(int dims, double *param, int numAbilities, double *theta, doubl
 static SEXP
 rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 {
-	omxManageProtectInsanity mpi;
   if (Rf_length(r_spec) < RPF_ISpecCount)
     Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
 
@@ -206,13 +205,13 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     }
   }
 
+  UNPROTECT(1);
   return outsxp;
 }
 
 static SEXP
 rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 {
-	omxManageProtectInsanity mpi;
   if (Rf_length(r_spec) < RPF_ISpecCount)
     Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
 
@@ -266,6 +265,7 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
     }
   }
 
+  UNPROTECT(1);
   return outsxp;
 }
 
@@ -428,7 +428,6 @@ int GlobalNumberOfCores = 1;
 
 static SEXP setNumberOfCores(SEXP num)
 {
-	omxManageProtectInsanity mpi;
 #if defined(_OPENMP)
 	GlobalNumberOfCores = Rf_asInteger(num);
 #endif
