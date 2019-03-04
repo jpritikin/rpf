@@ -46,22 +46,22 @@ static inline int triangleLoc0(int diag)
 
 extern int GlobalNumberOfCores;
 
-class omxManageProtectInsanity {
+class ProtectAutoBalanceDoodad {
 	PROTECT_INDEX initialpix;
  public:
-	omxManageProtectInsanity() {
-		PROTECT_WITH_INDEX(R_NilValue, &initialpix);
-		UNPROTECT(1);
+	ProtectAutoBalanceDoodad() {
+		R_ProtectWithIndex(R_NilValue, &initialpix);
+		Rf_unprotect(1);
 	}
 	PROTECT_INDEX getDepth() {
 		PROTECT_INDEX pix;
-		PROTECT_WITH_INDEX(R_NilValue, &pix);
+		R_ProtectWithIndex(R_NilValue, &pix);
 		PROTECT_INDEX diff = pix - initialpix;
-		UNPROTECT(1);
+		Rf_unprotect(1);
 		return diff;
 	}
-	~omxManageProtectInsanity() {
-		UNPROTECT(getDepth());
+	~ProtectAutoBalanceDoodad() {
+		Rf_unprotect(getDepth());
 	}
 };
 

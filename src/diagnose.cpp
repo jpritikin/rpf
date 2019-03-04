@@ -333,7 +333,7 @@ void otMix(ssEAP &myeap, int Sgroup, int ox, Eigen::ArrayBase<T1> &iProb, Eigen:
 SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
 		    SEXP Rmask, SEXP Rtwotier)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	double qwidth = Rf_asReal(Rwidth);
 	int qpts = Rf_asInteger(Rpts);
@@ -413,7 +413,7 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
 
 SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	double qwidth = Rf_asReal(Rwidth);
 	int qpts = Rf_asInteger(Rpts);
@@ -489,7 +489,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 
 SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
 
@@ -661,7 +661,7 @@ int ManhattenCollapse::run()
 
 SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
   int rows, cols;
   getMatrixDims(r_expected_orig, &rows, &cols);
@@ -723,7 +723,7 @@ static bool computeObservedSumScore(ifaGroup &grp, int *itemMask, int row, int *
 
 SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	int rows = Rf_length(Ritem1);
 	if (rows != Rf_length(Ritem2)) Rf_error("Data are of different lengths");
@@ -758,7 +758,7 @@ SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
 
 SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	ifaGroup grp(1, false);
 	grp.import(Rgrp, true);
@@ -793,7 +793,7 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 
 SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	ifaGroup grp(1, false);
 	grp.import(Rgrp, true);

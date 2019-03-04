@@ -91,7 +91,7 @@ static SEXP findIdenticalRowsData2(SEXP data, SEXP missing, SEXP defvars,
 SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
 			   SEXP skipMissingness, SEXP skipDefvars)
 {
-	omxManageProtectInsanity protectManager;
+	ProtectAutoBalanceDoodad protectManager;
 
 	try {
 		return findIdenticalRowsData2(data, missing, defvars,

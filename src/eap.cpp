@@ -67,7 +67,7 @@ void BA81LatentScores<T>::end(class ifaGroup *state, T extraData)
 
 SEXP eap_wrapper(SEXP Rgrp)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	eap eapContext;
 
