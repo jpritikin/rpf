@@ -1,3 +1,4 @@
+suppressWarnings(RNGversion("3.5"))
 library(testthat)
 library(rpf)
 library(mvtnorm)

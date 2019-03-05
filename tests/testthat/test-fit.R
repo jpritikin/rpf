@@ -1,3 +1,4 @@
+suppressWarnings(RNGversion("3.5"))
 #options(error = browser)
 library(testthat)
 library(rpf)
