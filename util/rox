@@ -9,7 +9,7 @@ if [ ! -x util/rox ]; then
   exit 1
 fi
 
-Version=0.59
+Version=0.60
 descVersion=$(grep Version DESCRIPTION | cut -d ' ' -f 2)
 if [ "$descVersion" != "$Version" ]; then
   today=$(date +%Y-%m-%d)
@@ -22,5 +22,6 @@ cp src/Makevars.in src/Makevars
 rm -f man/*.Rd
 R --no-restore --no-save --no-readline <<EOF
 library(roxygen2)
+pkgload::load_all()
 roxygenize('.', roclets=c("rd"))
 EOF
