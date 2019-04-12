@@ -104,7 +104,7 @@ sumScoreEAPTestInternal <- function(result) {
 
 	result$rms.p <- log(ptw2011.gof.test(obs, expected))
 
-	kc <- .Call(collapse_wrapper, obs, expected)
+	kc <- .Call(collapse_wrapper, obs, expected, 1.0)
 	obs <- kc$O
 	expected <- kc$E
 	mask <- !is.na(expected) & expected!=0
