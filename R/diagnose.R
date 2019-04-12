@@ -484,7 +484,7 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
 ##' a list of output from \code{\link{SitemFit1}}
 ##' @examples
 ##' grp <- list(spec=list())
-##' grp$spec[1:20] <- rpf.grm()
+##' grp$spec[1:20] <- list(rpf.grm())
 ##' grp$param <- sapply(grp$spec, rpf.rparam)
 ##' colnames(grp$param) <- paste("i", 1:20, sep="")
 ##' grp$mean <- 0
