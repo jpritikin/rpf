@@ -76,6 +76,26 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 	.Call(ssEAP_wrapper, grp, qwidth, qpoints, mask, twotier, debug)
 }
 
+#' Collapse small sample size categorical frequency counts
+#'
+#' @param observed the observed frequency table
+#' @param expected the expected frequency table
+#' 
+#' Pearson's X^2 test requires some minimum frequency per cell to
+#' avoid an inflated false positive rate. This function will merge
+#' cells with the lowest frequency counts until all the counts are
+#' above the minimum threshold. Cells that have been merged are filled
+#' with NAs. The resulting tables and number of merged cells is
+#' returned.
+#' 
+#' @examples
+#' O = matrix(c(7,31,42,20,0), 1,5)
+#' E = matrix(c(3,39,50,8,0), 1,5)
+#' collapseCategoricalCells(O,E,9)
+collapseCategoricalCells <- function(observed, expected, minExpected=1) {
+	.Call(collapse_wrapper, observed, expected, minExpected)
+}
+
 sumScoreEAPTestInternal <- function(result) {
 	class(result) <- "summary.sumScoreEAPTest"
 	if (result[['n']] == 0) return(result)

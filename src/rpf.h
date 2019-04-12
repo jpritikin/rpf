@@ -80,7 +80,7 @@ static inline bool strEQ(const char *s1, const char *s2) { return strcmp(s1,s2)=
 
 void getMatrixDims(SEXP r_theta, int *rows, int *cols);
 SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observed, SEXP r_quad);
-SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig);
+SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig, SEXP r_min);
 SEXP gamma_cor(SEXP r_mat);
 SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug);
 SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
