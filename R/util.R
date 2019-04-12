@@ -80,6 +80,7 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 #'
 #' @param observed the observed frequency table
 #' @param expected the expected frequency table
+#' @param minExpected the minimum expected cell frequency
 #' 
 #' Pearson's X^2 test requires some minimum frequency per cell to
 #' avoid an inflated false positive rate. This function will merge
