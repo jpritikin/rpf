@@ -90,11 +90,12 @@ expandDataFrame <- function(tabdata, freqName=NULL) {
 #'
 #' @param tabdata An object of class \code{data.frame}
 #' @param freqColName Column name to contain the frequencies
+#' @param .asNumeric logical. Whether to cast the frequencies to the numeric type
 #' @return Returns a compressed data frame
 #' @examples
 #' df <- as.data.frame(matrix(c(sample.int(2, 30, replace=TRUE)), 10, 3))
 #' compressDataFrame(df)
-compressDataFrame <- function(tabdata, freqColName="freq") {
+compressDataFrame <- function(tabdata, freqColName="freq", .asNumeric=FALSE) {
 	if (!is.na(match(freqColName, colnames(tabdata)))) {
 		# Might be nice to recompress instead of stopping.
 		# There might be rows to collapse due to removal
@@ -103,8 +104,8 @@ compressDataFrame <- function(tabdata, freqColName="freq") {
 			   paste(colnames(tabdata), collapse=", ")))
 	}
 	tabdata <- tabdata[orderCompletely(tabdata),,drop=FALSE]
-	# freqs must be in numeric format, OpenMx expects integers to be factors
-	freq <- as.numeric(tabulateRows(tabdata))
+	freq <- tabulateRows(tabdata)
+	if (.asNumeric) freq <- as.numeric(freq)
 	tabdata <- unique(tabdata)
 	tabdata <- cbind(tabdata, freq)
 	colnames(tabdata)[ncol(tabdata)] <- freqColName

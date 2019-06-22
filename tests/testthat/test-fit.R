@@ -1,3 +1,4 @@
+suppressWarnings(RNGversion("3.5"))
 #options(error = browser)
 library(testthat)
 library(rpf)
@@ -49,8 +50,9 @@ test_that("orlando-thissen-2000", {
   expect_true(all(sapply(got, function(ii) is.null(ii$omitted))))
   stat <- sapply(got, function(x) x$statistic)
   names(stat) <- NULL
-  Estat <- c(10.8, 13.38, 19.47, 15.34, 13.62, 6.52, 19.91, 8.19,  8.03, 11.73, 12.84,
-             10.4, 5.08, 9.37, 10.37, 11.74, 20.67, 16.34,  13.5, 16.91)
+  Estat <- c(28.44, 14.32, 20.12, 16.28, 15.16, 10.27, 41.52, 9.33, 9.22, 
+             16.99, 13.94, 11.99, 7.19, 10.47, 11.76, 13.53, 22.21, 19.72,
+             14.82, 19.92)
   expect_equal(stat, Estat, tolerance=.01)
   
   E1orig <- structure(c(2, 3.99, 12.95, 21.82, 21.66, 25.29, 30.5, 32.29,  35.09, 24.41, 34.33, 15.74,
@@ -68,7 +70,7 @@ test_that("orlando-thissen-2000", {
   mask <- !is.na(got[[1]]$expected)
   expect_equal(got[[1]]$expected[mask], E1[mask], tolerance=.01)
   
-  expect_equal(got[[1]]$pval, -0.984, tolerance=.01)
+  expect_equal(got[[1]]$pval, -2.88, tolerance=.01)
 
   got <- SitemFit(grp, method="pearson", alt=TRUE)
   stat <- sapply(got, function(x) x$statistic)
@@ -93,8 +95,8 @@ test_that("fit w/ mcar", {
   got <- sumScoreEAPTest(omitMostMissing(grp, 3L))
   expect_equal(got$n, 101L)
   expect_equal(got$rms.p, -1.87, tolerance=.01)
-  expect_equal(got$pearson.df, 16L)
-  expect_equal(got$pearson.p, -1.46, tolerance=.01)
+  expect_equal(got$pearson.df, 17L)
+  expect_equal(got$pearson.p, -1.26, tolerance=.01)
 
   grp1 <- grp
   grp1$data <- grp$data[1:250,]
@@ -108,8 +110,9 @@ test_that("fit w/ mcar", {
   got <- SitemFit(grp, omit=2L)
   stat <- sapply(got, function(x) x$statistic)
   names(stat) <- NULL
-  Estat <- c(6.68, 6.87, 9.6, 14.31, 11.74, 11.63, 15.05, 2.08, 6.16, 6.8,
-             10.28, 2.37, 6.86, 6.47, 10.02, 11.48, 13.96, 9.96, 8.24, 11.77 )
+  Estat <- c(14.78, 8.5, 12.88, 15.42, 16.39, 20.44, 17.88, 46.23, 8.32,
+             13, 12.61, 9.47, 8.77, 10.35, 12.57, 17.4, 15.18, 14.57,
+             16.83,  14.14)
   expect_equal(stat, Estat, tolerance=.01)
   
   e1 <- SitemFit(grp1) + SitemFit(grp2)

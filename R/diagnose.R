@@ -1013,7 +1013,7 @@ multinomialFit <- function(grp, independenceGrp, ..., method="lr", log=TRUE, .tw
 	todo <- lapply(todo, function(gx) {
 		if (is.null(gx$weightColumn)) {
 			wc <- "freq"
-			gx$data <- compressDataFrame(gx$data, wc)
+			gx$data <- compressDataFrame(gx$data, wc, .asNumeric=TRUE)
 			gx$weightColumn <- wc
 			gx$observedStats <- nrow(gx$data)
 		}

@@ -333,7 +333,7 @@ void otMix(ssEAP &myeap, int Sgroup, int ox, Eigen::ArrayBase<T1> &iProb, Eigen:
 SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
 		    SEXP Rmask, SEXP Rtwotier)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	double qwidth = Rf_asReal(Rwidth);
 	int qpts = Rf_asInteger(Rpts);
@@ -413,7 +413,7 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
 
 SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	double qwidth = Rf_asReal(Rwidth);
 	int qpts = Rf_asInteger(Rpts);
@@ -489,7 +489,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 
 SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
 
@@ -607,16 +607,22 @@ struct ManhattenCollapse {
 	Eigen::DenseIndex smr, smc;
 	double bestFit;
 	Eigen::DenseIndex bestR, bestC;
+	double minExpected;
 	
 	ManhattenCollapse(int rows, int cols, double *oMem, double *eMem)
-		: obs(oMem, rows, cols), expected(eMem, rows, cols) {}
+		: obs(oMem, rows, cols), expected(eMem, rows, cols),
+		  minExpected(KANG_CHEN_MIN_EXPECTED) {};
+	void setMinExpected(double th) { minExpected = th; };
 	void probe(Eigen::DenseIndex br, Eigen::DenseIndex bc);
+	double findMinCoeff(Eigen::DenseIndex *br, Eigen::DenseIndex *bc);
 	int run();
 };
 
 void ManhattenCollapse::probe(Eigen::DenseIndex br, Eigen::DenseIndex bc)
 {
-	if (br < 0 || bc < 0 || br >= expected.rows() || bc >= expected.cols()) return;
+	bool outside = (br < 0 || bc < 0 ||
+			br >= expected.rows() || bc >= expected.cols());
+	if (outside) return;
 	if (expected(br, bc) < bestFit) {
 		bestFit = expected(br, bc);
 		bestR = br;
@@ -624,44 +630,56 @@ void ManhattenCollapse::probe(Eigen::DenseIndex br, Eigen::DenseIndex bc)
 	}
 }
 
+double ManhattenCollapse::findMinCoeff(Eigen::DenseIndex *br, Eigen::DenseIndex *bc)
+{
+	// Eigen's minCoeff is not defined when some cells contain NaN
+	double mc = 1e100;
+	for (int cx=0; cx < expected.cols(); ++cx) {
+		for (int rx=0; rx < expected.rows(); ++rx) {
+			if (expected(rx,cx) < mc) {
+				mc = expected(rx,cx);
+				*br = rx;
+				*bc = cx;
+			}
+		}
+	}
+	return mc;
+}
+
 int ManhattenCollapse::run()
 {
-	const double worstFit = 1e100;
 	const int maxDist = obs.rows() + obs.cols();
 	int collapsed = 0;
 
-	while (expected.minCoeff(&smr, &smc) < KANG_CHEN_MIN_EXPECTED) {
-		bool done = false;
-		for (int dist=1; dist < maxDist && !done; ++dist) {
-			for (int updown=0; updown <= dist && !done; ++updown) {
+	while (findMinCoeff(&smr, &smc) < minExpected) {
+		bestFit = 1e100;
+		for (int dist=1; dist < maxDist; ++dist) {
+			for (int updown=0; updown <= dist; ++updown) {
 				int leftright = dist - updown;
-				bestFit = worstFit;
 				probe(smr + updown, smc + leftright);
 				probe(smr + updown, smc - leftright);
 				probe(smr - updown, smc + leftright);
 				probe(smr - updown, smc - leftright);
-				if (bestFit < worstFit) {
-					expected(bestR, bestC) += expected(smr, smc);
-					obs(bestR, bestC) += obs(smr, smc);
-					expected(smr, smc) = NA_REAL;
-					obs(smr, smc) = NA_REAL;
-					++collapsed;
-					done = true;
-				}
 			}
+			if (bestFit < minExpected) break;
 		}
-		if (!done) {
-			pda(expected.data(), expected.rows(), expected.cols());
-			Rf_error("Collapse algorithm failed");
-		}
+
+		expected(bestR, bestC) += expected(smr, smc);
+		obs(bestR, bestC) += obs(smr, smc);
+		expected(smr, smc) = NA_REAL;
+		obs(smr, smc) = NA_REAL;
+		++collapsed;
 	}
 
 	return collapsed;
 }
 
-SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
+SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig, SEXP r_min)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
+
+	if (!Rf_isMatrix(r_observed_orig)) Rf_error("observed must be a matrix");
+	if (!Rf_isMatrix(r_expected_orig)) Rf_error("expected must be a matrix");
 
   int rows, cols;
   getMatrixDims(r_expected_orig, &rows, &cols);
@@ -675,15 +693,14 @@ SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig)
   }
 
   SEXP r_observed, r_expected;
-  Rf_protect(r_observed = Rf_allocMatrix(REALSXP, rows, cols));
-  Rf_protect(r_expected = Rf_allocMatrix(REALSXP, rows, cols));
+  Rf_protect(r_observed = Rf_duplicate(r_observed_orig));
+  Rf_protect(r_expected = Rf_duplicate(r_expected_orig));
 
   double *observed = REAL(r_observed);
   double *expected = REAL(r_expected);
-  memcpy(observed, REAL(r_observed_orig), sizeof(double) * rows * cols);
-  memcpy(expected, REAL(r_expected_orig), sizeof(double) * rows * cols);
 
   ManhattenCollapse mcollapse(rows, cols, observed, expected);
+  if (Rf_length(r_min)) mcollapse.setMinExpected(Rf_asReal(r_min));
   int collapsed = mcollapse.run();
 
   SEXP dimnames;
@@ -725,7 +742,7 @@ static bool computeObservedSumScore(ifaGroup &grp, int *itemMask, int row, int *
 
 SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	int rows = Rf_length(Ritem1);
 	if (rows != Rf_length(Ritem2)) Rf_error("Data are of different lengths");
@@ -760,7 +777,7 @@ SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
 
 SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	ifaGroup grp(1, false);
 	grp.import(Rgrp, true);
@@ -795,7 +812,7 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 
 SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	ifaGroup grp(1, false);
 	grp.import(Rgrp, true);

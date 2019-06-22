@@ -79,12 +79,10 @@ as.IFAgroup <- function(mxModel, data=NULL, container=NULL, ..., minItemsPerScor
     if (mxData$type != "raw") {
       stop(paste("Not sure how to handle data of type", mxData$type))
     }
-    if (mxData$.isSorted) {
-      unsort <- match(0:(length(mxData$indexVector)-1), mxData$indexVector)
-      ret$data <- mxData$observed[unsort,]
-    } else {
-      ret$data <- mxData$observed
+    if (!is.null(mxData$frequency) && !is.na(mxData$frequency)) {
+	    ret$weightColumn <- mxData$frequency # TODO
     }
+    ret$data <- mxData$observed
   }
 
   if (!is.na(expectation$weightColumn)) {

@@ -102,7 +102,7 @@ void ch2012::run(const char *method)
 
 SEXP CaiHansen2012(SEXP Rgrp, SEXP Rmethod, SEXP Rtwotier)
 {
-	omxManageProtectInsanity mpi;
+	ProtectAutoBalanceDoodad mpi;
 
 	ch2012 engine(Rf_asLogical(Rtwotier), Rgrp);
 	engine.run(R_CHAR(Rf_asChar(Rmethod)));
