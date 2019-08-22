@@ -8,6 +8,9 @@
 ^vignettes/figure
 ^src/autodep$
 ^src/Makevars.in$
-^util/
 ^staging
 .dir-locals.el
+^\.Rproj\.user$
+^\.travis\.yml$
+^man-roxygen
+^codecov\.yml$
