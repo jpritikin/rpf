@@ -3,7 +3,7 @@
 set -o errexit
 set -o nounset
 
-if [ ! -e ./util/autodep ]; then
+if [ ! -e ./tools/autodep ]; then
   echo "$0 must be run from the top of the project tree"
   exit
 fi
