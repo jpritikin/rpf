@@ -2047,7 +2047,66 @@ static void irt_rpf_1dim_grmp_dTheta(const double *spec, const double *param,
                                     const double *where, const double *dir,
                                     double *grad, double *hess)
 {
-  error("dTheta for GR-MP model not implemented");
+  int i, j;
+  const int k = spec[RPF_ISpecCount];
+  const int numOutcomes = spec[RPF_ISpecOutcomes];
+  
+  // Extract item parameters
+  const double lambda = param[0];
+  Eigen::VectorXd xi(numOutcomes-1);
+  for(i = 0; i<(numOutcomes-1); i++){
+    xi[i] = param[i+1];
+  }
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
+  for(i = 0; i<k; i++){
+    alpha[i] = param[i*2+numOutcomes];
+    tau[i] = param[i*2+numOutcomes+1];
+  }
+  
+  // Boundary characteristic functions
+  Eigen::VectorXd Pstar(numOutcomes+1);
+  irt_rpf_1dim_grmp_rawprob(spec, param, where, Pstar.data());
+  
+  // Pre-compute PQ and P(1-P)(1-2P)
+  Eigen::VectorXd PQfull(numOutcomes+1);
+  Eigen::VectorXd PQ2full(numOutcomes+1);
+  PQfull[0] = 0;
+  PQfull[numOutcomes] = 0;
+  PQ2full[0] = 0;
+  PQ2full[numOutcomes] = 0;
+  for (int kx=0; kx <= (numOutcomes-1); kx++) PQfull[kx] = Pstar[kx] * (1.0-Pstar[kx]);
+  for (int kx=0; kx <= (numOutcomes-1); kx++) PQ2full[kx] = PQfull[kx]*(1.0-2.0*Pstar[kx]);
+  
+  // To compute derivatives of m(theta), we need b's; there appears to be some double-computation here with rawprob
+  Eigen::VectorXd a(2*k+1);
+  Eigen::VectorXd b(2*k+1);
+  a.setZero();
+  b.setZero();
+  
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
+  
+  _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+  _poly_getb(a.data(),k,b.data());
+
+  double dmdTheta = 0;
+  double d2md2Theta = 0;
+  
+  _poly_dmdTheta(k, b.data(), where, &dmdTheta, &d2md2Theta);
+  
+  for (int ix=0; ix < numOutcomes; ix++) {
+    double w1 = PQfull[ix] * dmdTheta;
+    double w2 = PQfull[ix+1] * dmdTheta;    
+    grad[ix] += dir[0] * (w1 - w2);
+    
+    double u1 = PQ2full[ix]*dmdTheta*dmdTheta + PQfull[ix]*d2md2Theta;
+    double u2 = PQ2full[ix+1]*dmdTheta*dmdTheta + PQfull[ix+1]*d2md2Theta;
+    hess[ix] += dir[0]*(u1-u2);
+  }
+  
 }
 
 static void
