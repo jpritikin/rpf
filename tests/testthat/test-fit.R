@@ -50,9 +50,9 @@ test_that("orlando-thissen-2000", {
   expect_true(all(sapply(got, function(ii) is.null(ii$omitted))))
   stat <- sapply(got, function(x) x$statistic)
   names(stat) <- NULL
-  Estat <- c(28.44, 14.32, 20.12, 16.28, 15.16, 10.27, 41.52, 9.33, 9.22, 
-             16.99, 13.94, 11.99, 7.19, 10.47, 11.76, 13.53, 22.21, 19.72,
-             14.82, 19.92)
+  Estat <- c(10.96, 14.32, 19.53, 15.53, 15.16, 7.75, 31.24, 8.63, 8.36,
+             12.55, 13.94, 11.01, 5.32, 9.49, 10.62, 12.88, 22.21, 15.17, 
+             14.15, 16.01)
   expect_equal(stat, Estat, tolerance=.01)
   
   E1orig <- structure(c(2, 3.99, 12.95, 21.82, 21.66, 25.29, 30.5, 32.29,  35.09, 24.41, 34.33, 15.74,
@@ -70,7 +70,7 @@ test_that("orlando-thissen-2000", {
   mask <- !is.na(got[[1]]$expected)
   expect_equal(got[[1]]$expected[mask], E1[mask], tolerance=.01)
   
-  expect_equal(got[[1]]$pval, -2.88, tolerance=.01)
+  expect_equal(got[[1]]$pval, -0.8065, tolerance=.01)
 
   got <- SitemFit(grp, method="pearson", alt=TRUE)
   stat <- sapply(got, function(x) x$statistic)
@@ -95,8 +95,8 @@ test_that("fit w/ mcar", {
   got <- sumScoreEAPTest(omitMostMissing(grp, 3L))
   expect_equal(got$n, 101L)
   expect_equal(got$rms.p, -1.87, tolerance=.01)
-  expect_equal(got$pearson.df, 17L)
-  expect_equal(got$pearson.p, -1.26, tolerance=.01)
+  expect_equal(got$pearson.df, 16L)
+  expect_equal(got$pearson.p, -1.09, tolerance=.01)
 
   grp1 <- grp
   grp1$data <- grp$data[1:250,]
@@ -110,9 +110,8 @@ test_that("fit w/ mcar", {
   got <- SitemFit(grp, omit=2L)
   stat <- sapply(got, function(x) x$statistic)
   names(stat) <- NULL
-  Estat <- c(14.78, 8.5, 12.88, 15.42, 16.39, 20.44, 17.88, 46.23, 8.32,
-             13, 12.61, 9.47, 8.77, 10.35, 12.57, 17.4, 15.18, 14.57,
-             16.83,  14.14)
+  Estat <- c(9.99, 8.1, 10.64, 14.65, 6.69, 10.88, 16.19, 2.95, 7.3, 11.12, 
+             12.61, 3.73, 7.53, 8.71, 12.2, 11.66, 14.19, 12.15, 10.44, 12.21 )
   expect_equal(stat, Estat, tolerance=.01)
   
   e1 <- SitemFit(grp1) + SitemFit(grp2)

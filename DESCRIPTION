@@ -1,7 +1,8 @@
+Encoding: UTF-8
 Package: rpf
 Type: Package
 Title: Response Probability Functions
-Version: 0.61
+Version: 0.62
 Date: 2019-04-12
 Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
     role=c('cre','aut')), person("Jonathan",family="Weeks",
@@ -19,6 +20,7 @@ Description: The purpose of this package is to factor out logic and math common
     envisioned as core support code suitable for more specialized IRT packages
     to build upon. Complete access to optimized C functions are made available
     with R_RegisterCCallable().
+SystemRequirements: GNU make
 LazyData: yes
 LazyDataCompression: bzip2
 License: GPL (>= 3)

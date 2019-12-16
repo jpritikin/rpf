@@ -80,6 +80,7 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 #'
 #' @param observed the observed frequency table
 #' @param expected the expected frequency table
+#' @param minExpected the minimum expected cell frequency
 #' 
 #' Pearson's X^2 test requires some minimum frequency per cell to
 #' avoid an inflated false positive rate. This function will merge
@@ -104,7 +105,7 @@ sumScoreEAPTestInternal <- function(result) {
 
 	result$rms.p <- log(ptw2011.gof.test(obs, expected))
 
-	kc <- .Call(collapse_wrapper, obs, expected)
+	kc <- .Call(collapse_wrapper, obs, expected, 1.0)
 	obs <- kc$O
 	expected <- kc$E
 	mask <- !is.na(expected) & expected!=0

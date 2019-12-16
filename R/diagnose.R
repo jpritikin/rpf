@@ -336,7 +336,7 @@ SitemFit1Internal <- function(out) {
 	if (out$alt) {
 		kc <- collapseCells(observed, expected)
 	} else {
-		kc <- .Call(collapse_wrapper, observed, expected)
+		kc <- .Call(collapse_wrapper, observed, expected, 1.0)
 	}
         out$observed <- observed <- kc$O
         out$expected <- expected <- kc$E
@@ -484,7 +484,7 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
 ##' a list of output from \code{\link{SitemFit1}}
 ##' @examples
 ##' grp <- list(spec=list())
-##' grp$spec[1:20] <- rpf.grm()
+##' grp$spec[1:20] <- list(rpf.grm())
 ##' grp$param <- sapply(grp$spec, rpf.rparam)
 ##' colnames(grp$param) <- paste("i", 1:20, sep="")
 ##' grp$mean <- 0
@@ -691,7 +691,7 @@ CT1997Internal1 <- function(info, method) {
 	info <- c(info, sign=sign(s), gamma=s)
 
 	if (method == "pearson") {
-		kc <- .Call(collapse_wrapper, observed, expected)
+		kc <- .Call(collapse_wrapper, observed, expected, 1.0)
 		observed <- kc$O
 		expected <- kc$E
 		mask <- !is.na(expected)
