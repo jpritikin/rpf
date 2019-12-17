@@ -1,6 +1,7 @@
 ##' Create monotonic polynomial generalized partial credit (GPC-MP) model
 ##' 
-##' This model is a polytomous model proposed by Falk & Cai (2016).
+##' This model is a polytomous model proposed by Falk & Cai (2016) and is based
+##' on the generalized partial credit model (Muraki, 1992).
 ##'
 ##' The GPC-MP replaces the linear predictor part of the
 ##' generalized partial credit model with a monotonic polynomial
@@ -8,25 +9,25 @@
 ##' for the logistic function of a monotonic polynomial (LMP).
 ##' See also (\code{\link{rpf.lmp}}).
 ##' 
-##' ##' The order of the polynomial is always odd and is controlled by
-##' the user specified non-negative integer, k. The model contains
-##' 1+(outcomtes-1)+2*k parameters and are used as input to the \code{\link{rpf.prob}}
+##' The order of the polynomial is always odd and is controlled by
+##' the user specified non-negative integer, q. The model contains
+##' 1+(outcomtes-1)+2*q parameters and are used as input to the \code{\link{rpf.prob}}
 ##' function in the following order:
-##' \eqn{\lambda}{lambda} - slope of the item model when k=0,
+##' \eqn{\omega}{omega} - natural log of the slope of the item model when q=0,
 ##' \eqn{\xi}{xi} - a (outcomes-1)-length vector of intercept parameters,
 ##' \eqn{\alpha}{alpha} and \eqn{\tau}{tau} - two parameters that control bends in
 ##' the polynomial. These latter parameters are repeated in the same order for
-##' models with k>1. For example, a k=2 polynomial with 3 categories will have an item
+##' models with q>0. For example, a q=2 polynomial with 3 categories will have an item
 ##' parameter vector of: \eqn{\omega, \xi_1, \xi_2, \alpha_1, \tau_1, \alpha_2, \tau_2}{
 ##' omega, xi1, xi2, alpha1, tau1, alpha2, tau2}.
 ##'
 ##' Note that the GPC-MP reduces to the LMP when the number of
 ##' categories is 2, and the GPC-MP reduces to the generalized partial
-##' credit model when the order of the polynomial is 1.
+##' credit model when the order of the polynomial is 1 (i.e., q=0).
 ##'
 ##' @param outcomes The number of possible response categories.
-##' @param k a non-negative integer that controls the order of the
-##' polynomial (2k+1) with a default of k=0 (1st order polynomial = generalized partial credit model).
+##' @param q a non-negative integer that controls the order of the
+##' polynomial (2q+1) with a default of q=0 (1st order polynomial = generalized partial credit model).
 ##' @param multidimensional whether to use a multidimensional model.
 ##' Defaults to \code{FALSE}. The multidimensional version is not yet
 ##' available.
@@ -35,6 +36,8 @@
 ##' estimation of a monotonic polynomial generalized partial credit model with
 ##' applications to multiple group analysis. \emph{Psychometrika, 81}, 434-460.
 ##' \url{http://dx.doi.org/10.1007/s11336-014-9428-7}
+##' @references Muraki, E. (1992). A generalized partial credit model: Application of an EM algorithm. \emph{Applied Psychological Measurement, 16,} 159–176.
+##' 
 ##' @seealso \code{\link{rpf.lmp}} \code{\link{rpf.grmp}}
 ##'
 ##' @examples
@@ -43,9 +46,9 @@
 ##' p<-rpf.prob(spec, c(1.02,3.48,2.5,-.25,-1.64,.89,-8.7,-.74,-8.99),theta)
 ##'
 
-rpf.gpcmp <- function(outcomes=2, k=0, multidimensional=FALSE) {
-  if(!(k%%1==0)){
-    stop("k must be an integer >= 0")
+rpf.gpcmp <- function(outcomes=2, q=0, multidimensional=FALSE) {
+  if(!(q%%1==0)){
+    stop("q must be an integer >= 0")
   }
   if(multidimensional){
       stop("Multidimensional gpcmp model is not yet supported")
@@ -56,21 +59,21 @@ rpf.gpcmp <- function(outcomes=2, k=0, multidimensional=FALSE) {
   m <- new("rpf.1dim.gpcmp",
            outcomes=outcomes,
            factors=1)
-  m@spec <- c(id, m@outcomes, m@factors, k)
+  m@spec <- c(id, m@outcomes, m@factors, q)
   m
 }
 
 setMethod("rpf.rparam", signature(m="rpf.1dim.gpcmp"),
           function(m, version) {
             n <- 1
-            k<-m$spec[4] ## ok to hardcode this index?
+            q<-m$spec[4] ## ok to hardcode this index?
             ret<-c(omega=rnorm(n, 0, .5)) # random overall slope
             # randomly generate xi
             xi <- rnorm(m@outcomes-1)
             xi <- xi[order(xi)]
             ret<-c(ret,xi=xi)
-            if(k>0){
-                for(i in 1:k){
+            if(q>0){
+                for(i in 1:q){
                     ret<-c(ret,runif(n,-1,1),log(runif(n,.0001,1)))
                     names(ret)[(m@outcomes+1+(i-1)*2):(m@outcomes+(i*2))]<-c(paste("alpha",i,sep=""),paste("tau",i,sep=""))
                 }
