@@ -99,7 +99,7 @@ setMethod("rpf.rparam", signature(m="rpf.1dim.lmp"),
             n <- 1
             q<-m$spec[4] ## ok to hardcode this index?
             ret<-c(omega=rnorm(n, 0, .5),xi=rnorm(n, 0, .75))
-            if(k>0){
+            if(q>0){
                 for(i in 1:q){
                     ret<-c(ret,runif(n,-1,1),log(runif(n,.0001,1)))
                     names(ret)[(3+(i-1)*2):(2+(i*2))]<-c(paste("alpha",i,sep=""),paste("tau",i,sep=""))
