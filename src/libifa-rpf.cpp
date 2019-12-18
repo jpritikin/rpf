@@ -1640,7 +1640,6 @@ static void irt_rpf_1dim_lmp_dTheta(const double *spec, const double *param,
 			const double *where, const double *dir,
 			double *grad, double *hess)
 {
-  int numDims = spec[RPF_ISpecDims];
   int k = spec[RPF_ISpecCount];
   double PQ[2];
   double dmdTheta = 0;
@@ -1688,7 +1687,6 @@ static void
     *upper = nan("unset");
     *lower = nan("unset");
     
-    int k = spec[RPF_ISpecCount];
     int ncat = spec[RPF_ISpecOutcomes];
     
     *type = NULL;
@@ -2047,7 +2045,7 @@ static void irt_rpf_1dim_grmp_dTheta(const double *spec, const double *param,
                                     const double *where, const double *dir,
                                     double *grad, double *hess)
 {
-  int i, j;
+  int i;
   const int k = spec[RPF_ISpecCount];
   const int numOutcomes = spec[RPF_ISpecOutcomes];
   
@@ -2136,7 +2134,6 @@ static void
     *upper = nan("unset");
     *lower = nan("unset");
     
-    int k = spec[RPF_ISpecCount];
     int ncat = spec[RPF_ISpecOutcomes];
     
     *type = NULL;
@@ -2389,7 +2386,7 @@ static void irt_rpf_1dim_gpcmp_deriv1(const double *spec,
         
         dalpha[j] = 1;
         _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-        double dmdalpha2 = dmda.transpose() * a;
+        //double dmdalpha2 = dmda.transpose() * a;
         
         dalpha[i] = 1;
         _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
@@ -2476,7 +2473,7 @@ static void irt_rpf_1dim_gpcmp_deriv1(const double *spec,
       {
         dtau[j] = 1;
         _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
-        double dmdtau2 = dmda.transpose() * a;
+        //double dmdtau2 = dmda.transpose() * a;
         
         dtau[i] = 1;
         _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
