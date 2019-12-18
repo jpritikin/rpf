@@ -4,9 +4,17 @@
 ##' on the generalized partial credit model (Muraki, 1992).
 ##'
 ##' The GPC-MP replaces the linear predictor part of the
-##' generalized partial credit model with a monotonic polynomial
-##' using the same parameterization for the polynomial as described
-##' for the logistic function of a monotonic polynomial (LMP).
+##' generalized partial credit model with a monotonic polynomial,
+##' \eqn{m(\theta;\omega,\xi,\mathbf{\alpha},\mathbf{\tau})}{m(theta; omega, alpha, tau)}.
+##' The response function for category k is:
+##'
+##' \deqn{\mathrm P(\mathrm{pick}=k|\omega,\xi,\alpha,\tau,\theta)
+##' = \frac{\exp(\sum_{v=0}^k (\xi_k + m(\theta;\omega,\xi,\mathbf{\alpha},\mathbf{\tau})))}{\sum_{u=0}^{K-1}\exp(\sum_{v=0}^u (\xi_u + m(\theta;\omega,\xi,\mathbf{\alpha},\mathbf{\tau})))}
+##' }{\frac{exp(sum_{v=0}^k (xi_k + m(theta;omega,xi,alpha,tau)))}{sum_{u=0}^{K-1}exp(sum_{v=0}^u (xi_u + m(theta;omega,xi,alpha,tau)))}}
+##'
+##' where \eqn{\mathbf{\alpha}}{alpha} and \eqn{\mathbf{\tau}}{tau} are vectors
+##' of length q. The GPC-MP uses the same parameterization for the polynomial
+##' as described for the logistic function of a monotonic polynomial (LMP).
 ##' See also (\code{\link{rpf.lmp}}).
 ##' 
 ##' The order of the polynomial is always odd and is controlled by

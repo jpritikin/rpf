@@ -6,12 +6,12 @@
 ##' Given its relationship to the graded response model, the GR-MP
 ##' is constructed in an analogous way:
 ##' 
-##' \deqn{\mathrm P(\mathrm{pick}=0|\lambda,\alpha,\tau,\theta) = 1- \frac{1}{1+\exp(-(\xi_1 + m(\theta,\lambda,\mathbf{\alpha},\mathbf{\tau})))}
-##' }{P(pick=0|a,c,theta) = 1-1/(1+exp(-(xi_1 + m(theta,lambda,alpha,tau)))}
-##' \deqn{\mathrm P(\mathrm{pick}=k|\lambda,\alpha,\tau,\theta) = \frac{1}{1+\exp(-(\xi_k + m(\theta,\lambda,\mathbf{\alpha},\mathbf{\tau})))} - \frac{1}{1+\exp(-(\xi_{k+1} + m(\theta,\lambda,\mathbf{\alpha},\mathbf{\tau}))}
-##' }{P(pick=k|a,c,theta) = 1/(1+exp(-(xi_k + m(theta,lambda,alpha,tau))) - 1/(1+exp(-(xi_(k+1) + m(theta,lambda,alpha,tau))))}
-##' \deqn{\mathrm P(\mathrm{pick}=K|\lambda,\alpha,\tau,\theta) = \frac{1}{1+\exp(-(\xi_K + m(\theta,\lambda,\mathbf{\alpha},\mathbf{\tau}))}
-##' }{P(pick=K|\lambda,\alpha,\tau,theta) = 1/(1+exp(-(xi_K + m(theta,lambda,alpha,tau))))}
+##' \deqn{\mathrm P(\mathrm{pick}=0|\lambda,\alpha,\tau,\theta) = 1- \frac{1}{1+\exp(-(\xi_1 + m(\theta;\lambda,\mathbf{\alpha},\mathbf{\tau})))}
+##' }{P(pick=0|a,c,theta) = 1-1/(1+exp(-(xi_1 + m(theta;lambda,alpha,tau)))}
+##' \deqn{\mathrm P(\mathrm{pick}=k|\lambda,\alpha,\tau,\theta) = \frac{1}{1+\exp(-(\xi_k + m(\theta;\lambda,\mathbf{\alpha},\mathbf{\tau})))} - \frac{1}{1+\exp(-(\xi_{k+1} + m(\theta,\lambda,\mathbf{\alpha},\mathbf{\tau}))}
+##' }{P(pick=k|a,c,theta) = 1/(1+exp(-(xi_k + m(theta;lambda,alpha,tau))) - 1/(1+exp(-(xi_(k+1) + m(theta;lambda,alpha,tau))))}
+##' \deqn{\mathrm P(\mathrm{pick}=K|\lambda,\alpha,\tau,\theta) = \frac{1}{1+\exp(-(\xi_K + m(\theta;\lambda,\mathbf{\alpha},\mathbf{\tau}))}
+##' }{P(pick=K|\lambda,\alpha,\tau,theta) = 1/(1+exp(-(xi_K + m(theta;lambda,alpha,tau))))}
 ##' 
 ##' The order of the polynomial is always odd and is controlled by
 ##' the user specified non-negative integer, q. The model contains
