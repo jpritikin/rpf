@@ -6,10 +6,10 @@
 ##'
 ##' The LMP model replaces the linear predictor part of the
 ##' two-parameter logistic function with a monotonic polynomial,
-##' \eqn{m(\theta,\omega,\xi,\mathbf{\alpha},\mathbf{\tau})}{m(theta, omega, alpha, tau)},
+##' \eqn{m(\theta,\omega,\xi,\mathbf{\alpha},\mathbf{\tau})}{m(theta; omega, alpha, tau)},
 ##'
 ##' \deqn{\mathrm P(\mathrm{pick}=1|\omega,\xi,\mathbf{\alpha},\mathbf{\tau},\theta)
-##' = \frac{1}{1+\exp(-(\xi + m(\theta,\omega,\mathbf{\alpha},\mathbf{\tau})))}
+##' = \frac{1}{1+\exp(-(\xi + m(\theta;\omega,\mathbf{\alpha},\mathbf{\tau})))}
 ##' }{P(pick=1|omega,xi,alpha,tau,th) = 1/(1+exp(-(xi + m(theta;omega,alpha,tau))))}
 ##'
 ##' where \eqn{\mathbf{\alpha}}{alpha} and \eqn{\mathbf{\tau}}{tau} are vectors
