@@ -1230,6 +1230,7 @@ irt_rpf_1dim_lmp_paramInfo(const double *spec, const int param,
 		*type = "alpha";
 	} else {
 		*type = "tau";
+	  *lower = -EXP_STABLE_DOMAIN;
 	}
 }
 
@@ -1327,6 +1328,34 @@ _mp_getarec (const int k, const double *omega, const double *alpha, const double
   }
 }
 
+// reparameterize omega
+static void
+  _mp_getarec2 (const int k, const double *lambda, const double *alpha, const double *tau,
+               const int *dalpha, const int *dtau, const int dlambda, double *a)
+  {
+    int i;
+    Eigen::VectorXd olda(1);
+    if (dlambda==0)
+    {
+      olda[0] = *lambda;
+    } else if (dlambda==1)
+    {
+      olda[0] = 1;      
+    } else if (dlambda==2)
+    {
+      olda[0] = 0;      
+    }
+    for(i=1;i<=k;i++){
+      Eigen::VectorXd newa(i*2+1);
+      newa.setZero();
+      _mp_geta(i,&alpha[i-1],&tau[i-1],dalpha[i-1],dtau[i-1],olda.data(),newa.data());
+      olda=newa;
+    }
+    for(i=0;i<2*k+1;i++){
+      a[i] = olda[i];
+    }
+  }
+
 template <typename T> static void
 _poly_dmda (const int k, const double *th, Eigen::MatrixBase<T> &dmda)
 {
@@ -1368,6 +1397,7 @@ irt_rpf_1dim_lmp_prob(const double *spec,
 
   double athb = 0;
 
+  // Why do I have VectorXi here? Should it be VectorXd (and does it matter?)
   Eigen::VectorXi dalpha(k);
   Eigen::VectorXi dtau(k);
   dalpha.setZero();
@@ -1610,7 +1640,6 @@ static void irt_rpf_1dim_lmp_dTheta(const double *spec, const double *param,
 			const double *where, const double *dir,
 			double *grad, double *hess)
 {
-  int numDims = spec[RPF_ISpecDims];
   int k = spec[RPF_ISpecCount];
   double PQ[2];
   double dmdTheta = 0;
@@ -1638,7 +1667,865 @@ irt_rpf_1dim_lmp_rescale(const double *spec, double *param, const int *paramMask
   error("Rescale for LMP model not implemented");
 }
 
-// End of LMP functions
+
+// GR-MP
+static int
+  irt_rpf_1dim_grmp_numSpec(const double *spec)
+  { return RPF_ISpecCount; }
+
+static int
+  irt_rpf_1dim_grmp_numParam(const double *spec)
+  {
+    int k = spec[RPF_ISpecCount];
+    return(spec[RPF_ISpecOutcomes]+2*k);
+  }
+
+static void
+  irt_rpf_1dim_grmp_paramInfo(const double *spec, const int param,
+                               const char **type, double *upper, double *lower)
+  {
+    *upper = nan("unset");
+    *lower = nan("unset");
+    
+    int ncat = spec[RPF_ISpecOutcomes];
+    
+    *type = NULL;
+    if (param == 0) {
+      *type = "lambda";
+    } else if (param < ncat) {
+      *type = "xi";
+    } else if ((param-ncat+2) %2 == 0 ){
+      *type = "alpha";
+    } else {
+      *type = "tau";
+      *lower = -EXP_STABLE_DOMAIN;
+    }
+  }
+
+static void
+  irt_rpf_1dim_grmp_prob(const double *spec,
+                        const double *param, const double *th,
+                        double *out)
+  {
+    const int k = spec[RPF_ISpecCount];
+    const int numOutcomes = spec[RPF_ISpecOutcomes];
+
+    const double lambda = param[0];
+    Eigen::VectorXd xi(numOutcomes-1);
+    for(int i = 0; i<(numOutcomes-1); i++){
+      xi[i] = param[i+1];
+    }
+
+    Eigen::VectorXd alpha(k);
+    Eigen::VectorXd tau(k);
+    for(int i = 0; i<k; i++){
+      alpha[i] = param[i*2+numOutcomes];
+      tau[i] = param[i*2+numOutcomes+1];
+    }
+
+    Eigen::VectorXd a(2*k+1);
+    Eigen::VectorXd b(2*k+1);
+    a.setZero();
+    b.setZero();
+
+    double poly = 0;
+    
+    Eigen::VectorXi dalpha(k);
+    Eigen::VectorXi dtau(k);
+    dalpha.setZero();
+    dtau.setZero();
+
+    _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+    _poly_getb(a.data(),k,b.data());
+    _poly_val(th,b.data(),k,&poly);
+
+    // copied from grm_prob
+    // looks to initialize first couple of entries in output
+    double athb = poly + xi[0];
+    if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
+    else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
+    double tmp = 1 / (1 + exp(-athb));
+    out[0] = 1-tmp;
+    out[1] = tmp;
+
+    for (int kx=2; kx < numOutcomes; kx++) {
+      // copied from grm_prob
+      if (1e-6 + xi[kx-1] >= xi[kx-2]) {
+        for (int ky=0; ky < numOutcomes; ky++) {
+          out[ky] = nan("I");
+        }
+        return;
+      }
+
+      double athb = poly + xi[kx-1];
+      if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
+      else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
+      double tmp = 1 / (1 + exp(-athb));
+      out[kx-1] -= tmp;
+      out[kx] = tmp;
+    }
+    
+    for (int kx=0; kx < numOutcomes; kx++) {
+      if (out[kx] <= 0) {
+        _grm_fix_crazy_stuff(spec, numOutcomes, out); // not sure what this does
+        return;
+      }
+    }
+  }
+
+static void
+  irt_rpf_1dim_grmp_rawprob(const double *spec,
+                             const double *param, const double *th,
+                             double *out)
+  {
+    const int k = spec[RPF_ISpecCount];
+    const int numOutcomes = spec[RPF_ISpecOutcomes];
+    
+    const double lambda = param[0];
+    Eigen::VectorXd xi(numOutcomes-1);
+    for(int i = 0; i<(numOutcomes-1); i++){
+      xi[i] = param[i+1];
+    }
+    
+    Eigen::VectorXd alpha(k);
+    Eigen::VectorXd tau(k);
+    for(int i = 0; i<k; i++){
+      alpha[i] = param[i*2+numOutcomes];
+      tau[i] = param[i*2+numOutcomes+1];
+    }
+    
+    Eigen::VectorXd a(2*k+1);
+    Eigen::VectorXd b(2*k+1);
+    a.setZero();
+    b.setZero();
+    
+    double poly = 0;
+    
+    Eigen::VectorXi dalpha(k);
+    Eigen::VectorXi dtau(k);
+    dalpha.setZero();
+    dtau.setZero();
+    
+    _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+    _poly_getb(a.data(),k,b.data());
+    _poly_val(th,b.data(),k,&poly);
+    
+    out[0] = 1;
+    for (int kx=0; kx < (numOutcomes-1); kx++) {
+      double athb = poly + xi[kx];
+      if (athb < -EXP_STABLE_DOMAIN) athb = -EXP_STABLE_DOMAIN;
+      else if (athb > EXP_STABLE_DOMAIN) athb = EXP_STABLE_DOMAIN;
+      double tmp = 1 / (1 + exp(-athb));
+      out[kx+1] = tmp;
+    }
+    out[numOutcomes] = 0;
+    
+  }
+
+static void irt_rpf_1dim_grmp_deriv1(const double *spec,
+                        const double *param,
+                        const double *where,
+                        const double *weight, double *out)
+{
+  
+  int i, j;
+  const int k = spec[RPF_ISpecCount];
+  const int numOutcomes = spec[RPF_ISpecOutcomes];
+  const int ord = 2*k+1;
+  const int indxParam = numOutcomes+2*k; // number of parameters; useful for Hessian matrix
+  
+  // Extract item parameters
+  const double lambda = param[0];
+  Eigen::VectorXd xi(numOutcomes-1);
+  for(i = 0; i<(numOutcomes-1); i++){
+    xi[i] = param[i+1];
+  }
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
+  for(i = 0; i<k; i++){
+    alpha[i] = param[i*2+numOutcomes];
+    tau[i] = param[i*2+numOutcomes+1];
+  }
+
+  // Category response functions
+  Eigen::VectorXd P(numOutcomes);
+  irt_rpf_1dim_grmp_prob(spec, param, where, P.data());
+  
+  // Boundary characteristic functions (used w/ some derivatives)
+  Eigen::VectorXd Pstar(numOutcomes+1);
+  irt_rpf_1dim_grmp_rawprob(spec, param, where, Pstar.data());
+  
+  // Pre-compute PQ and P(1-P)(1-2P)
+  Eigen::VectorXd PQfull(numOutcomes+1);
+  Eigen::VectorXd PQ2full(numOutcomes+1);
+  PQfull[0] = 0;
+  PQfull[numOutcomes] = 0;
+  PQ2full[0] = 0;
+  PQ2full[numOutcomes] = 0;
+  for (int kx=0; kx <= (numOutcomes-1); kx++) PQfull[kx] = Pstar[kx] * (1.0-Pstar[kx]);
+  for (int kx=0; kx <= (numOutcomes-1); kx++) PQ2full[kx] = PQfull[kx]*(1.0-2.0*Pstar[kx]);
+  
+  // dmda
+  Eigen::VectorXd dmda(ord);
+  _poly_dmda(k,where,dmda);
+  
+  // Set up storage for obtaining "a" coefficients and derivatives
+  // Note that _mp_getrec will also obtain a coefficients with derivatives w.r.t alpha and tau
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
+  Eigen::VectorXd a(ord);
+
+  // loop over categories
+  for (int jx = 0; jx <= (numOutcomes-1); jx++)
+  {
+    
+    double Pk_1 = Pstar[jx];
+    double Pk = Pstar[jx + 1];
+    double PQ_1 = PQfull[jx];
+    double PQ = PQfull[jx + 1];
+    double PQ2_1 = PQ2full[jx];
+    double PQ2 = PQ2full[jx + 1];
+    double Pk_1Pk = Pk_1 - Pk;
+    if (Pk_1Pk < 1e-10) Pk_1Pk = 1e-10;
+    double dif1 = weight[jx] / Pk_1Pk;
+    double dif1sq = dif1 / Pk_1Pk;
+    
+    double Pk_1Pk2 = Pstar[jx-1] - Pk_1;
+    if (Pk_1Pk2 < 1e-10) Pk_1Pk2 = 1e-10;
+    double dif2 = weight[jx-1]/Pk_1Pk2;
+    double dif2sq = dif2/Pk_1Pk2;
+    
+    // dldlambda
+    _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 1, a.data());
+    double dmdlambda = dmda.transpose()*a;
+    out[0]-= dif1*(PQ_1 - PQ)*dmdlambda;
+    
+    // dl2dlambda2
+    _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 2, a.data());
+    double d2md2lambda = dmda.transpose()*a;
+    out[hessianIndex(indxParam,0,0)] -= -dif1sq*(PQ_1 - PQ)*dmdlambda*(PQ_1 - PQ)*dmdlambda + dif1*((PQ2_1 - PQ2)*dmdlambda*dmdlambda + (PQ_1 - PQ)*d2md2lambda);
+    
+    if(jx > 0)
+    {
+      // dldc      
+      double dldc = (dif1-dif2)*PQ_1;
+      out[jx] -= dldc;
+
+      // d2d2c
+      out[hessianIndex(indxParam,jx,jx)] -= (dif1-dif2)*PQ2_1 + (-dif1sq - dif2sq)*PQ_1*PQ_1;
+      
+      // d2dcklambda
+      out[hessianIndex(indxParam,jx,0)] -= (-dif1sq*(PQ_1 - PQ)*dmdlambda + dif2sq*(PQfull[jx-1] - PQ_1)*dmdlambda)*PQ_1 + (dif1 - dif2)*PQ2_1*dmdlambda;
+      
+      //d2dckct - cross derivatives with other threshold or intercept parameters
+      out[hessianIndex(indxParam,jx+1,jx)] -= dif1sq*PQ_1*PQ;
+    }
+    
+    for(i = 0; i<k; i++)
+    {
+      
+      // dldalpha
+      dalpha[i] = 1;
+      _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+      double dmdalpha = dmda.transpose() * a;
+      dalpha[i]=0;
+      out[i*2+numOutcomes] -= dif1*(PQ_1 - PQ)*dmdalpha;
+      
+      // d2dalphalambda
+      out[hessianIndex(indxParam,i*2+numOutcomes,0)] -= -dif1sq*(PQ_1 - PQ)*dmdlambda*(PQ_1 - PQ)*dmdalpha + dif1*(PQ2_1 - PQ2)*dmdlambda*dmdalpha + dif1*(PQ_1-PQ)*dmdalpha;//dmda.transpose() *a;
+      
+      if(jx > 0)
+      {
+        // d2dckalpha
+        out[hessianIndex(indxParam,i*2+numOutcomes,jx)] -= (-dif1sq*(PQ_1 - PQ)*dmdalpha + dif2sq*(PQfull[jx-1] - PQ_1)*dmdalpha)*PQ_1 + (dif1 - dif2)*PQ2_1*dmdalpha;
+      }
+      
+      // d2dalpha1alpha2
+      for(j = i+1; j<k; j++)
+      {
+        dalpha[j] = 1;
+        _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+        double dmdalpha2 = dmda.transpose() * a;
+
+        dalpha[i] = 1;
+        _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+        double d2mdalpha1alpha2 = dmda.transpose() * a;
+        dalpha[i]=0;
+        dalpha[j]=0;        
+        
+        out[hessianIndex(indxParam,j*2+numOutcomes,i*2+numOutcomes)] -= -dif1sq*(PQ_1 - PQ)*dmdalpha*(PQ_1 - PQ)*dmdalpha2 + dif1*(PQ2_1 - PQ2)*dmdalpha*dmdalpha2 + dif1*(PQ_1-PQ)*d2mdalpha1alpha2;
+      }
+      
+      // d2ld2alpha
+      dalpha[i] = 2;
+      _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+      double d2md2alpha = dmda.transpose() * a;
+      dalpha[i] = 0;
+      out[hessianIndex(indxParam,i*2+numOutcomes,i*2+numOutcomes)] -= -dif1sq*(PQ_1 - PQ)*dmdalpha*(PQ_1 - PQ)*dmdalpha + dif1*((PQ2_1 - PQ2)*dmdalpha*dmdalpha + (PQ_1 - PQ)*d2md2alpha);
+      
+      // d2ldalpha1dalphatau
+      for(j=0; j<k; j++)
+      {
+        dalpha[i] = 0;
+        dtau[j] = 1;
+        _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+        double dmdtau = dmda.transpose() * a;
+        
+        dalpha[i]=1;
+        _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+        double d2mdtaudalpha = dmda.transpose() * a;
+        
+        if(j>=i){
+          out[hessianIndex(indxParam,j*2+numOutcomes+1,i*2+numOutcomes)] -= -dif1sq*(PQ_1 - PQ)*dmdalpha*(PQ_1 - PQ)*dmdtau + dif1*(PQ2_1 - PQ2)*dmdalpha*dmdtau + dif1*(PQ_1-PQ)*d2mdtaudalpha;
+        } else {
+          out[hessianIndex(indxParam,i*2+numOutcomes,j*2+numOutcomes+1)] -= -dif1sq*(PQ_1 - PQ)*dmdalpha*(PQ_1 - PQ)*dmdtau + dif1*(PQ2_1 - PQ2)*dmdalpha*dmdtau + dif1*(PQ_1-PQ)*d2mdtaudalpha;
+        }
+        
+        dtau[j]=0;
+        dalpha[i]=0;
+      }
+
+    }
+    
+    for(i = 0; i<k; i++)
+    {
+      // dldtau
+      dtau[i] = 1;
+      _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+      double dmdtau = dmda.transpose() * a;
+      dtau[i]=0;
+      out[i*2+numOutcomes+1] -= dif1*(PQ_1 - PQ)*dmdtau;
+      
+      // d2dtaulambda
+      out[hessianIndex(indxParam,i*2+numOutcomes+1,0)] -= -dif1sq*(PQ_1 - PQ)*dmdlambda*(PQ_1 - PQ)*dmdtau + dif1*(PQ2_1 - PQ2)*dmdlambda*dmdtau + dif1*(PQ_1-PQ)*dmdtau;//dmda.transpose() *a;
+      
+      if(jx > 0)
+      {
+        // d2dcktau
+        out[hessianIndex(indxParam,i*2+numOutcomes+1,jx)] -= (-dif1sq*(PQ_1 - PQ)*dmdtau + dif2sq*(PQfull[jx-1] - PQ_1)*dmdtau)*PQ_1 + (dif1 - dif2)*PQ2_1*dmdtau;
+      }
+      
+      // d2dtau1tau2
+      for(j = i+1; j<k; j++)
+      {
+        dtau[j] = 1;
+        _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+        double dmdtau2 = dmda.transpose() * a;
+        
+        dtau[i] = 1;
+        _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+        double dmdtau1tau2 = dmda.transpose() * a;
+        dtau[i]=0;
+        dtau[j]=0;        
+        
+        out[hessianIndex(indxParam,j*2+numOutcomes+1,i*2+numOutcomes+1)] -= -dif1sq*(PQ_1 - PQ)*dmdtau*(PQ_1 - PQ)*dmdtau2 + dif1*(PQ2_1 - PQ2)*dmdtau*dmdtau2 + dif1*(PQ_1-PQ)*dmdtau1tau2;
+      }
+      
+      // d2ld2tau
+      dtau[i] = 2;
+      _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+      double d2md2tau = dmda.transpose() * a;
+      dtau[i] = 0;
+      out[hessianIndex(indxParam,i*2+numOutcomes+1,i*2+numOutcomes+1)] -= -dif1sq*(PQ_1 - PQ)*dmdtau*(PQ_1 - PQ)*dmdtau + dif1*((PQ2_1 - PQ2)*dmdtau*dmdtau + (PQ_1 - PQ)*d2md2tau);
+      
+    }
+  }
+}
+
+static void irt_rpf_1dim_grmp_deriv2(const double *spec,
+                                    const double *param,
+                                    double *out)
+{
+  
+}
+
+static void irt_rpf_1dim_grmp_dTheta(const double *spec, const double *param,
+                                    const double *where, const double *dir,
+                                    double *grad, double *hess)
+{
+  int i;
+  const int k = spec[RPF_ISpecCount];
+  const int numOutcomes = spec[RPF_ISpecOutcomes];
+  
+  // Extract item parameters
+  const double lambda = param[0];
+  Eigen::VectorXd xi(numOutcomes-1);
+  for(i = 0; i<(numOutcomes-1); i++){
+    xi[i] = param[i+1];
+  }
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
+  for(i = 0; i<k; i++){
+    alpha[i] = param[i*2+numOutcomes];
+    tau[i] = param[i*2+numOutcomes+1];
+  }
+  
+  // Boundary characteristic functions
+  Eigen::VectorXd Pstar(numOutcomes+1);
+  irt_rpf_1dim_grmp_rawprob(spec, param, where, Pstar.data());
+  
+  // Pre-compute PQ and P(1-P)(1-2P)
+  Eigen::VectorXd PQfull(numOutcomes+1);
+  Eigen::VectorXd PQ2full(numOutcomes+1);
+  PQfull[0] = 0;
+  PQfull[numOutcomes] = 0;
+  PQ2full[0] = 0;
+  PQ2full[numOutcomes] = 0;
+  for (int kx=0; kx <= (numOutcomes-1); kx++) PQfull[kx] = Pstar[kx] * (1.0-Pstar[kx]);
+  for (int kx=0; kx <= (numOutcomes-1); kx++) PQ2full[kx] = PQfull[kx]*(1.0-2.0*Pstar[kx]);
+  
+  // To compute derivatives of m(theta), we need b's; there appears to be some double-computation here with rawprob
+  Eigen::VectorXd a(2*k+1);
+  Eigen::VectorXd b(2*k+1);
+  a.setZero();
+  b.setZero();
+  
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
+  
+  _mp_getarec2(k, &lambda, alpha.data(), tau.data(), dalpha.data(), dtau.data(), 0, a.data());
+  _poly_getb(a.data(),k,b.data());
+
+  double dmdTheta = 0;
+  double d2md2Theta = 0;
+  
+  _poly_dmdTheta(k, b.data(), where, &dmdTheta, &d2md2Theta);
+  
+  for (int ix=0; ix < numOutcomes; ix++) {
+    double w1 = PQfull[ix] * dmdTheta;
+    double w2 = PQfull[ix+1] * dmdTheta;    
+    grad[ix] += dir[0] * (w1 - w2);
+    
+    double u1 = PQ2full[ix]*dmdTheta*dmdTheta + PQfull[ix]*d2md2Theta;
+    double u2 = PQ2full[ix+1]*dmdTheta*dmdTheta + PQfull[ix+1]*d2md2Theta;
+    hess[ix] += dir[0]*(u1-u2);
+  }
+  
+}
+
+static void
+  irt_rpf_1dim_grmp_rescale(const double *spec, double *param, const int *paramMask,
+                           const double *mean, const double *cov)
+  {
+    error("Rescale for GR-MP model not implemented");
+  }
+
+
+// GPC-MP
+static int
+  irt_rpf_1dim_gpcmp_numSpec(const double *spec)
+  { return RPF_ISpecCount; }
+
+static int
+  irt_rpf_1dim_gpcmp_numParam(const double *spec)
+  {
+    int k = spec[RPF_ISpecCount];
+    return(spec[RPF_ISpecOutcomes]+2*k);
+  }
+
+static void
+  irt_rpf_1dim_gpcmp_paramInfo(const double *spec, const int param,
+                              const char **type, double *upper, double *lower)
+  {
+    *upper = nan("unset");
+    *lower = nan("unset");
+    
+    int ncat = spec[RPF_ISpecOutcomes];
+    
+    *type = NULL;
+    if (param == 0) {
+      *type = "omega";
+    } else if (param < ncat) {
+      *type = "xi";
+    } else if ((param-ncat+2) %2 == 0 ){
+      *type = "alpha";
+    } else {
+      *type = "tau";
+      *lower = -EXP_STABLE_DOMAIN;
+    }
+  }
+
+static void
+  irt_rpf_1dim_gpcmp_prob(const double *spec,
+                         const double *param, const double *th,
+                         double *out)
+  {
+    
+    const int k = spec[RPF_ISpecCount];
+    const int numOutcomes = spec[RPF_ISpecOutcomes];
+    
+    const double omega = param[0];
+
+    Eigen::VectorXd xi(numOutcomes-1);
+    for(int i = 0; i<(numOutcomes-1); i++){
+      xi[i] = param[i+1];
+    }
+    
+    Eigen::VectorXd alpha(k);
+    Eigen::VectorXd tau(k);
+    for(int i = 0; i<k; i++){
+      alpha[i] = param[i*2+numOutcomes];
+      tau[i] = param[i*2+numOutcomes+1];
+    }
+    
+    Eigen::VectorXd a(2*k+1);
+    Eigen::VectorXd b(2*k+1);
+    a.setZero();
+    b.setZero();
+    
+    double poly = 0;
+    
+    Eigen::VectorXi dalpha(k);
+    Eigen::VectorXi dtau(k);
+    dalpha.setZero();
+    dtau.setZero();
+    
+    _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+    _poly_getb(a.data(),k,b.data());
+    _poly_val(th,b.data(),k,&poly);
+    
+    Eigen::VectorXd Z(numOutcomes);
+    Z[0] = poly;
+    for (int i = 1; i < numOutcomes; i++)
+    {
+      Z[i] = xi[i-1] + poly + Z[i-1];
+    }
+    
+    // Transform for more numerical stability
+    // Somewhat clumsily coded for now
+    double rowMax = Z.maxCoeff();
+    for (int i = 0; i < numOutcomes; i++)
+    {
+      out[i] = Z[i];
+      Z[i] = exp(Z[i]-rowMax);
+    }
+    
+    double rowSum = Z.sum();
+    for (int i = 0; i < numOutcomes; i++)
+    {
+      double tmp = out[i] - (rowMax + log(rowSum));
+      if (tmp < -EXP_STABLE_DOMAIN) tmp = -EXP_STABLE_DOMAIN;
+      else if (tmp > EXP_STABLE_DOMAIN) tmp = EXP_STABLE_DOMAIN;
+      out[i] = exp(tmp);
+    }
+  }
+
+static void irt_rpf_1dim_gpcmp_deriv1(const double *spec,
+                                     const double *param,
+                                     const double *where,
+                                     const double *weight, double *out)
+{
+
+  int i, j;
+  const int k = spec[RPF_ISpecCount];
+  const int numOutcomes = spec[RPF_ISpecOutcomes];
+  const int ord = 2*k+1;
+  const int indxParam = numOutcomes+2*k; // number of parameters; useful for Hessian matrix
+  
+  // Extract item parameters
+  const double omega = param[0];
+  Eigen::VectorXd xi(numOutcomes-1);
+  for(i = 0; i<(numOutcomes-1); i++){
+    xi[i] = param[i+1];
+  }
+  Eigen::VectorXd alpha(k);
+  Eigen::VectorXd tau(k);
+  for(i = 0; i<k; i++){
+    alpha[i] = param[i*2+numOutcomes];
+    tau[i] = param[i*2+numOutcomes+1];
+  }
+  
+  // Category response functions
+  Eigen::VectorXd P(numOutcomes);
+  irt_rpf_1dim_gpcmp_prob(spec, param, where, P.data());
+  
+  // Set up storage for obtaining "a" coefficients and derivatives
+  // Note that _mp_getrec will also obtain a coefficients with derivatives w.r.t alpha and tau
+  Eigen::VectorXi dalpha(k);
+  Eigen::VectorXi dtau(k);
+  dalpha.setZero();
+  dtau.setZero();
+  Eigen::VectorXd a(ord);
+
+  // dmda for re-use later
+  Eigen::VectorXd dmda(ord);
+  _poly_dmda(k,where,dmda);
+    
+  // dmdomega for use later
+  _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+  double dmdomega = dmda.transpose()*a;
+  
+  // dPdeta for later use (mostly with second derivatives)
+  Eigen::VectorXd dPdomega(numOutcomes);
+  Eigen::MatrixXd dPdxi(numOutcomes,numOutcomes);
+  Eigen::MatrixXd dPdalpha(numOutcomes,k);
+  Eigen::MatrixXd dPdtau(numOutcomes,k);
+  dPdomega.setZero();
+  dPdxi.setZero();
+  dPdalpha.setZero();
+  dPdtau.setZero();
+  
+  double Psum = 0;
+  for(int jx = 0; jx < numOutcomes; jx++)
+  {
+    Psum += P[jx]*(jx+1);
+  }
+  
+  // loops to pre-compute dPdeta
+  for(int jx = 0; jx < numOutcomes; jx++)
+  {
+    double Pjx_sum = P[jx]*((jx+1)-Psum);
+    dPdomega[jx] = Pjx_sum*dmdomega;
+    
+    // dPdxi
+    for(int u = 1; u < numOutcomes; u++)
+    {
+      if(u <= jx)
+      {
+        dPdxi(jx,u) += P[jx];
+      }
+      for(int v = u; v < numOutcomes; v++)
+      {
+        dPdxi(jx,u) -= P[jx]*P[v];
+      }
+    }
+    
+    // dPdalpha and dPdtau
+    for(i = 0; i<k; i++)
+    {
+      dalpha[i] = 1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      double dmdalpha = dmda.transpose() * a;
+      dalpha[i]=0;
+      dPdalpha(jx,i) = Pjx_sum*dmdalpha;
+      
+      dtau[i] = 1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      double dmdtau = dmda.transpose() * a;
+      dtau[i]=0;
+      dPdtau(jx,i) = Pjx_sum*dmdtau;
+    }
+  }
+  
+  // outer loop over categories
+  for (int jx = 0; jx <= (numOutcomes-1); jx++)
+  {
+    
+    double Pk = P[jx];
+    double w = weight[jx];
+    if (Pk < 1e-10) Pk = 1e-10;
+    //double wsq = w / Pk;
+    
+     // this should confirm whether dPdomega is correct; ok so far
+    //out[0]-= w*(jx+1-Psum)*dmdomega;
+    out[0]-= (w/Pk)*dPdomega[jx];
+    
+    // dl2domega2
+    double d2md2omega = dmdomega; // just for this parameter
+    out[hessianIndex(indxParam,0,0)] -= w*(jx+1-Psum)*d2md2omega;
+    for(int u = 0; u < numOutcomes; u++)
+    {
+      out[hessianIndex(indxParam,0,0)] -= -w*dmdomega*dPdomega[u]*(u+1);
+    }
+    
+    for(int u = 1; u < numOutcomes; u++)
+    {
+      //dldxi
+      out[u] -= (w/Pk)*dPdxi(jx,u);
+      
+      // d2dxidomega
+      for(int v = 0; v < numOutcomes; v++)
+      {
+        out[hessianIndex(indxParam,u,0)] -= -w*dmdomega*dPdxi(v,u)*(v+1);
+      }
+
+      //d2dxikxit - cross derivatives with other intercept parameters
+      // includes d2d2xi as a special case
+      for(int v = u; v < numOutcomes; v++)
+      {
+        for(int t = 0; t < numOutcomes; t++)
+        {
+          if(t>=v)
+          out[hessianIndex(indxParam,v,u)] -= -w*dPdxi(t,u);          
+        }
+      }
+    }
+    
+    for(i = 0; i<k; i++)
+    {
+      // dldalpha
+      dalpha[i] = 1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      double dmdalpha = dmda.transpose() * a;
+      dalpha[i]=0;
+      out[i*2+numOutcomes] -= (w/Pk)*dPdalpha(jx,i);
+      
+      // d2dalphaomega
+      out[hessianIndex(indxParam,i*2+numOutcomes,0)] -= w*(jx+1-Psum)*dmdalpha;
+      for(int u = 0; u < numOutcomes; u++)
+      {
+        out[hessianIndex(indxParam,i*2+numOutcomes,0)] -= -w*dmdomega*dPdalpha(u,i)*(u+1);
+      }
+      
+      // d2dckalpha
+      for(int u = 1; u < numOutcomes; u++)
+      {
+        for(int v = 0; v < numOutcomes; v++)
+        {
+          out[hessianIndex(indxParam,i*2+numOutcomes,u)] -= -w*dmdalpha*dPdxi(v,u)*(v+1);
+        }
+      }        
+
+      // d2dalpha1alpha2
+      for(j = i+1; j<k; j++)
+      {
+        
+        dalpha[j] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        //double dmdalpha2 = dmda.transpose() * a;
+        
+        dalpha[i] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double d2mdalpha1alpha2 = dmda.transpose() * a;
+        dalpha[i]=0;
+        dalpha[j]=0;
+        
+        out[hessianIndex(indxParam,j*2+numOutcomes,i*2+numOutcomes)] -= w*(jx+1-Psum)*d2mdalpha1alpha2;
+        for(int u = 0; u < numOutcomes; u++)
+        {
+          out[hessianIndex(indxParam,j*2+numOutcomes,i*2+numOutcomes)] -= -w*dmdalpha*dPdalpha(u,j)*(u+1);
+        }
+      }
+      
+      
+      // d2ld2alpha
+      dalpha[i] = 2;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      double d2md2alpha = dmda.transpose() * a;
+      dalpha[i] = 0;
+      out[hessianIndex(indxParam,i*2+numOutcomes,i*2+numOutcomes)] -= w*(jx+1-Psum)*d2md2alpha;
+      for(int u = 0; u < numOutcomes; u++)
+      {
+        out[hessianIndex(indxParam,i*2+numOutcomes,i*2+numOutcomes)] -= -w*dmdalpha*dPdalpha(u,i)*(u+1);
+      }
+      
+      // d2ldalpha1dalphatau
+      for(j=0; j<k; j++)
+      {
+        
+        dalpha[i] = 0;
+        dtau[j] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double dmdtau = dmda.transpose() * a;
+        
+        dalpha[i]=1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double d2mdtaudalpha = dmda.transpose() * a;
+        
+        double dldalphadtau = w*(jx+1-Psum)*d2mdtaudalpha;
+        for(int u = 0; u < numOutcomes; u++)
+        {
+          dldalphadtau += -w*dmdtau*dPdalpha(u,j)*(u+1);
+        }
+        
+        if(j>=i){
+          out[hessianIndex(indxParam,j*2+numOutcomes+1,i*2+numOutcomes)] -= dldalphadtau;
+        } else {
+          out[hessianIndex(indxParam,i*2+numOutcomes,j*2+numOutcomes+1)] -= dldalphadtau;
+        }
+        dtau[j]=0;
+        dalpha[i]=0;
+      }
+      
+    }
+    
+    for(i = 0; i<k; i++)
+    {
+      // dldtau
+      dtau[i] = 1;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      double dmdtau = dmda.transpose() * a;
+      dtau[i]=0;
+      out[i*2+numOutcomes+1] -= (w/Pk)*dPdtau(jx,i);
+      
+      // d2dtauomega
+      out[hessianIndex(indxParam,i*2+numOutcomes+1,0)] -= w*(jx+1-Psum)*dmdtau;
+      for(int u = 0; u < numOutcomes; u++)
+      {
+        out[hessianIndex(indxParam,i*2+numOutcomes+1,0)] -= -w*dmdomega*dPdtau(u,i)*(u+1);
+      }
+      
+      // d2dtaudxi
+      for(int u = 1; u < numOutcomes; u++)
+      {
+        for(int v = 0; v < numOutcomes; v++)
+        {
+          out[hessianIndex(indxParam,i*2+numOutcomes+1,u)] -= -w*dmdtau*dPdxi(v,u)*(v+1);
+        }
+      }
+      
+      // d2dtau1tau2
+      for(j = i+1; j<k; j++)
+      {
+        dtau[j] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        //double dmdtau2 = dmda.transpose() * a;
+        
+        dtau[i] = 1;
+        _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+        double dmdtau1tau2 = dmda.transpose() * a;
+        dtau[i]=0;
+        dtau[j]=0;        
+        
+        out[hessianIndex(indxParam,j*2+numOutcomes+1,i*2+numOutcomes+1)] -= w*(jx+1-Psum)*dmdtau1tau2;
+        for(int u = 0; u < numOutcomes; u++)
+        {
+          out[hessianIndex(indxParam,j*2+numOutcomes+1,i*2+numOutcomes+1)] -= -w*dmdtau*dPdtau(u,j)*(u+1);
+        }
+      }
+      
+      
+      // d2ld2tau
+      dtau[i] = 2;
+      _mp_getarec(k, &omega, alpha.data(), tau.data(), dalpha.data(), dtau.data(), a.data());
+      double d2md2tau = dmda.transpose() * a;
+      dtau[i] = 0;
+      out[hessianIndex(indxParam,i*2+numOutcomes+1,i*2+numOutcomes+1)] -= w*(jx+1-Psum)*d2md2tau;
+      for(int u = 0; u < numOutcomes; u++)
+      {
+        out[hessianIndex(indxParam,i*2+numOutcomes+1,i*2+numOutcomes+1)] -= -w*dmdtau*dPdtau(u,i)*(u+1);
+      }
+      
+    }
+  }
+}
+
+static void irt_rpf_1dim_gpcmp_deriv2(const double *spec,
+                                     const double *param,
+                                     double *out)
+{
+  
+}
+
+static void irt_rpf_1dim_gpcmp_dTheta(const double *spec, const double *param,
+                                     const double *where, const double *dir,
+                                     double *grad, double *hess)
+{
+  error("dTheta for GPC-MP model not implemented");
+}
+
+static void
+  irt_rpf_1dim_gpcmp_rescale(const double *spec, double *param, const int *paramMask,
+                            const double *mean, const double *cov)
+  {
+    error("Rescale for GPC-MP model not implemented");
+  }
+
+// End of MP functions
 /********************************************************************************/
 
 // replace with forward difference numeric approx TODO
@@ -1716,6 +2603,28 @@ const struct rpf librpf_model[] = {
     irt_rpf_1dim_lmp_deriv2,
     irt_rpf_1dim_lmp_dTheta,
     irt_rpf_1dim_lmp_rescale, // not done yet
+  },
+  { "grmp",
+    irt_rpf_1dim_grmp_numSpec,
+    irt_rpf_1dim_grmp_numParam,
+    irt_rpf_1dim_grmp_paramInfo,
+    irt_rpf_1dim_grmp_prob,
+    irt_rpf_logprob_adapter,
+    irt_rpf_1dim_grmp_deriv1,
+    irt_rpf_1dim_grmp_deriv2,
+    irt_rpf_1dim_grmp_dTheta,
+    irt_rpf_1dim_grmp_rescale, // not done yet
+  },
+  { "gpcmp",
+    irt_rpf_1dim_gpcmp_numSpec,
+    irt_rpf_1dim_gpcmp_numParam,
+    irt_rpf_1dim_gpcmp_paramInfo,
+    irt_rpf_1dim_gpcmp_prob,
+    irt_rpf_logprob_adapter,
+    irt_rpf_1dim_gpcmp_deriv1,
+    irt_rpf_1dim_gpcmp_deriv2,
+    irt_rpf_1dim_gpcmp_dTheta,
+    irt_rpf_1dim_gpcmp_rescale, // not done yet
   }
 };
 

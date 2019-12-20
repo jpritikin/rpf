@@ -59,5 +59,7 @@ Collate:
     'flexmirt.R'
     'util.R'
     'lmp.R'
+    'grmp.R'
+    'gpcmp.R'
 URL: https://github.com/jpritikin/rpf
 RoxygenNote: 6.1.1
