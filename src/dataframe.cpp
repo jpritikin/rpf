@@ -88,7 +88,7 @@ static SEXP findIdenticalRowsData2(SEXP data, SEXP missing, SEXP defvars,
 	}
 }
 
-SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
+RcppExport SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
 			   SEXP skipMissingness, SEXP skipDefvars)
 {
 	ProtectAutoBalanceDoodad protectManager;

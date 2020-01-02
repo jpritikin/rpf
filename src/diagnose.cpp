@@ -330,7 +330,7 @@ void otMix(ssEAP &myeap, int Sgroup, int ox, Eigen::ArrayBase<T1> &iProb, Eigen:
 	}
 }
 
-SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
+RcppExport SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
 		    SEXP Rmask, SEXP Rtwotier)
 {
 	ProtectAutoBalanceDoodad mpi;
@@ -411,7 +411,7 @@ SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
 	}
 }
 
-SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug)
+RcppExport SEXP ssEAP_wrapper(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -487,7 +487,7 @@ SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SE
 	return Rout;
 }
 
-SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier)
+RcppExport SEXP pairwiseExpected_wrapper(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -674,7 +674,7 @@ int ManhattenCollapse::run()
 	return collapsed;
 }
 
-SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig, SEXP r_min)
+RcppExport SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig, SEXP r_min)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -740,7 +740,7 @@ static bool computeObservedSumScore(ifaGroup &grp, int *itemMask, int row, int *
 	return false;
 }
 
-SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
+RcppExport SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -775,7 +775,7 @@ SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
 	return Rdist;
 }
 
-SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
+RcppExport SEXP observedSumScore_wrapper(SEXP Rgrp, SEXP Rmask)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -810,7 +810,7 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 	return out.asR();
 }
 
-SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
+RcppExport SEXP itemOutcomeBySumScore_wrapper(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -857,7 +857,8 @@ SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 	return lout.asR();
 }
 
-static double table_concordance(double *mat, int rows, int cols, int ii, int jj)
+static double table_concordance(const NumericMatrix &mat,
+																int rows, int cols, int ii, int jj)
 {
   double sum=0;
   for (int hh=ii+1; hh < rows; ++hh) {
@@ -868,7 +869,8 @@ static double table_concordance(double *mat, int rows, int cols, int ii, int jj)
   return sum;
 }
 
-static double table_discordance(double *mat, int rows, int cols, int ii, int jj)
+static double table_discordance(const NumericMatrix &mat,
+																int rows, int cols, int ii, int jj)
 {
   double sum=0;
   for (int hh=ii+1; hh < rows; ++hh) {
@@ -879,15 +881,12 @@ static double table_discordance(double *mat, int rows, int cols, int ii, int jj)
   return sum;
 }
 
-/* See Agresti (1990, p. 22) */
-SEXP gamma_cor(SEXP r_mat)
+// See Agresti (1990, p. 22)
+// [[Rcpp::export]]
+double gamma_cor(const NumericMatrix &mat)
 {
-  int rows;
-  int cols;
-  getMatrixDims(r_mat, &rows, &cols);
-  SEXP realmat;
-  Rf_protect(realmat = Rf_coerceVector(r_mat, REALSXP));
-  double *mat = REAL(realmat);
+	int rows = mat.nrow();
+	int cols = mat.ncol();
 
   double concord = 0;
   for (int ii=0; ii < rows-1; ++ii) {
@@ -903,10 +902,8 @@ SEXP gamma_cor(SEXP r_mat)
     }
   }
 
-  UNPROTECT(1);
-
   double gamma = (concord - discord) / (concord + discord);
-  return Rf_ScalarReal(gamma);
+	return gamma;
 }
 
 template <typename T1, typename T2, typename T3>
@@ -926,7 +923,7 @@ static inline double crosstabMS(Eigen::ArrayBase<T1> &observed,
 	}
 }
 
-SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials)
+RcppExport SEXP crosstabTest_wrapper(SEXP Robserved, SEXP Rexpected, SEXP Rtrials)
 {
 	int rows, cols;
 	getMatrixDims(Robserved, &rows, &cols);

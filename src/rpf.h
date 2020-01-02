@@ -14,14 +14,9 @@
 #undef EIGEN_NO_DEBUG
 #endif
 
-#define R_NO_REMAP
-#include <R.h>
-#include <Rinternals.h>
-#include <Rmath.h>
-#include <R_ext/Rdynload.h>
-#include <R_ext/BLAS.h>
-#include <R_ext/Lapack.h>
-#include <vector>
+#include <Rcpp.h>
+using namespace Rcpp;
+
 #include "Eigen/Core"
 
 #if defined(_OPENMP)
@@ -79,21 +74,6 @@ class MxRList : private MxRListBase {
 static inline bool strEQ(const char *s1, const char *s2) { return strcmp(s1,s2)==0; }
 
 void getMatrixDims(SEXP r_theta, int *rows, int *cols);
-SEXP orlando_thissen_2000(SEXP r_spec, SEXP r_param, SEXP r_item, SEXP r_observed, SEXP r_quad);
-SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig, SEXP r_min);
-SEXP gamma_cor(SEXP r_mat);
-SEXP sumscoreEAP(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug);
-SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
-		    SEXP Rmask, SEXP Rtwotier);
-SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials);
-SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier);
-SEXP observedSumScore(SEXP Rgrp, SEXP Rmask);
-SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest);
-SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
-			   SEXP skipMissingness, SEXP skipDefvars);
-SEXP CaiHansen2012(SEXP Rgrp, SEXP Rmethod, SEXP Rtwotier);
-SEXP eap_wrapper(SEXP Rgrp);
-SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight);
 
 static inline void
 pda(const double *ar, int rows, int cols) {   // column major order

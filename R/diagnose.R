@@ -593,7 +593,7 @@ print.summary.SitemFit <- function(x,...) {
 ##' # Example data from Agresti (1990, p. 21)
 ##' jobsat <- matrix(c(20,22,13,7,24,38,28,18,80,104,81,54,82,125,113,92), nrow=4, ncol=4)
 ##' ordinal.gamma(jobsat)
-ordinal.gamma <- function(mat) .Call(ordinal_gamma_wrapper, mat)
+ordinal.gamma <- function(mat) .Call(`_rpf_gamma_cor`, mat)
 
 # root mean squared statistic (sqrt omitted)
 ms <- function(observed, expected, draws) {

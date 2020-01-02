@@ -108,7 +108,7 @@ setMethod("rpf.numSpec", signature(m="rpf.base"),
             if (length(m@spec)==0) {
               stop("Not implemented")
             } else {
-              .Call(rpf_numSpec_wrapper, m@spec)
+              .Call(`_rpf_numSpec`, m@spec)
             }
           })
 
@@ -618,5 +618,5 @@ setClass("rpf.1dim.gpcmp", contains='rpf.1dim')
 ##' @param name name of the item model (string)
 ##' @return the integer ID assigned to the given model
 rpf.id_of <- function(name) {
-   .Call(get_model_names, name)
+   .Call(`_rpf_get_model_id`, name)
 }

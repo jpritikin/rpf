@@ -24,7 +24,7 @@ SystemRequirements: GNU make
 LazyData: yes
 LazyDataCompression: bzip2
 License: GPL (>= 3)
-LinkingTo: RcppEigen
+LinkingTo: Rcpp, RcppEigen
 Suggests:
     testthat,
     roxygen2,
@@ -35,7 +35,7 @@ Suggests:
     knitr,
     mirt
 Imports:
-    mvtnorm
+    Rcpp (>= 1.0.2), mvtnorm
 Depends:
     methods,
     parallel,
@@ -62,4 +62,4 @@ Collate:
     'grmp.R'
     'gpcmp.R'
 URL: https://github.com/jpritikin/rpf
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2

@@ -18,20 +18,16 @@ SEXP MxRList::asR()
 	return ans;
 }
 
-static SEXP
-get_model_names(SEXP name)
+// [[Rcpp::export]]
+int get_model_id(const StringVector &str)
 {
-  const char *target = CHAR(STRING_ELT(name, 0));
-  SEXP ret;
-  Rf_protect(ret = Rf_allocVector(REALSXP, 1));
-  REAL(ret)[0] = NA_REAL;
+	const char *target = str[0];
   for (int sx=0; sx < Glibrpf_numModels; sx++) {
     if (strcmp(Glibrpf_model[sx].name, target) == 0) {
-      REAL(ret)[0] = sx;
+			return sx;
     }
   }
-  UNPROTECT(1);
-  return ret;
+  return NA_REAL;
 }
 
 void getMatrixDims(SEXP r_theta, int *rows, int *cols)
@@ -44,29 +40,22 @@ void getMatrixDims(SEXP r_theta, int *rows, int *cols)
     UNPROTECT(1);
 }
 
-static SEXP
-rpf_numSpec_wrapper(SEXP r_spec)
+// [[Rcpp::export]]
+int numSpec(NumericVector spec)
 {
-  if (Rf_length(r_spec) < RPF_ISpecCount)
-    Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
-
-  double *spec = REAL(r_spec);
+  if (spec.size() < RPF_ISpecCount)
+    stop("Item spec must be of length %d, not %d",
+				 RPF_ISpecCount, int(spec.size()));
 
   int id = spec[RPF_ISpecID];
   if (id < 0 || id >= Glibrpf_numModels)
-    Rf_error("Item model %d out of range", id);
+    stop("Item model %d out of range", id);
 
-  int numSpec = (*Glibrpf_model[id].numSpec)(spec);
-
-  SEXP ret;
-  Rf_protect(ret = Rf_allocVector(INTSXP, 1));
-  INTEGER(ret)[0] = numSpec;
-  UNPROTECT(1);
-
-  return ret;
+  int numSpec = (*Glibrpf_model[id].numSpec)(spec.begin());
+	return numSpec;
 }
 
-static SEXP
+RcppExport SEXP
 rpf_numParam_wrapper(SEXP r_spec)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
@@ -88,7 +77,7 @@ rpf_numParam_wrapper(SEXP r_spec)
   return ret;
 }
 
-static SEXP
+RcppExport SEXP
 rpf_paramInfo_wrapper(SEXP r_spec, SEXP r_paramNum)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
@@ -149,7 +138,7 @@ int unpack_theta(int dims, double *param, int numAbilities, double *theta, doubl
   return 1;
 }
 
-static SEXP
+RcppExport SEXP
 rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
@@ -209,7 +198,7 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   return outsxp;
 }
 
-static SEXP
+RcppExport SEXP
 rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
@@ -269,7 +258,7 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   return outsxp;
 }
 
-static SEXP
+RcppExport SEXP
 rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
 		  SEXP r_where, SEXP r_weight)
 {
@@ -320,7 +309,7 @@ rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
   return ret;
 }
 
-static SEXP
+RcppExport SEXP
 rpf_dTheta_wrapper(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
@@ -370,7 +359,7 @@ rpf_dTheta_wrapper(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
   return ret;
 }
 
-static SEXP
+RcppExport SEXP
 rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
@@ -414,71 +403,23 @@ rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
   return ret;
 }
 
-static SEXP has_openmp()
+// [[Rcpp::export]]
+bool has_openmp()
 {
 #if defined(_OPENMP)
-	bool opm = true;
+	return true;
 #else
-	bool opm = false;
+	return false;
 #endif
-	return Rf_ScalarLogical(opm);
 }
 
 int GlobalNumberOfCores = 1;
 
-static SEXP setNumberOfCores(SEXP num)
+// [[Rcpp::export]]
+int setNumberOfCores(IntegerVector num)
 {
 #if defined(_OPENMP)
-	GlobalNumberOfCores = Rf_asInteger(num);
+	GlobalNumberOfCores = num[0];
 #endif
-	return num;
-}
-
-static R_CallMethodDef flist[] = {
-  {"get_model_names", (DL_FUNC) get_model_names, 1},
-  {"rpf_numSpec_wrapper", (DL_FUNC) rpf_numSpec_wrapper, 1},
-  {"rpf_numParam_wrapper", (DL_FUNC) rpf_numParam_wrapper, 1},
-  {"rpf_paramInfo_wrapper", (DL_FUNC) rpf_paramInfo_wrapper, 2},
-  {"rpf_prob_wrapper", (DL_FUNC) rpf_prob_wrapper, 3},
-  {"rpf_logprob_wrapper", (DL_FUNC) rpf_logprob_wrapper, 3},
-  {"rpf_dLL_wrapper", (DL_FUNC) rpf_dLL_wrapper, 4},
-  {"rpf_dTheta_wrapper", (DL_FUNC) rpf_dTheta_wrapper, 4},
-  {"rpf_rescale_wrapper", (DL_FUNC) rpf_rescale_wrapper, 4},
-  {"collapse_wrapper", (DL_FUNC) collapse_wrapper, 3},
-  {"ordinal_gamma_wrapper", (DL_FUNC) gamma_cor, 1},
-  {"ssEAP_wrapper", (DL_FUNC) sumscoreEAP, 6},
-  {"ot2000_wrapper", (DL_FUNC) ot2000_wrapper, 7},
-  {"crosstabTest_wrapper", (DL_FUNC) crosstabTest, 3},
-  {"pairwiseExpected_wrapper", (DL_FUNC) pairwiseExpected, 5},
-  {"observedSumScore_wrapper", (DL_FUNC) observedSumScore, 2},
-  {"itemOutcomeBySumScore_wrapper", (DL_FUNC) itemOutcomeBySumScore, 3},
-  {"findIdenticalRowsData", (DL_FUNC) findIdenticalRowsData, 5},
-  {"CaiHansen2012_wrapper", (DL_FUNC) CaiHansen2012, 3},
-  {"eap_wrapper", (DL_FUNC) eap_wrapper, 1},
-  {"hasOpenMP_wrapper", (DL_FUNC) has_openmp, 0},
-  {"setNumberOfCores", (DL_FUNC) setNumberOfCores, 1},
-  {"fast_tableWithWeights", (DL_FUNC) fast_tableWithWeights, 3},
-  {NULL, NULL, 0}
-};
-
-extern const struct rpf librpf_model[];
-extern const int librpf_numModels;
-
-static void
-get_librpf_models(int version, int *numModels, const struct rpf **model)
-{
-	if (version != LIBIFA_RPF_API_VERSION) Rf_error("LIBIFA_RPF binary API version mismatch");
-  *numModels = librpf_numModels;
-  *model = librpf_model;
-}
-
-const struct rpf *Glibrpf_model;
-int Glibrpf_numModels;
-
-extern "C" void R_init_rpf(DllInfo *info) {
-	R_registerRoutines(info, NULL, flist, NULL, NULL);
-	R_useDynamicSymbols(info, FALSE);
-	R_RegisterCCallable("rpf", "get_librpf_model_GPL", (DL_FUNC) get_librpf_models);
-	Glibrpf_numModels = librpf_numModels;
-	Glibrpf_model = librpf_model;
+	return num[0];
 }

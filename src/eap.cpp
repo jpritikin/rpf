@@ -65,7 +65,7 @@ void BA81LatentScores<T>::end(class ifaGroup *state, T extraData)
 	}
 }
 
-SEXP eap_wrapper(SEXP Rgrp)
+RcppExport SEXP eap_wrapper(SEXP Rgrp)
 {
 	ProtectAutoBalanceDoodad mpi;
 
