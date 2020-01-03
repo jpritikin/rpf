@@ -11,6 +11,5 @@
 .dir-locals.el
 ^\.Rproj\.user$
 ^\.travis\.yml$
-^R/RcppExports.R$
 ^man-roxygen
 ^codecov\.yml$

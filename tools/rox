@@ -22,5 +22,4 @@ R --no-restore --no-save --no-readline <<EOF
 library(roxygen2)
 pkgload::load_all()
 roxygenize('.', roclets=c("rd"))
-file.remove("R/RcppExports.R")  # don't use it
 EOF

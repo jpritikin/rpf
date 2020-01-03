@@ -61,5 +61,6 @@ Collate:
     'lmp.R'
     'grmp.R'
     'gpcmp.R'
+		'RcppExports.R'
 URL: https://github.com/jpritikin/rpf
 RoxygenNote: 7.0.2

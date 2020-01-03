@@ -943,15 +943,15 @@ print.summary.ChenThissen1997 <- function(x,...) {
 ##' @param trials number of Monte-Carlo trials
 crosstabTest <- function(ob, ex, trials) {
 	if (missing(trials)) trials <- 10000
-	.Call('_rpf_crosstabTest', ob, ex, trials)
+	.Call('_rpf_crosstabTest_cpp', ob, ex, trials)
 }
 
 pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, .twotier=FALSE) {
-	.Call('_rpf_pairwiseExpected', grp, qwidth, qpoints, items - 1L, .twotier)
+	.Call('_rpf_pairwiseExpected_cpp', grp, qwidth, qpoints, items - 1L, .twotier)
 }
 
 CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
-	.Call('_rpf_CaiHansen2012', grp, method, .twotier)
+	.Call('_rpf_CaiHansen2012_cpp', grp, method, .twotier)
 }
 
 ##' Multinomial fit test

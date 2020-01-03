@@ -12,5 +12,4 @@ fi
 R --no-restore --no-save --no-readline <<EOF
 library(Rcpp)
 Rcpp::compileAttributes(verbose=TRUE)
-file.remove("R/RcppExports.R")  # don't use it
 EOF

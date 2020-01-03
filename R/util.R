@@ -259,7 +259,7 @@ observedSumScore <- function(grp, ..., mask, summary=TRUE) {
 		names(ss) <- rownames(dat)
 		return(ss)
 	}
-	got <- .Call('_rpf_observedSumScore', grp, mask)
+	got <- .Call('_rpf_observedSumScore_cpp', grp, mask)
 	if (got[['n']] == 0) {
 		warning("Some columns are all missing; cannot compute observedSumScore")
 	}
@@ -290,7 +290,7 @@ itemOutcomeBySumScore <- function(grp, mask, interest) {
 	if (is.character(interest)) {
 		interest <- match(interest, colnames(grp$param))
 	}
-	got <- .Call('_rpf_itemOutcomeBySumScore', grp, mask, interest)
+	got <- .Call('_rpf_itemOutcomeBySumScore_cpp', grp, mask, interest)
 	rownames(got$table) <- 0:(nrow(got$table)-1L)
 	col <- colnames(grp$param)[interest]
 	colnames(got$table) <- levels(grp$data[,col])

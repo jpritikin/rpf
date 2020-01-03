@@ -101,7 +101,7 @@ void ch2012::run(const char *method)
 }
 
 // [[Rcpp::export]]
-SEXP CaiHansen2012(SEXP Rgrp, SEXP Rmethod, bool twotier)
+SEXP CaiHansen2012_cpp(SEXP Rgrp, SEXP Rmethod, bool twotier)
 {
 	ProtectAutoBalanceDoodad mpi;
 

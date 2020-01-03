@@ -490,7 +490,7 @@ SEXP ssEAP_wrapper(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, 
 }
 
 // [[Rcpp::export]]
-SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier)
+SEXP pairwiseExpected_cpp(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -781,7 +781,7 @@ SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
 }
 
 // [[Rcpp::export]]
-SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
+SEXP observedSumScore_cpp(SEXP Rgrp, SEXP Rmask)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -817,7 +817,7 @@ SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 }
 
 // [[Rcpp::export]]
-SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
+SEXP itemOutcomeBySumScore_cpp(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -931,7 +931,7 @@ static inline double crosstabMS(Eigen::ArrayBase<T1> &observed,
 }
 
 // [[Rcpp::export]]
-SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials)
+SEXP crosstabTest_cpp(SEXP Robserved, SEXP Rexpected, SEXP Rtrials)
 {
 	int rows, cols;
 	getMatrixDims(Robserved, &rows, &cols);
