@@ -228,7 +228,7 @@ void ifaGroup::importSpec(SEXP slotValue)
 	for (int sx=0; sx < Rf_length(slotValue); ++sx) {
 		SEXP model = VECTOR_ELT(slotValue, sx);
 		if (!OBJECT(model)) {
-			Rf_error("Item models must inherit rpf.base");
+			stop("Item models must inherit rpf.base");
 		}
 		SEXP Rspec;
 		Rf_protect(Rspec = R_do_slot(model, Rf_install("spec")));
@@ -271,14 +271,14 @@ void ifaGroup::verifyFactorNames(SEXP mat, const char *matName)
 			Rf_protect(names = VECTOR_ELT(dimnames, dx));
 			if (!Rf_length(names)) continue;
 			if (int(factorNames.size()) != Rf_length(names)) {
-				Rf_error("%s %snames must be length %d",
+				stop("%s %snames must be length %d",
 					 matName, dimname[dx], (int) factorNames.size());
 			}
 			int nlen = Rf_length(names);
 			for (int nx=0; nx < nlen; ++nx) {
 				const char *name = CHAR(STRING_ELT(names, nx));
 				if (strEQ(factorNames[nx].c_str(), name)) continue;
-				Rf_error("%s %snames[%d] is '%s', does not match factor name '%s'",
+				stop("%s %snames[%d] is '%s', does not match factor name '%s'",
 					 matName, dimname[dx], 1+nx, name, factorNames[nx].c_str());
 			}
 		}
@@ -298,7 +298,7 @@ void ifaGroup::learnMaxAbilities()
 	maxAbilities = (loadings != 0).count();
 	if (maxItemDims != maxAbilities) {
 		for (int lx=0; lx < maxItemDims; ++lx) {
-			if (loadings[lx] == 0) Rf_error("Factor %d does not load on any items", 1+lx);
+			if (loadings[lx] == 0) stop("Factor %d does not load on any items", 1+lx);
 		}
 	}
 }
@@ -308,7 +308,7 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 	SEXP argNames;
 	Rf_protect(argNames = Rf_getAttrib(Rlist, R_NamesSymbol));
 	if (Rf_length(Rlist) != Rf_length(argNames)) {
-		Rf_error("All list elements must be named");
+		stop("All list elements must be named");
 	}
 
 	std::vector<const char *> dataColNames;
@@ -325,7 +325,7 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 		if (strEQ(key, "spec")) {
 			importSpec(slotValue);
 		} else if (strEQ(key, "param")) {
-			if (!Rf_isReal(slotValue)) Rf_error("'param' must be a numeric matrix of item parameters");
+			if (!Rf_isReal(slotValue)) stop("'param' must be a numeric matrix of item parameters");
 			param = REAL(slotValue);
 			getMatrixDims(slotValue, &paramRows, &pmatCols);
 
@@ -348,11 +348,11 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 			}
 		} else if (strEQ(key, "mean")) {
 			Rmean = slotValue;
-			if (!Rf_isReal(slotValue)) Rf_error("'mean' must be a numeric vector or matrix");
+			if (!Rf_isReal(slotValue)) stop("'mean' must be a numeric vector or matrix");
 			mean = REAL(slotValue);
 		} else if (strEQ(key, "cov")) {
 			Rcov = slotValue;
-			if (!Rf_isReal(slotValue)) Rf_error("'cov' must be a numeric matrix");
+			if (!Rf_isReal(slotValue)) stop("'cov' must be a numeric matrix");
 			cov = REAL(slotValue);
 		} else if (strEQ(key, "data")) {
 			Rdata = slotValue;
@@ -368,7 +368,7 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 			Rf_protect(dataRowNames = Rf_getAttrib(Rdata, R_RowNamesSymbol));
 		} else if (strEQ(key, "weightColumn")) {
 			if (Rf_length(slotValue) != 1) {
-				Rf_error("You can only have one weightColumn");
+				stop("You can only have one weightColumn");
 			}
 			weightColumnName = CHAR(STRING_ELT(slotValue, 0));
 		} else if (strEQ(key, "qwidth")) {
@@ -406,11 +406,11 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 			int nrow, ncol;
 			getMatrixDims(Rmean, &nrow, &ncol);
 			if (!(nrow * ncol == maxAbilities && (nrow==1 || ncol==1))) {
-				Rf_error("mean must be a column or row matrix of length %d", maxAbilities);
+				stop("mean must be a column or row matrix of length %d", maxAbilities);
 			}
 		} else {
 			if (Rf_length(Rmean) != maxAbilities) {
-				Rf_error("mean must be a vector of length %d", maxAbilities);
+				stop("mean must be a vector of length %d", maxAbilities);
 			}
 		}
 
@@ -422,11 +422,11 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 			int nrow, ncol;
 			getMatrixDims(Rcov, &nrow, &ncol);
 			if (nrow != maxAbilities || ncol != maxAbilities) {
-				Rf_error("cov must be %dx%d matrix", maxAbilities, maxAbilities);
+				stop("cov must be %dx%d matrix", maxAbilities, maxAbilities);
 			}
 		} else {
 			if (Rf_length(Rcov) != 1) {
-				Rf_error("cov must be %dx%d matrix", maxAbilities, maxAbilities);
+				stop("cov must be %dx%d matrix", maxAbilities, maxAbilities);
 			}
 		}
 
@@ -438,12 +438,12 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 	setMinItemsPerScore(mips);
 
 	if (numItems() != pmatCols) {
-		Rf_error("item matrix implies %d items but spec is length %d",
+		stop("item matrix implies %d items but spec is length %d",
 			 pmatCols, numItems());
 	}
 
 	if (Rdata) {
-		if (itemNames.size() == 0) Rf_error("Item matrix must have colnames");
+		if (itemNames.size() == 0) stop("Item matrix must have colnames");
 		for (int ix=0; ix < numItems(); ++ix) {
 			bool found=false;
 			for (int dc=0; dc < int(dataColNames.size()); ++dc) {
@@ -451,11 +451,11 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 					SEXP col = VECTOR_ELT(Rdata, dc);
 					if (!Rf_isFactor(col)) {
 						if (TYPEOF(col) == INTSXP) {
-							Rf_error("Column '%s' is an integer but "
+							stop("Column '%s' is an integer but "
 								 "not an ordered factor",
 								 dataColNames[dc]);
 						} else {
-							Rf_error("Column '%s' is of type %s; expecting an "
+							stop("Column '%s' is of type %s; expecting an "
 								 "ordered factor (integer)",
 								 dataColNames[dc], Rf_type2char(TYPEOF(col)));
 						}
@@ -466,7 +466,7 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 				}
 			}
 			if (!found) {
-				Rf_error("Cannot find item '%s' in data", itemNames[ix]);
+				stop("Cannot find item '%s' in data", itemNames[ix]);
 			}
 		}
 		if (weightColumnName) {
@@ -474,7 +474,7 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 				if (strEQ(weightColumnName, dataColNames[dc])) {
 					SEXP col = VECTOR_ELT(Rdata, dc);
 					if (TYPEOF(col) != REALSXP) {
-						Rf_error("Column '%s' is of type %s; expecting type numeric (double)",
+						stop("Column '%s' is of type %s; expecting type numeric (double)",
 							 dataColNames[dc], Rf_type2char(TYPEOF(col)));
 					}
 					rowWeight = REAL(col);
@@ -482,7 +482,7 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 				}
 			}
 			if (!rowWeight) {
-				Rf_error("Cannot find weight column '%s'", weightColumnName);
+				stop("Cannot find weight column '%s'", weightColumnName);
 			}
 		}
 		rowMap.reserve(dataRows);
@@ -493,7 +493,7 @@ void ifaGroup::import(SEXP Rlist, bool lenient)
 	sanityCheck();
 
 	if (paramRows < impliedParamRows) {
-		Rf_error("At least %d rows are required in the item parameter matrix, only %d found",
+		stop("At least %d rows are required in the item parameter matrix, only %d found",
 			 impliedParamRows, paramRows);
 	}
 }
@@ -511,7 +511,7 @@ void ifaGroup::setupQuadrature()
 void ifaGroup::setLatentDistribution(int dims, double *_mean, double *_cov)
 {
 	maxAbilities = dims;
-	if (maxAbilities < 0) Rf_error("maxAbilities must be non-negative");
+	if (maxAbilities < 0) stop("maxAbilities must be non-negative");
 
 	if (!mean) {
 		mean = (double *) R_alloc(maxAbilities, sizeof(double));
@@ -566,7 +566,7 @@ void ifaGroup::detectTwoTier()
 	}
 	if (orthogonal.size() == 1) orthogonal.clear();
 	if (orthogonal.size() && orthogonal[0] != mlen - int(orthogonal.size())) {
-		Rf_error("Independent factors must be given after dense factors");
+		stop("Independent factors must be given after dense factors");
 	}
 
 	numSpecific = orthogonal.size();
@@ -587,7 +587,7 @@ void ifaGroup::detectTwoTier()
 void ifaGroup::setMinItemsPerScore(int mips)
 {
 	if (numItems() && mips > numItems()) {
-		Rf_error("minItemsPerScore (=%d) cannot be larger than the number of items (=%d)",
+		stop("minItemsPerScore (=%d) cannot be larger than the number of items (=%d)",
 			 mips, numItems());
 	}
 	minItemsPerScore = mips;
@@ -622,7 +622,7 @@ void ifaGroup::buildRowSkip()
 		}
 		if (!hasNA) continue;
 		if (minItemsPerScore == NA_INTEGER) {
-			Rf_error("You have missing data. You must set minItemsPerScore");
+			stop("You have missing data. You must set minItemsPerScore");
 		}
 		for (int ax=0; ax < maxAbilities; ++ax) {
 			if (contribution[ax] < minItemsPerScore) {

@@ -65,7 +65,8 @@ void BA81LatentScores<T>::end(class ifaGroup *state, T extraData)
 	}
 }
 
-RcppExport SEXP eap_wrapper(SEXP Rgrp)
+// [[Rcpp::export]]
+SEXP eap_wrapper(SEXP Rgrp)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -76,7 +77,7 @@ RcppExport SEXP eap_wrapper(SEXP Rgrp)
 	grp.setupQuadrature();
 	grp.buildRowSkip();
 	if (grp.getNumUnique() == 0) {
-		Rf_error("EAP requested but there are no data rows");
+		stop("EAP requested but there are no data rows");
 	}
 	grp.ba81OutcomeProb(grp.param, false);
 
@@ -96,7 +97,7 @@ RcppExport SEXP eap_wrapper(SEXP Rgrp)
 	*/
 
 	int maxAbilities = grp.quad.maxAbilities;
-	if (maxAbilities == 0) Rf_error("At least 1 factor is required");
+	if (maxAbilities == 0) stop("At least 1 factor is required");
 	int rows = grp.getNumUnique();  // allow indexvector for compressed tables TODO
 	int cols = 2 * maxAbilities + triangleLoc1(maxAbilities);
 

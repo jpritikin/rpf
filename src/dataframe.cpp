@@ -79,27 +79,13 @@ static SEXP findIdenticalDataFrame(SEXP data, SEXP missing, SEXP defvars,
 	return retval;
 }
 
-static SEXP findIdenticalRowsData2(SEXP data, SEXP missing, SEXP defvars,
-			   SEXP skipMissingness, SEXP skipDefvars) {
+// [[Rcpp::export]]
+SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
+			   SEXP skipMissingness, SEXP skipDefvars)
+{
 	if (Rf_isMatrix(data)) {
-		Rf_error("Only data.frame is implemented");
+		stop("Only data.frame is implemented");
 	} else {
 		return(findIdenticalDataFrame(data, missing, defvars, skipMissingness, skipDefvars));
 	}
-}
-
-RcppExport SEXP findIdenticalRowsData(SEXP data, SEXP missing, SEXP defvars,
-			   SEXP skipMissingness, SEXP skipDefvars)
-{
-	ProtectAutoBalanceDoodad protectManager;
-
-	try {
-		return findIdenticalRowsData2(data, missing, defvars,
-					      skipMissingness, skipDefvars);
-	} catch( std::exception& __ex__ ) {
-		exception_to_try_Rf_error( __ex__ );
-	} catch(...) {
-		string_to_try_Rf_error( "c++ exception (unknown reason)" );
-	}
-	return 0; // not reached
 }

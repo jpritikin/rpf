@@ -66,10 +66,10 @@ void ch2012::run(const char *method)
 	} else if (strEQ(method, "lr")) {
 		pearson = false;
 	} else {
-		Rf_error("Unknown method '%s'", method);
+		stop("Unknown method '%s'", method);
 	}
 
-	if (!grp.rowWeight) Rf_error("weightColumn required");
+	if (!grp.rowWeight) stop("weightColumn required");
 	ba81NormalQuad &quad = grp.quad;
 
 	grp.ba81OutcomeProb(grp.param, false);
@@ -100,11 +100,12 @@ void ch2012::run(const char *method)
 	}
 }
 
-RcppExport SEXP CaiHansen2012_wrapper(SEXP Rgrp, SEXP Rmethod, SEXP Rtwotier)
+// [[Rcpp::export]]
+SEXP CaiHansen2012(SEXP Rgrp, SEXP Rmethod, bool twotier)
 {
 	ProtectAutoBalanceDoodad mpi;
 
-	ch2012 engine(Rf_asLogical(Rtwotier), Rgrp);
+	ch2012 engine(twotier, Rgrp);
 	engine.run(R_CHAR(Rf_asChar(Rmethod)));
 	
 	//obMargin1(col);

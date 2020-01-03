@@ -336,7 +336,7 @@ SitemFit1Internal <- function(out) {
 	if (out$alt) {
 		kc <- collapseCells(observed, expected)
 	} else {
-		kc <- .Call(collapse_wrapper, observed, expected, 1.0)
+		kc <- .Call('_rpf_collapse', observed, expected, 1.0)
 	}
         out$observed <- observed <- kc$O
         out$expected <- expected <- kc$E
@@ -462,7 +462,7 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
 	if (missing(width)) width <- 6
 	if (missing(pts)) pts <- 49L
-	.Call(ot2000_wrapper, grp, item, width, pts, alt, mask, .twotier)
+	.Call('_rpf_ot2000', grp, item, width, pts, alt, mask, .twotier)
 }
 
 ##' Compute the S fit statistic for a set of items
@@ -691,7 +691,7 @@ CT1997Internal1 <- function(info, method) {
 	info <- c(info, sign=sign(s), gamma=s)
 
 	if (method == "pearson") {
-		kc <- .Call(collapse_wrapper, observed, expected, 1.0)
+		kc <- .Call('_rpf_collapse', observed, expected, 1.0)
 		observed <- kc$O
 		expected <- kc$E
 		mask <- !is.na(expected)
@@ -745,7 +745,7 @@ tableWithWeights <- function(colpair, weights) {
 	l1 <- levels(colpair[[1]])
 	l2 <- levels(colpair[[2]])
 	if (1) {
-		result <- .Call(fast_tableWithWeights, colpair[[1]], colpair[[2]], weights)
+		result <- .Call('_rpf_fast_tableWithWeights', colpair[[1]], colpair[[2]], weights)
 	} else {
 		result <- matrix(0.0, length(l1), length(l2))
 		if (nrow(colpair)) for (rx in 1:nrow(colpair)) {
@@ -943,15 +943,15 @@ print.summary.ChenThissen1997 <- function(x,...) {
 ##' @param trials number of Monte-Carlo trials
 crosstabTest <- function(ob, ex, trials) {
 	if (missing(trials)) trials <- 10000
-	.Call(crosstabTest_wrapper, ob, ex, trials)
+	.Call('_rpf_crosstabTest', ob, ex, trials)
 }
 
 pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, .twotier=FALSE) {
-	.Call(pairwiseExpected_wrapper, grp, qwidth, qpoints, items - 1L, .twotier)
+	.Call('_rpf_pairwiseExpected', grp, qwidth, qpoints, items - 1L, .twotier)
 }
 
 CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
-	.Call(CaiHansen2012_wrapper, grp, method, .twotier)
+	.Call('_rpf_CaiHansen2012', grp, method, .twotier)
 }
 
 ##' Multinomial fit test

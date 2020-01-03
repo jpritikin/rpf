@@ -57,7 +57,7 @@ mahalanobis(int dim, double *loc, double *center, double *origCov)
 	char err[ERROR_LEN];
 	err[0] = 0;
 	double ret = _mahalanobis(err, dim, loc, center, origCov);
-	if (err[0]) Rf_error("%s", err);
+	if (err[0]) stop("%s", err);
 	return ret;
 }
 
@@ -79,6 +79,6 @@ dmvnorm(int dim, double *loc, double *mean, double *sigma)
 	char err[ERROR_LEN];
 	err[0] = 0;
 	double ret = _dmvnorm(err, dim, loc, mean, sigma);
-	if (err[0]) Rf_error("%s", err);
+	if (err[0]) stop("%s", err);
 	return ret;
 }

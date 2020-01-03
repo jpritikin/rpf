@@ -33,7 +33,7 @@ orderCompletely <- function(observed) {
 tabulateRows <- function(observed) {
 	selectMissing <- rep(0L, nrow(observed))
 	selectDefvars <- rep(0L, nrow(observed))
-	threeVectors <- .Call(findIdenticalRowsData, observed,
+	threeVectors <- .Call('_rpf_findIdenticalRowsData', observed,
 			      selectMissing, selectDefvars, TRUE, TRUE)
 	dups <- threeVectors[[1]]
 	result <- rep(NA, sum(dups==1L))

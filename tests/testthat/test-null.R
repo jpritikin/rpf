@@ -3,6 +3,13 @@ library(testthat)
 
 context("null")
 
+test_that("error check", {
+  bad <- rpf.drm(factors=0)
+  bad@spec <- 1
+  expect_error(rpf.numSpec(bad),
+               "Item spec must be of length 3")
+})
+
 test_that("param info", {
   ans1 <-structure(list(type = "intercept", upper = NA_real_, lower = NA_real_),
                    .Names = c("type",  "upper", "lower"))

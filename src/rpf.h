@@ -84,13 +84,3 @@ pda(const double *ar, int rows, int cols) {   // column major order
 		Rprintf("\n");
 	}
 }
-
-static inline void string_to_try_Rf_error( const std::string& str )
-{
-	Rf_error("%s", str.c_str());
-}
-
-static inline void exception_to_try_Rf_error( const std::exception& ex )
-{
-	string_to_try_Rf_error(ex.what());
-}

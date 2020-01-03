@@ -73,7 +73,7 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 	if (missing(mask)) {
 		mask <- rep(TRUE, ncol(grp$param))
 	}
-	.Call(ssEAP_wrapper, grp, qwidth, qpoints, mask, twotier, debug)
+	.Call('_rpf_ssEAP_wrapper', grp, qwidth, qpoints, mask, twotier, debug)
 }
 
 #' Collapse small sample size categorical frequency counts
@@ -94,7 +94,7 @@ ssEAP <- function(grp, qwidth, qpoints, mask, twotier=FALSE, debug=FALSE) {
 #' E = matrix(c(3,39,50,8,0), 1,5)
 #' collapseCategoricalCells(O,E,9)
 collapseCategoricalCells <- function(observed, expected, minExpected=1) {
-	.Call(collapse_wrapper, observed, expected, minExpected)
+	.Call('_rpf_collapse', observed, expected, minExpected)
 }
 
 sumScoreEAPTestInternal <- function(result) {
@@ -105,7 +105,7 @@ sumScoreEAPTestInternal <- function(result) {
 
 	result$rms.p <- log(ptw2011.gof.test(obs, expected))
 
-	kc <- .Call(collapse_wrapper, obs, expected, 1.0)
+	kc <- .Call('_rpf_collapse', obs, expected, 1.0)
 	obs <- kc$O
 	expected <- kc$E
 	mask <- !is.na(expected) & expected!=0
@@ -259,7 +259,7 @@ observedSumScore <- function(grp, ..., mask, summary=TRUE) {
 		names(ss) <- rownames(dat)
 		return(ss)
 	}
-	got <- .Call(observedSumScore_wrapper, grp, mask)
+	got <- .Call('_rpf_observedSumScore', grp, mask)
 	if (got[['n']] == 0) {
 		warning("Some columns are all missing; cannot compute observedSumScore")
 	}
@@ -290,7 +290,7 @@ itemOutcomeBySumScore <- function(grp, mask, interest) {
 	if (is.character(interest)) {
 		interest <- match(interest, colnames(grp$param))
 	}
-	got <- .Call(itemOutcomeBySumScore_wrapper, grp, mask, interest)
+	got <- .Call('_rpf_itemOutcomeBySumScore', grp, mask, interest)
 	rownames(got$table) <- 0:(nrow(got$table)-1L)
 	col <- colnames(grp$param)[interest]
 	colnames(got$table) <- levels(grp$data[,col])
@@ -338,7 +338,7 @@ EAPscores <- function(grp, ..., naAction=NULL, compressed=FALSE) {
 
 	if (!missing(naAction)) warning("naAction is deprecated")
 
-	ctbl <- .Call(eap_wrapper, grp)
+	ctbl <- .Call('_rpf_eap_wrapper', grp)
 
 	if (!compressed && !is.null(grp$weightColumn)) {
 		freq <- grp$data[[ grp$weightColumn ]]

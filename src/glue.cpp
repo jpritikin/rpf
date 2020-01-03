@@ -10,7 +10,7 @@ SEXP MxRList::asR()
 	for (int lx=0; lx < len; ++lx) {
 		const char *p1 = (*this)[lx].first;
 		SEXP p2 = (*this)[lx].second;
-		if (!p1 || !p2) Rf_error("Attempt to return NULL pointer to R");
+		if (!p1 || !p2) stop("Attempt to return NULL pointer to R");
 		SET_STRING_ELT(names, lx, Rf_mkChar(p1));
 		SET_VECTOR_ELT(ans,   lx, p2);
 	}
@@ -55,47 +55,36 @@ int numSpec(NumericVector spec)
 	return numSpec;
 }
 
-RcppExport SEXP
-rpf_numParam_wrapper(SEXP r_spec)
+// [[Rcpp::export]]
+int numParam(NumericVector spec)
 {
-  if (Rf_length(r_spec) < RPF_ISpecCount)
-    Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
-
-  double *spec = REAL(r_spec);
+  if (spec.size() < RPF_ISpecCount)
+    stop("Item spec must be of length %d, not %d", RPF_ISpecCount, int(spec.size()));
 
   int id = spec[RPF_ISpecID];
   if (id < 0 || id >= Glibrpf_numModels)
-    Rf_error("Item model %d out of range", id);
+    stop("Item model %d out of range", id);
 
-  int numParam = (*Glibrpf_model[id].numParam)(spec);
-
-  SEXP ret;
-  Rf_protect(ret = Rf_allocVector(INTSXP, 1));
-  INTEGER(ret)[0] = numParam;
-  UNPROTECT(1);
-
-  return ret;
+  int numParam = (*Glibrpf_model[id].numParam)(spec.begin());
+	return numParam;
 }
 
-RcppExport SEXP
-rpf_paramInfo_wrapper(SEXP r_spec, SEXP r_paramNum)
+// [[Rcpp::export]]
+SEXP paramInfo(NumericVector spec, int pnum)
 {
-  if (Rf_length(r_spec) < RPF_ISpecCount)
-    Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
-
-  double *spec = REAL(r_spec);
+  if (spec.size() < RPF_ISpecCount)
+    stop("Item spec must be of length %d, not %d", RPF_ISpecCount, spec.size());
 
   int id = spec[RPF_ISpecID];
   if (id < 0 || id >= Glibrpf_numModels)
-    Rf_error("Item model %d out of range", id);
+    stop("Item model %d out of range", id);
 
-  int pnum = Rf_asInteger(r_paramNum);
-  int numParam = (*Glibrpf_model[id].numParam)(spec);
-  if (pnum < 0 || pnum >= numParam) Rf_error("Item model %d has %d parameters", id, numParam);
+  int numParam = (*Glibrpf_model[id].numParam)(spec.begin());
+  if (pnum < 0 || pnum >= numParam) stop("Item model %d has %d parameters", id, numParam);
 
   const char *type;
   double upper, lower;
-  (*Glibrpf_model[id].paramInfo)(spec, pnum, &type, &upper, &lower);
+  (*Glibrpf_model[id].paramInfo)(spec.begin(), pnum, &type, &upper, &lower);
 
   int len = 3;
   SEXP names, ans;
@@ -132,31 +121,29 @@ int unpack_theta(int dims, double *param, int numAbilities, double *theta, doubl
       ++ax;
     }
     if (ax != numAbilities) {
-      Rf_error("Item has %d nonzero dims but given %d abilities", ax, numAbilities);
+      stop("Item has %d nonzero dims but given %d abilities", ax, numAbilities);
     }
   }
   return 1;
 }
 
-RcppExport SEXP
-rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
+// [[Rcpp::export]]
+SEXP prob(NumericVector spec, SEXP r_param, SEXP r_theta)
 {
-  if (Rf_length(r_spec) < RPF_ISpecCount)
-    Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
-
-  double *spec = REAL(r_spec);
+  if (spec.size() < RPF_ISpecCount)
+    stop("Item spec must be of length %d, not %d", RPF_ISpecCount, spec.size());
 
   int id = spec[RPF_ISpecID];
   if (id < 0 || id >= Glibrpf_numModels)
-    Rf_error("Item model %d out of range", id);
+    stop("Item model %d out of range", id);
 
-  int numSpec = (*Glibrpf_model[id].numSpec)(spec);
-  if (Rf_length(r_spec) < numSpec)
-    Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
+  int numSpec = (*Glibrpf_model[id].numSpec)(spec.begin());
+  if (spec.size() < numSpec)
+    stop("Item spec must be of length %d, not %d", numSpec, spec.size());
     
-  int numParam = (*Glibrpf_model[id].numParam)(spec);
+  int numParam = (*Glibrpf_model[id].numParam)(spec.begin());
   if (Rf_length(r_param) < numParam)
-    Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
+    stop("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
   const int numOutcomes = spec[RPF_ISpecOutcomes];
   const int dims = spec[RPF_ISpecDims];
@@ -185,7 +172,7 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
 		  }
 		  continue;
 	  }
-	  (*Glibrpf_model[id].prob)(spec, param, thBuf.data(), out+px*numOutcomes);
+	  (*Glibrpf_model[id].prob)(spec.begin(), param, thBuf.data(), out+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
       double prob = out[px*numOutcomes + ox];
       if (!std::isfinite(prob)) {
@@ -198,25 +185,25 @@ rpf_prob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   return outsxp;
 }
 
-RcppExport SEXP
-rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
+// [[Rcpp::export]]
+SEXP logprob(SEXP r_spec, SEXP r_param, SEXP r_theta)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
-    Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
+    stop("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
 
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
   if (id < 0 || id >= Glibrpf_numModels)
-    Rf_error("Item model %d out of range", id);
+    stop("Item model %d out of range", id);
 
   int numSpec = (*Glibrpf_model[id].numSpec)(spec);
   if (Rf_length(r_spec) < numSpec)
-    Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
+    stop("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
     
   int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (Rf_length(r_param) < numParam)
-    Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
+    stop("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
   const int numOutcomes = spec[RPF_ISpecOutcomes];
   const int dims = spec[RPF_ISpecDims];
@@ -258,35 +245,34 @@ rpf_logprob_wrapper(SEXP r_spec, SEXP r_param, SEXP r_theta)
   return outsxp;
 }
 
-RcppExport SEXP
-rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
-		  SEXP r_where, SEXP r_weight)
+// [[Rcpp::export]]
+SEXP dLL(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_weight)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
-    Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
+    stop("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
 
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
   if (id < 0 || id >= Glibrpf_numModels)
-    Rf_error("Item model %d out of range", id);
+    stop("Item model %d out of range", id);
 
   int numSpec = (*Glibrpf_model[id].numSpec)(spec);
   if (Rf_length(r_spec) < numSpec)
-    Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
+    stop("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
     
   int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (Rf_length(r_param) < numParam)
-    Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
+    stop("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
   int dims = spec[RPF_ISpecDims];
   if (Rf_length(r_where) != dims)
-    Rf_error("Item has %d dimensions, but where is of length %d",
+    stop("Item has %d dimensions, but where is of length %d",
 	  dims, Rf_length(r_where));
 
   int outcomes = spec[RPF_ISpecOutcomes];
   if (Rf_length(r_weight) != outcomes)
-    Rf_error("Item has %d outcomes, but weight is of length %d",
+    stop("Item has %d outcomes, but weight is of length %d",
 	  outcomes, Rf_length(r_weight));
 
   double *where = NULL;
@@ -299,43 +285,43 @@ rpf_dLL_wrapper(SEXP r_spec, SEXP r_param,
   (*Glibrpf_model[id].dLL1)(spec, REAL(r_param),
 			    where, REAL(r_weight), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
-    if (!std::isfinite(REAL(ret)[px])) Rf_error("Deriv %d not finite at step 1", px);
+    if (!std::isfinite(REAL(ret)[px])) stop("Deriv %d not finite at step 1", px);
   }
   (*Glibrpf_model[id].dLL2)(spec, REAL(r_param), REAL(ret));
   for (int px=0; px < numDeriv; px++) {
-	  //if (!std::isfinite(REAL(ret)[px])) Rf_error("Deriv %d not finite at step 2", px);
+	  //if (!std::isfinite(REAL(ret)[px])) stop("Deriv %d not finite at step 2", px);
   }
   UNPROTECT(1);
   return ret;
 }
 
-RcppExport SEXP
-rpf_dTheta_wrapper(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
+// [[Rcpp::export]]
+SEXP dTheta(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
-    Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
+    stop("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
 
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
   if (id < 0 || id >= Glibrpf_numModels)
-    Rf_error("Item model %d out of range", id);
+    stop("Item model %d out of range", id);
 
   int numSpec = (*Glibrpf_model[id].numSpec)(spec);
   if (Rf_length(r_spec) < numSpec)
-    Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
+    stop("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
     
   int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (Rf_length(r_param) < numParam)
-    Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
+    stop("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
   int dims = spec[RPF_ISpecDims];
-  if (dims == 0) Rf_error("Item has no factors");
+  if (dims == 0) stop("Item has no factors");
   if (Rf_length(r_dir) != dims)
-    Rf_error("Item has %d dimensions, but dir is of length %d",
+    stop("Item has %d dimensions, but dir is of length %d",
 	  dims, Rf_length(r_dir));
   if (Rf_length(r_where) != dims)
-    Rf_error("Item has %d dimensions, but where is of length %d",
+    stop("Item has %d dimensions, but where is of length %d",
 	  dims, Rf_length(r_where));
 
   SEXP ret, names;
@@ -359,36 +345,36 @@ rpf_dTheta_wrapper(SEXP r_spec, SEXP r_param, SEXP r_where, SEXP r_dir)
   return ret;
 }
 
-RcppExport SEXP
-rpf_rescale_wrapper(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
+// [[Rcpp::export]]
+SEXP rescale(SEXP r_spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
 {
   if (Rf_length(r_spec) < RPF_ISpecCount)
-    Rf_error("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
+    stop("Item spec must be of length %d, not %d", RPF_ISpecCount, Rf_length(r_spec));
 
   double *spec = REAL(r_spec);
 
   int id = spec[RPF_ISpecID];
   if (id < 0 || id >= Glibrpf_numModels)
-    Rf_error("Item model %d out of range", id);
+    stop("Item model %d out of range", id);
 
   int numSpec = (*Glibrpf_model[id].numSpec)(spec);
   if (Rf_length(r_spec) < numSpec)
-    Rf_error("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
+    stop("Item spec must be of length %d, not %d", numSpec, Rf_length(r_spec));
     
   int numParam = (*Glibrpf_model[id].numParam)(spec);
   if (Rf_length(r_param) < numParam)
-    Rf_error("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
+    stop("Item has %d parameters, only %d given", numParam, Rf_length(r_param));
 
   int dims = spec[RPF_ISpecDims];
-  if (dims == 0) Rf_error("Item has no factors");
+  if (dims == 0) stop("Item has no factors");
   if (Rf_length(r_mean) != dims)
-    Rf_error("Item has %d dimensions, but mean is of length %d",
+    stop("Item has %d dimensions, but mean is of length %d",
 	  dims, Rf_length(r_mean));
 
   int cov_rows, cov_cols;
   getMatrixDims(r_cov, &cov_rows, &cov_cols);
   if (cov_rows != dims || cov_rows != dims)
-    Rf_error("Item has %d dimensions, but cov is %dx%d",
+    stop("Item has %d dimensions, but cov is %dx%d",
 	  dims, cov_rows, cov_cols);
 
   Eigen::VectorXi mask(numParam);
@@ -422,4 +408,25 @@ int setNumberOfCores(IntegerVector num)
 	GlobalNumberOfCores = num[0];
 #endif
 	return num[0];
+}
+
+extern const struct rpf librpf_model[];
+extern const int librpf_numModels;
+
+const struct rpf *Glibrpf_model;
+int Glibrpf_numModels;
+
+void get_librpf_models(int version, int *numModels, const struct rpf **model)
+{
+  if (version != LIBIFA_RPF_API_VERSION) stop("LIBIFA_RPF binary API version mismatch");
+  *numModels = librpf_numModels;
+  *model = librpf_model;
+}
+
+// [[Rcpp::export]]
+void registerCCallable()
+{
+    Glibrpf_numModels = librpf_numModels;
+    Glibrpf_model = librpf_model;
+    R_RegisterCCallable("rpf", "get_librpf_model_GPL", (DL_FUNC) get_librpf_models);
 }

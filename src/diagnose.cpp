@@ -330,7 +330,8 @@ void otMix(ssEAP &myeap, int Sgroup, int ox, Eigen::ArrayBase<T1> &iProb, Eigen:
 	}
 }
 
-RcppExport SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
+// [[Rcpp::export]]
+SEXP ot2000(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SEXP Ralter,
 		    SEXP Rmask, SEXP Rtwotier)
 {
 	ProtectAutoBalanceDoodad mpi;
@@ -411,7 +412,8 @@ RcppExport SEXP ot2000_wrapper(SEXP robj, SEXP Ritem, SEXP Rwidth, SEXP Rpts, SE
 	}
 }
 
-RcppExport SEXP ssEAP_wrapper(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug)
+// [[Rcpp::export]]
+SEXP ssEAP_wrapper(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, SEXP debug)
 {
 	ProtectAutoBalanceDoodad mpi;
 
@@ -487,11 +489,12 @@ RcppExport SEXP ssEAP_wrapper(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEX
 	return Rout;
 }
 
-RcppExport SEXP pairwiseExpected_wrapper(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier)
+// [[Rcpp::export]]
+SEXP pairwiseExpected(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Ritems, SEXP Rtwotier)
 {
 	ProtectAutoBalanceDoodad mpi;
 
-	if (Rf_length(Ritems) != 2) Rf_error("A pair of items must be specified");
+	if (Rf_length(Ritems) != 2) stop("A pair of items must be specified");
 
 	ifaGroup grp(1, Rf_asLogical(Rtwotier));
 	grp.setGridFineness(Rf_asReal(Rwidth), Rf_asInteger(Rpts));
@@ -502,8 +505,8 @@ RcppExport SEXP pairwiseExpected_wrapper(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP
 
 	int i1 = INTEGER(Ritems)[0];
 	int i2 = INTEGER(Ritems)[1];
-	if (i1 < 0 || i1 >= (int) grp.spec.size()) Rf_error("Item %d out of range", i1);
-	if (i2 < 0 || i2 >= (int) grp.spec.size()) Rf_error("Item %d out of range", i2);
+	if (i1 < 0 || i1 >= (int) grp.spec.size()) stop("Item %d out of range", i1);
+	if (i2 < 0 || i2 >= (int) grp.spec.size()) stop("Item %d out of range", i2);
 	if (i1 == i2) Rf_warning("Request to create bivariate distribution of %d with itself", i1);
 
 	double *i1par = &grp.param[i1 * grp.paramRows];
@@ -674,12 +677,13 @@ int ManhattenCollapse::run()
 	return collapsed;
 }
 
-RcppExport SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig, SEXP r_min)
+// [[Rcpp::export]]
+SEXP collapse(SEXP r_observed_orig, SEXP r_expected_orig, SEXP r_min)
 {
 	ProtectAutoBalanceDoodad mpi;
 
-	if (!Rf_isMatrix(r_observed_orig)) Rf_error("observed must be a matrix");
-	if (!Rf_isMatrix(r_expected_orig)) Rf_error("expected must be a matrix");
+	if (!Rf_isMatrix(r_observed_orig)) stop("observed must be a matrix");
+	if (!Rf_isMatrix(r_expected_orig)) stop("expected must be a matrix");
 
   int rows, cols;
   getMatrixDims(r_expected_orig, &rows, &cols);
@@ -688,7 +692,7 @@ RcppExport SEXP collapse_wrapper(SEXP r_observed_orig, SEXP r_expected_orig, SEX
     int orows, ocols;
     getMatrixDims(r_observed_orig, &orows, &ocols);
     if (rows != orows || cols != ocols)
-	    Rf_error("Observed %dx%d and expected %dx%d matrices must have same dimensions",
+	    stop("Observed %dx%d and expected %dx%d matrices must have same dimensions",
 		     orows, ocols, rows, cols);
   }
 
@@ -740,12 +744,13 @@ static bool computeObservedSumScore(ifaGroup &grp, int *itemMask, int row, int *
 	return false;
 }
 
-RcppExport SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
+// [[Rcpp::export]]
+SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
 {
 	ProtectAutoBalanceDoodad mpi;
 
 	int rows = Rf_length(Ritem1);
-	if (rows != Rf_length(Ritem2)) Rf_error("Data are of different lengths");
+	if (rows != Rf_length(Ritem2)) stop("Data are of different lengths");
 
 	Eigen::Map<Eigen::ArrayXi> item1(INTEGER(Ritem1), rows);
 	Eigen::Map<Eigen::ArrayXi> item2(INTEGER(Ritem2), rows);
@@ -775,16 +780,17 @@ RcppExport SEXP fast_tableWithWeights(SEXP Ritem1, SEXP Ritem2, SEXP Rweight)
 	return Rdist;
 }
 
-RcppExport SEXP observedSumScore_wrapper(SEXP Rgrp, SEXP Rmask)
+// [[Rcpp::export]]
+SEXP observedSumScore(SEXP Rgrp, SEXP Rmask)
 {
 	ProtectAutoBalanceDoodad mpi;
 
 	ifaGroup grp(1, false);
 	grp.import(Rgrp, true);
-	if (grp.getNumUnique() == 0) Rf_error("observedSumScore requires data");
+	if (grp.getNumUnique() == 0) stop("observedSumScore requires data");
 
 	if (Rf_length(Rmask) != int(grp.spec.size())) {
-		Rf_error("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));
+		stop("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));
 	}
 	int *itemMask = LOGICAL(Rmask);
 
@@ -810,16 +816,17 @@ RcppExport SEXP observedSumScore_wrapper(SEXP Rgrp, SEXP Rmask)
 	return out.asR();
 }
 
-RcppExport SEXP itemOutcomeBySumScore_wrapper(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
+// [[Rcpp::export]]
+SEXP itemOutcomeBySumScore(SEXP Rgrp, SEXP Rmask, SEXP Rinterest)
 {
 	ProtectAutoBalanceDoodad mpi;
 
 	ifaGroup grp(1, false);
 	grp.import(Rgrp, true);
-	if (grp.getNumUnique() == 0) Rf_error("itemOutcomeBySumScore requires data");
+	if (grp.getNumUnique() == 0) stop("itemOutcomeBySumScore requires data");
 
 	if (Rf_length(Rmask) != int(grp.spec.size())) {
-		Rf_error("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));
+		stop("Mask must be of length %d not %d", int(grp.spec.size()), Rf_length(Rmask));
 	}
 	int *itemMask = LOGICAL(Rmask);
 
@@ -827,7 +834,7 @@ RcppExport SEXP itemOutcomeBySumScore_wrapper(SEXP Rgrp, SEXP Rmask, SEXP Rinter
 
 	int interest = Rf_asInteger(Rinterest) - 1;
 	if (interest < 0 || interest >= int(grp.spec.size())) {
-		Rf_error("Item of interest %d must be between 1 and %d", 1+interest, int(grp.spec.size()));
+		stop("Item of interest %d must be between 1 and %d", 1+interest, int(grp.spec.size()));
 	}
 
 	const double *spec = grp.spec[interest];
@@ -923,7 +930,8 @@ static inline double crosstabMS(Eigen::ArrayBase<T1> &observed,
 	}
 }
 
-RcppExport SEXP crosstabTest_wrapper(SEXP Robserved, SEXP Rexpected, SEXP Rtrials)
+// [[Rcpp::export]]
+SEXP crosstabTest(SEXP Robserved, SEXP Rexpected, SEXP Rtrials)
 {
 	int rows, cols;
 	getMatrixDims(Robserved, &rows, &cols);
@@ -931,7 +939,7 @@ RcppExport SEXP crosstabTest_wrapper(SEXP Robserved, SEXP Rexpected, SEXP Rtrial
 		int erows, ecols;
 		getMatrixDims(Rexpected, &erows, &ecols);
 		if (rows != erows || cols != ecols) {
-			Rf_error("observed and expected matrices must be the same dimension");
+			stop("observed and expected matrices must be the same dimension");
 		}
 	}
 
@@ -942,7 +950,7 @@ RcppExport SEXP crosstabTest_wrapper(SEXP Robserved, SEXP Rexpected, SEXP Rtrial
 	} else if (Rf_isReal(Robserved)) {
 		memcpy(observed.data(), REAL(Robserved), sizeof(double) * rows * cols);
 	} else {
-		Rf_error("observed is an unknown type");
+		stop("observed is an unknown type");
 	}
 
 	Eigen::ArrayXXd expected(rows, cols);
@@ -951,7 +959,7 @@ RcppExport SEXP crosstabTest_wrapper(SEXP Robserved, SEXP Rexpected, SEXP Rtrial
 	Eigen::ArrayXd rowSum(rows);
 	rowSum = observed.rowwise().sum();
 	if (((expected.rowwise().sum() - rowSum).abs() > 1e-6).any()) {
-		Rf_error("observed and expected row sums must match");
+		stop("observed and expected row sums must match");
 	}
 
 	expected.colwise() /= rowSum;
