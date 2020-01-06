@@ -428,12 +428,12 @@ SEXP ssEAP_wrapper(SEXP robj, SEXP Rwidth, SEXP Rpts, SEXP Rmask, SEXP twotier, 
 	ifaGroup &grp = myeap.grp;
 	Eigen::ArrayXXd &slCur = myeap.slCur;
 
-	if (Rf_asLogical(debug)) {
+	if (Rf_asLogical(debug)) {  // nocov start
 		SEXP Rout;
 		Rf_protect(Rout = Rf_allocMatrix(REALSXP, slCur.rows(), slCur.cols()));
 		memcpy(REAL(Rout), slCur.data(), sizeof(double) * slCur.rows() * slCur.cols());
 		return Rout;
-	}
+	}  // nocov end
 
 	int curMax = myeap.maxScore;
 	int outRows = 1 + curMax;

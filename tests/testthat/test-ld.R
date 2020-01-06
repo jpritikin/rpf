@@ -3,6 +3,8 @@ library(testthat)
 library(rpf)
 library(mvtnorm)
 
+options(mc.cores=1L) #otherwise not picked up by covr
+
 context("chen & thissen 1997")
 
 mxSimplify2Array <- function(x, higher=FALSE) {

@@ -10,9 +10,9 @@ static int elementEqualsDataframe(SEXP column, int offset1, int offset2) {
 		return(REAL(column)[offset1] == REAL(column)[offset2]);
 	case LGLSXP:
 	case INTSXP:
-		return(INTEGER(column)[offset1] == INTEGER(column)[offset2]);		
+		return(INTEGER(column)[offset1] == INTEGER(column)[offset2]);
 	}
-	return(0);
+	stop("elementEqualsDataframe: unknown type %d", TYPEOF(column)); //nocov
 }
 
 static int testRowDataframe(SEXP data, int numrow, int numcol, int i, int *row, int base) {

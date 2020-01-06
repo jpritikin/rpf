@@ -4,6 +4,7 @@ library(testthat)
 library(rpf)
 
 context("ot2000")
+options(mc.cores=1L) #otherwise not picked up by covr
 
 test_that("simple case", {
   require(rpf)
