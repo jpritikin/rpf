@@ -1,5 +1,5 @@
 /*
-  Copyright 2012-2017 Joshua Nathaniel Pritikin and contributors
+  Copyright 2012-2020 Joshua Nathaniel Pritikin and contributors
 
   libifa-rpf is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -15,13 +15,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <R.h>
-#include <R_ext/BLAS.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
+#include <Rcpp.h>
+using namespace Rcpp;
+
 #include "../inst/include/libifa-rpf.h"
 #include "Eigen/Core"
+#include <R_ext/BLAS.h>  // replace with Eigen TODO
 
 #ifndef M_LN2
 #define M_LN2           0.693147180559945309417232121458        /* ln(2) */
@@ -37,6 +36,143 @@ extern const int librpf_numModels;
 
 static const double EXP_STABLE_DOMAIN = 35;
 static const double SMALLEST_PROB = 6.305116760146989222002e-16;  // exp(-35), need constexpr
+
+class numericDeriv {
+	int numParams;
+	int numIter;
+	double stepSize;
+	Eigen::VectorXd point;
+	Eigen::VectorXd loc;
+	double minimum;
+	std::vector<double> Gcentral;
+	std::vector<double> Haprox;
+
+	template <typename T1> void onDiag(T1 ff, int ii);
+	template <typename T1> void offDiag(T1 ff, int rx, int cx);
+
+public:
+	Eigen::VectorXd gradient;
+	Eigen::MatrixXd hessian;
+
+	numericDeriv(int _numParams, int _numIter, double _eps) :
+		numParams(_numParams), numIter(_numIter), stepSize(_eps)
+	{
+		Gcentral.resize(numIter);
+		Haprox.resize(numIter);
+		gradient.resize(numParams);
+		hessian.resize(numParams, numParams);
+	}
+
+	template <typename T1, typename T2>
+	void operator()(T1 ff, Eigen::MatrixBase<T2> &_loc)
+	{
+		point = _loc;
+		loc = point;
+		minimum = ff(point.data());
+		for (int px=0; px < numParams; ++px) {
+			onDiag(ff, px);
+		}
+		// lower triangle
+		for (int cx=0; cx < numParams-1; ++cx) {
+			for (int rx=cx+1; rx < numParams; ++rx) {
+				offDiag(ff, rx, cx);
+			}
+		}
+	}
+};
+
+template <typename T1>
+void numericDeriv::onDiag(T1 ff, int i)
+{
+	static const double v = 2.0; //Note: NumDeriv comments that this could be a parameter, but is hard-coded in the algorithm
+
+	double offset = stepSize;
+	for(int k = 0; k < numIter; k++) {			// Decreasing step size, starting at k == 0
+		loc[i] = point[i] + offset;
+		double f1 = ff(loc.data());
+
+		loc[i] = point[i] - offset;
+		double f2 = ff(loc.data());
+
+		Gcentral[k] = (f1 - f2) / (2.0*offset); 						// This is for the gradient
+		Haprox[k] = (f1 - 2.0 * minimum + f2) / (offset * offset);		// This is second derivative
+		loc[i] = point[i];									// Reset parameter value
+		offset /= v;
+	}
+
+	for(int m = 1; m < numIter; m++) {						// Richardson Step
+		for(int k = 0; k < (numIter - m); k++) {
+			// NumDeriv Hard-wires 4s for r here. Why?
+			Gcentral[k] = (Gcentral[k+1] * pow(4.0, m) - Gcentral[k])/(pow(4.0, m)-1);
+			Haprox[k] = (Haprox[k+1] * pow(4.0, m) - Haprox[k])/(pow(4.0, m)-1);
+		}
+	}
+
+	gradient[i]  = Gcentral[0];
+	hessian(i, i) = Haprox[0];
+}
+
+template <typename T1>
+void numericDeriv::offDiag(T1 ff, int i, int l)
+{
+    static const double v = 2.0; //Note: NumDeriv comments that this could be a parameter, but is hard-coded in the algorithm
+
+		double offset = stepSize;
+	for(int k = 0; k < numIter; k++) {
+		loc[i] = point[i] + offset;
+		loc[l] = point[l] + offset;
+		double f1 = ff(loc.data());
+
+		loc[i] = point[i] - offset;
+		loc[l] = point[l] - offset;
+		double f2 = ff(loc.data());
+
+		Haprox[k] = (f1 - 2.0 * minimum + f2 - hessian(i,i)*offset*offset -
+								 hessian(l,l)*offset*offset)/(2.0*offset*offset);
+
+		loc[i] = point[i];				// Reset parameter values
+		loc[l] = point[l];
+
+		offset /= v;					//  And shrink step
+		offset /= v;
+	}
+
+	for(int m = 1; m < numIter; m++) {						// Richardson Step
+		for(int k = 0; k < (numIter - m); k++) {
+			Haprox[k] = (Haprox[k+1] * pow(4.0, m) - Haprox[k]) / (pow(4.0, m)-1);
+		}
+	}
+
+	hessian(i,l) = Haprox[0];
+	hessian(l,i) = Haprox[0];
+}
+
+static void
+fallback_dTheta(const double *spec, const double *param,
+			const double *where, const double *dir,
+			double *grad, double *hess)
+{
+	int id = spec[RPF_ISpecID];
+  int dims = spec[RPF_ISpecDims];
+  int outcomes = spec[RPF_ISpecOutcomes];
+
+	Eigen::Map< const Eigen::VectorXd > Ewhere(where, dims);
+	numericDeriv nd(dims, 2, 1e-2);
+
+	Eigen::Map< const Eigen::VectorXd > Edir(dir, dims);
+	for (int ox=0; ox < outcomes; ++ox) {
+		auto ff = [&](double *point)->double{
+								Eigen::VectorXd prob(outcomes);
+								(*librpf_model[id].prob)(spec, param, point, prob.data());
+								return prob[ox];
+							};
+		nd(ff, Ewhere);
+		grad[ox] = Edir.transpose() * nd.gradient;
+		hess[ox] = Edir.transpose() * nd.hessian.diagonal();
+	}
+}
+
+// -----------------
 
 static void
 irt_rpf_logprob_adapter(const double *spec,
@@ -1664,7 +1800,7 @@ static void
 irt_rpf_1dim_lmp_rescale(const double *spec, double *param, const int *paramMask,
 			 const double *mean, const double *cov)
 {
-  error("Rescale for LMP model not implemented");
+  stop("Rescale for LMP model not implemented");
 }
 
 
@@ -2111,7 +2247,7 @@ static void
   irt_rpf_1dim_grmp_rescale(const double *spec, double *param, const int *paramMask,
                            const double *mean, const double *cov)
   {
-    error("Rescale for GR-MP model not implemented");
+    stop("Rescale for GR-MP model not implemented");
   }
 
 
@@ -2511,41 +2647,29 @@ static void irt_rpf_1dim_gpcmp_deriv2(const double *spec,
   
 }
 
-static void irt_rpf_1dim_gpcmp_dTheta(const double *spec, const double *param,
-                                     const double *where, const double *dir,
-                                     double *grad, double *hess)
-{
-  error("dTheta for GPC-MP model not implemented");
-}
-
 static void
   irt_rpf_1dim_gpcmp_rescale(const double *spec, double *param, const int *paramMask,
                             const double *mean, const double *cov)
   {
-    error("Rescale for GPC-MP model not implemented");
+    stop("Rescale for GPC-MP model not implemented");
   }
 
 // End of MP functions
 /********************************************************************************/
 
-// replace with forward difference numeric approx TODO
+// replace with numeric approx, see above TODO
 
 //static void noop() {}
 static void notimplemented_deriv1(const double *spec,
 				  const double *param,
 				  const double *where,
 				  const double *weight, double *out)
-{ error("Not implemented"); }
+{ stop("Not implemented"); }
 
 static void notimplemented_deriv2(const double *spec,
 				  const double *param,
 				  double *out)
-{ error("Not implemented"); }
-
-static void notimplemented_dTheta(const double *spec, const double *param,
-			const double *where, const double *dir,
-			double *grad, double *hess)
-{ error("Not implemented"); }
+{ stop("Not implemented"); }
 
 
 const struct rpf librpf_model[] = {
@@ -2623,7 +2747,7 @@ const struct rpf librpf_model[] = {
     irt_rpf_logprob_adapter,
     irt_rpf_1dim_gpcmp_deriv1,
     irt_rpf_1dim_gpcmp_deriv2,
-    irt_rpf_1dim_gpcmp_dTheta,
+    fallback_dTheta,
     irt_rpf_1dim_gpcmp_rescale, // not done yet
   }
 };

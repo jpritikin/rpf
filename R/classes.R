@@ -224,7 +224,7 @@ setMethod("rpf.dLL", signature(m="rpf.base", param="numeric",
 ##' @param m item model
 ##' @param param item parameters
 ##' @param where location in the latent distribution
-##' @param dir if more than 1 factor, a basis vector]
+##' @param dir if more than 1 factor, a basis vector
 ##' @aliases
 ##' _rpf_dTheta
 ##' rpf.dTheta,rpf.base,numeric,numeric,numeric-method

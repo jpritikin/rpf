@@ -12,7 +12,9 @@ items <- list(rpf.drm(),
               rpf.nrm(outcomes=4, factors=2, T.a="random", T.c="random"),
               rpf.nrm(outcomes=4, factors=3, T.a="random", T.c="random"),
               rpf.lmp(q=0),
-              rpf.lmp(q=1))
+              rpf.lmp(q=1),
+              rpf.gpcmp(q=0),
+              rpf.gpcmp(q=1))
 
 triSize <- function(sz) sz*(sz + 1) / 2
 
