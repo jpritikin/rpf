@@ -101,18 +101,16 @@ void ch2012::run(const char *method)
 }
 
 // [[Rcpp::export]]
-SEXP CaiHansen2012_cpp(SEXP Rgrp, SEXP Rmethod, bool twotier)
+List CaiHansen2012_cpp(SEXP Rgrp, const CharacterVector &Rmethod, bool twotier)
 {
 	ProtectAutoBalanceDoodad mpi;
 
 	ch2012 engine(twotier, Rgrp);
-	engine.run(R_CHAR(Rf_asChar(Rmethod)));
+	engine.run(Rmethod[0]);
 	
 	//obMargin1(col);
 	//obMargin2(col1, col2);
 
-	MxRList out;
-	out.add("stat", Rf_ScalarReal(engine.stat));
-	out.add("n", Rf_ScalarReal(engine.weightSum));
-	return out.asR();
+	return List::create(_["stat"] = wrap(engine.stat),
+											_["n"] = wrap(engine.weightSum));
 }

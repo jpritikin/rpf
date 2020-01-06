@@ -7,6 +7,18 @@ options(mc.cores=1L) #otherwise not picked up by covr
 
 context("chen & thissen 1997")
 
+test_that("collapseCategoricalCells", {
+  O = matrix(c(7,31,42,20,0), 1,5,
+             dimnames=list('a',letters[1:5]))
+  E = matrix(c(3,39,50,8,0), 1,5,
+             dimnames=list('a',letters[1:5]))
+  got <- collapseCategoricalCells(O,E,9)
+  expect_equal(O['a','a'],7)
+  expect_true(is.na(got$O['a','a']))
+  expect_equal(got$collapsed, 2)
+  expect_equal(E[,letters[2:3]], got$E[,letters[2:3]])
+})
+
 mxSimplify2Array <- function(x, higher=FALSE) {
 	if (higher) {
 		stop("higher=TRUE is not implemented. Consider using simplify2array")
