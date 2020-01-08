@@ -2,6 +2,8 @@
 library(testthat)
 library(rpf)
 
+suppressWarnings(RNGversion("3.5"))
+
 context("score")
 
 test_that("tpbw1995-table2", {
@@ -15,12 +17,14 @@ test_that("tpbw1995-table2", {
   # fix parameterization
   param <- apply(param, 2, function(p) c(p[1], p[2:4] * -p[1]))
   colnames(param) <- paste('i', 1:3, sep="")
+  demoData <- rpf.sample(2, spec, param)
   
-  grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param)
+  grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param,
+              data = demoData[0,,drop=FALSE])
   
   expect_error(EAPscores(grp), "EAP requested but there are no data rows")
 
-  grp$data <- rpf.sample(2, spec, param)
+  grp$data <- demoData
   scores <- EAPscores(grp)
   
   expect_equal(scores[,1], c(0.084, -0.154), tolerance=.01)

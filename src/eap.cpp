@@ -2,40 +2,37 @@
 
 struct eap {
 	std::vector<double *> scoresOut;
+	int numLatents;
+	Eigen::ArrayXXd thrScore;
+
+	void setup(ba81NormalQuad &quad, int numThr)
+	{
+		numLatents = quad.abilities() + triangleLoc1(quad.abilities());
+		thrScore.resize(numLatents, numThr);
+	}
 };
 
 template <typename T>
 struct BA81LatentScores {
-       int numLatents;
-       Eigen::ArrayXXd thrScore;
-
-       void begin(class ifaGroup *state, T extraData);
-       void normalizeWeights(class ifaGroup *state, T extraData, int px, double *Qweight, double weight, int thrId);
-       void end(class ifaGroup *state, T extraData);
-       bool hasEnd() { return true; }
- };
-
-template <typename T>
-void BA81LatentScores<T>::begin(class ifaGroup *state, T extraData)
-{
-	ba81NormalQuad &quad = state->quad;
-	numLatents = quad.maxAbilities + triangleLoc1(quad.maxAbilities);
-	thrScore.resize(numLatents, GlobalNumberOfCores);
-}
+	void normalizeWeights(class ifaGroup *state, T extraData, int px, double weight, int thrId);
+	void end(class ifaGroup *state, T extraData);
+	bool hasEnd() { return true; }
+	bool wantSummary() { return true; }
+};
 
 template <typename T>
 void BA81LatentScores<T>::normalizeWeights(class ifaGroup *state, T extraData,
-					   int px, double *Qweight, double patternLik1, int thrId)
+					   int px, double patternLik1, int thrId)
 {
 	ba81NormalQuad &quad = state->quad;
-	const int maxAbilities = quad.maxAbilities;
+	ba81NormalQuad::layer &layer = quad.getLayer();
+	const int maxAbilities = quad.abilities();
 
-	// NOTE: Qweight remains unnormalized
+	Eigen::Map< Eigen::ArrayXd > wvec(&layer.Qweight.coeffRef(0, thrId), layer.Qweight.rows());
+	double *scorePad = &extraData.thrScore.coeffRef(0, thrId);
+	Eigen::Map< Eigen::ArrayXd > EscorePad(scorePad, extraData.numLatents);
 
-	thrScore.col(thrId).setZero();
-	double *scorePad = &thrScore.coeffRef(0, thrId);
-
-	quad.EAP(Qweight, 1/patternLik1, scorePad);
+	quad.EAP(wvec, patternLik1, EscorePad);
 
 	std::vector<double*> &out = extraData.scoresOut;
 
@@ -72,14 +69,15 @@ SEXP eap_wrapper(SEXP Rgrp)
 
 	eap eapContext;
 
-	ifaGroup grp(GlobalNumberOfCores, true);
-	grp.import(Rgrp, false);
-	grp.setupQuadrature();
+	ifaGroup grp(true);
+	grp.quad.setNumThreads(GlobalNumberOfCores);
+	grp.import(Rgrp);
 	grp.buildRowSkip();
 	if (grp.getNumUnique() == 0) {
 		stop("EAP requested but there are no data rows");
 	}
-	grp.ba81OutcomeProb(grp.param, false);
+	ba81NormalQuad &quad = grp.quad;
+	quad.cacheOutcomeProb(grp.param, false);
 
 	// TODO Wainer & Thissen. (1987). Estimating ability with the wrong
 	// model. Journal of Educational Statistics, 12, 339-368.
@@ -96,7 +94,7 @@ SEXP eap_wrapper(SEXP Rgrp)
 	ba81Estep1(oo);
 	*/
 
-	int maxAbilities = grp.quad.maxAbilities;
+	int maxAbilities = quad.abilities();
 	if (maxAbilities == 0) stop("At least 1 factor is required");
 	int rows = grp.getNumUnique();  // allow indexvector for compressed tables TODO
 	int cols = 2 * maxAbilities + triangleLoc1(maxAbilities);
@@ -133,13 +131,9 @@ SEXP eap_wrapper(SEXP Rgrp)
 		Rf_setAttrib(Rscores, R_RowNamesSymbol, grp.dataRowNames);
 	}
 
-	if (grp.numSpecific == 0) {
-		BA81Engine<eap&, BA81Dense, BA81LatentScores, BA81OmitEstep> engine;
-		engine.ba81Estep1(&grp, eapContext);
-	} else {
-		BA81Engine<eap&, BA81TwoTier, BA81LatentScores, BA81OmitEstep> engine;
-		engine.ba81Estep1(&grp, eapContext);
-	}
+	eapContext.setup(quad, GlobalNumberOfCores);
+	BA81Engine<eap&, BA81LatentScores, BA81OmitEstep> engine;
+	engine.ba81Estep1(&grp, eapContext);
 
 	return Rscores;
 }

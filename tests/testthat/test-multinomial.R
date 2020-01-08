@@ -2,6 +2,8 @@
 library(testthat)
 library(rpf)
 
+suppressWarnings(RNGversion("3.5"))
+
 context("multinomialFit")
 
 test_that("multinomialFit full info, simple", {

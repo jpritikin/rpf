@@ -140,14 +140,16 @@ test_that("2tier fit", {
   grp <- list(spec=spec, param=param, mean=runif(3, -1, 1), cov=diag(runif(3,.5,2)))
   grp$data <- rpf.sample(500, grp=grp)
   colnames(grp$param) <- colnames(grp$data)
-
-  got <- SitemFit(grp, qwidth=2, qpoints=5L, .twotier=FALSE)
-  tt <- SitemFit(grp, qwidth=2, qpoints=5L, .twotier=TRUE)
+  grp$qwidth <- 2
+  grp$qpoints <- 5L
+  
+  got <- SitemFit(grp, .twotier=FALSE)
+  tt <- SitemFit(grp, .twotier=TRUE)
   expect_equal(sapply(got, function(x) x$statistic),
                sapply(tt, function(x) x$statistic), .001)
 
-  got <- SitemFit(grp, qwidth=2, qpoints=5L, .twotier=FALSE, alt = TRUE)
-  tt <- SitemFit(grp, qwidth=2, qpoints=5L, .twotier=TRUE, alt=TRUE)
+  got <- SitemFit(grp, .twotier=FALSE, alt = TRUE)
+  tt <- SitemFit(grp, .twotier=TRUE, alt=TRUE)
   expect_equal(sapply(got, function(x) x$statistic),
                sapply(tt, function(x) x$statistic), .001)
 })

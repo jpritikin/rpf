@@ -15,10 +15,10 @@ struct ch2012 {
 };
 
 ch2012::ch2012(bool twotier, SEXP Rgrp)
-	: grp(1, twotier)
+	: grp(twotier)
 {
-	grp.import(Rgrp, false);
-	grp.setupQuadrature();
+	grp.quad.setNumThreads(1);
+	grp.import(Rgrp);
 	rowMask.reserve(grp.getNumUnique());
 	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		bool missing = false;
@@ -40,7 +40,7 @@ void ch2012::accumulate(double observed, double expected)
 	} else {
 		stat += 2 * observed * (log(observed) - log(expected));
 	}
-	R_CheckUserInterrupt();  // could loop for a long time
+	checkUserInterrupt();  // could loop for a long time
 }
 
 void ch2012::run(const char *method)
@@ -69,34 +69,23 @@ void ch2012::run(const char *method)
 		stop("Unknown method '%s'", method);
 	}
 
-	if (!grp.rowWeight) stop("weightColumn required");
+	// Data need to be compressed TODO
+	//if (!grp.rowWeight) stop("weightColumn required");  ?? TODO
 	ba81NormalQuad &quad = grp.quad;
-
-	grp.ba81OutcomeProb(grp.param, false);
 
 	weightSum = 0;
 	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		if (!rowMask[rx]) continue;
-		weightSum += grp.rowWeight[rx];
+		weightSum += grp.getRowWeight(rx);
 	}
 
 	stat = 0;
-	if (grp.numSpecific == 0) {
-		Eigen::ArrayXd Qweight(quad.totalQuadPoints);
-		for (int px=0; px < grp.getNumUnique(); ++px) {
-			if (!rowMask[px]) continue;
-			grp.ba81LikelihoodSlow2(px, Qweight.data());
-			accumulate(grp.rowWeight[px], Qweight.sum() * weightSum);
-		}
-	} else {
-		Eigen::ArrayXd Qweight(quad.totalQuadPoints * grp.numSpecific);
-		Eigen::ArrayXd Ei(quad.totalPrimaryPoints);
-		Eigen::ArrayXd Eis(quad.totalPrimaryPoints * grp.numSpecific);
-		for (int px=0; px < grp.getNumUnique(); ++px) {
-			if (!rowMask[px]) continue;
-			grp.cai2010EiEis(px, Qweight.data(), Eis.data(), Ei.data());
-			accumulate(grp.rowWeight[px], Ei.sum() * weightSum);
-		}
+	quad.cacheOutcomeProb(grp.param, false);
+	quad.allocBuffers();
+	for (int px=0; px < grp.getNumUnique(); ++px) {
+		if (!rowMask[px]) continue;
+		double patternLik1 = quad.computePatternLik(0, px);
+		accumulate(grp.getRowWeight(px), patternLik1 * weightSum);
 	}
 }
 

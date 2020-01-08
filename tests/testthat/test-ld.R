@@ -76,14 +76,16 @@ test_that("ct1997 2tier", {
   gen.param[c('a2','a3'), 4:5] <- 0
   colnames(gen.param) <- paste("i", 1:ncol(gen.param), sep="")
 	resp <- rpf.sample(500, spec, gen.param)
-	grp <- list(spec=spec, param=gen.param, mean=runif(3, 0, 1), cov=diag(runif(3,1,2)), data=resp)
-	slow <- ChenThissen1997(grp, qpoints=13L, qwidth=4, .twotier=FALSE)
-	fast <- ChenThissen1997(grp, qpoints=13L, qwidth=4, .twotier=TRUE)
+	grp <- list(spec=spec, param=gen.param, mean=runif(3, 0, 1),
+	            cov=diag(runif(3,1,2)), data=resp,
+	            qpoints=13L, qwidth=4)
+	slow <- ChenThissen1997(grp, .twotier=FALSE)
+	fast <- ChenThissen1997(grp, .twotier=TRUE)
   expect_equal(slow$raw[!is.na(slow$raw)],
                fast$raw[!is.na(fast$raw)], tolerance=.001)
   
   grp$data <- rpf.sample(200, spec, gen.param, mcar=.2)
-  fast <- ChenThissen1997(grp, qpoints=13L, qwidth=4)
+  fast <- ChenThissen1997(grp)
   got <- fast$pval[,'i1']
   names(got) <- NULL
 #  cat(deparse(round(fast$pval[,'i1'],2)))

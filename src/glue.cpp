@@ -361,12 +361,12 @@ bool has_openmp()
 int GlobalNumberOfCores = 1;
 
 // [[Rcpp::export]]
-int setNumberOfCores(IntegerVector num)
+int setNumberOfCores(int num)
 {
 #if defined(_OPENMP)
-	GlobalNumberOfCores = num[0];
+	GlobalNumberOfCores = num;
 #endif
-	return num[0];
+	return num;
 }
 
 extern const struct rpf librpf_model[];

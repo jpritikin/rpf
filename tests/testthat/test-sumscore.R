@@ -2,6 +2,8 @@
 library(testthat)
 library(rpf)
 
+suppressWarnings(RNGversion("3.5"))
+
 context("sumscore")
 
 test_that("observedSumScore", {
@@ -50,7 +52,7 @@ test_that("tpbw1995-table2", {
                     1.24, .08, 2.03, 4.3), nrow=4)
   # fix parameterization
   param <- apply(param, 2, function(p) c(p[1], p[2:4] * -p[1]))
-  
+
   grp <- list(spec=spec, mean=0, cov=matrix(1,1,1), param=param)
   
   got <- sumScoreEAP(grp)
@@ -105,17 +107,18 @@ test_that("2tier sumScoreEAP", {
       param['a3', seq(gx * gsize+1, (gx+1)*gsize)] <- 0
     }
   }
-  grp <- list(spec=spec, param=param, mean=runif(3, -1, 1), cov=diag(runif(3,.5,2)))
+  grp <- list(spec=spec, param=param, mean=runif(3, -1, 1),
+              cov=diag(runif(3,.5,2)), qwidth=2, qpoints=5L)
   grp$data <- rpf.sample(500, grp=grp)
   colnames(grp$param) <- colnames(grp$data)
   
-  got <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=FALSE)
-  tt <- sumScoreEAP(grp, qwidth=2, qpoints=5L, .twotier=TRUE)
+  got <- sumScoreEAP(grp, .twotier=FALSE)
+  tt <- sumScoreEAP(grp, .twotier=TRUE)
   expect_equal(tt, got[,c(1:2,5,8)], .001)
   
-  grp2 <- omitItems(grp, c('i5','i6'))
-  got <- sumScoreEAP(grp2, qwidth=2, qpoints=5L)
+  grp2 <- omitItems(grp, c('i4','i6'))
+  got <- sumScoreEAP(grp2)
 #  cat(deparse(round(log(got[,'p']), 2)))
-  expect_equal(log(got[,'p']), c(-3.19, -1.68, -1.07, -1.16, -2.14),
+  expect_equal(log(got[,'p']), c(-2.81, -1.37, -0.97, -1.4, -2.77),
                check.names=FALSE, tolerance=.01)
 })

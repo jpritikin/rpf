@@ -392,8 +392,8 @@ SitemFit1Internal <- function(out) {
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param method whether to use a pearson or rms test
 ##' @param log whether to return pvalues in log units
-##' @param qwidth the positive width of the quadrature in Z units
-##' @param qpoints the number of quadrature points
+##' @param qwidth  DEPRECATED
+##' @param qpoints DEPRECATED
 ##' @param alt whether to include the item of interest in the denominator
 ##' @param omit number of items to omit or a character vector with the names of the items to omit when calculating the observed and expected sum-score tables
 ##' @param .twotier whether to enable the two-tier optimization
@@ -409,9 +409,7 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
-
-	if (missing(qwidth) && !is.null(grp$qwidth)) { qwidth <- grp$qwidth }
-	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
+  if (!missing(qwidth) || !missing(qpoints)) complainAboutQuadSpec()
 
     spec <- grp$spec
   c.spec <- lapply(spec, function(m) {
@@ -443,7 +441,7 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
     stop(paste("param matrix must have", max.param ,"rows"))
   }
 
-    Eproportion <- ot2000md(grp, itemIndex, qwidth, qpoints, alt, mask, .twotier)
+    Eproportion <- ot2000md(grp, itemIndex, alt, mask, .twotier)
     if (nrow(Eproportion) != nrow(observed)) {
 	    print(Eproportion)
 	    stop(paste("Expecting", nrow(observed), "rows in expected matrix"))
@@ -459,10 +457,8 @@ SitemFit1 <- function(grp, item, free=0, ..., method="pearson", log=TRUE, qwidth
 	out
 }
 
-ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
-	if (missing(width)) width <- 6
-	if (missing(pts)) pts <- 49L
-	.Call('_rpf_ot2000', grp, item, width, pts, alt, mask, .twotier)
+ot2000md <- function(grp, item, alt=FALSE, mask, .twotier) {
+	.Call('_rpf_ot2000', grp, item, alt, mask, .twotier)
 }
 
 ##' Compute the S fit statistic for a set of items
@@ -474,8 +470,8 @@ ot2000md <- function(grp, item, width, pts, alt=FALSE, mask, .twotier) {
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param method whether to use a pearson or rms test
 ##' @param log whether to return pvalues in log units
-##' @param qwidth the positive width of the quadrature in Z units
-##' @param qpoints the number of quadrature points
+##' @param qwidth DEPRECATED
+##' @param qpoints DEPRECATED
 ##' @param alt whether to include the item of interest in the denominator
 ##' @param omit number of items to omit (a single number) or a list of the length the number of items
 ##' @param .twotier whether to enable the two-tier optimization
@@ -498,8 +494,7 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
 	}
 
-	if (missing(qwidth) && !is.null(grp$qwidth)) { qwidth <- grp$qwidth }
-	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
+  if (!missing(qwidth) || !missing(qpoints)) complainAboutQuadSpec()
 
     spec <- grp$spec
     param <- grp$param
@@ -515,7 +510,7 @@ SitemFit <- function(grp, ..., method="pearson", log=TRUE, qwidth=6, qpoints=49L
 		if (is.list(omit)) {
 			omit1 <- omit[[interest]]
 		}
-		ot.out <- SitemFit1(grp, itemname, free, method=method, log=log, qwidth=qwidth, qpoints=qpoints,
+		ot.out <- SitemFit1(grp, itemname, free, method=method, log=log,
 				    alt=alt, omit=omit1, .twotier=.twotier)
 		ot.out
 	})
@@ -761,6 +756,11 @@ tableWithWeights <- function(colpair, weights) {
 	result
 }
 
+complainAboutQuadSpec <- function()
+{
+  stop("Specify qwidth and qpoints as part of the group; For example, grp$qpoints <- 31L; grp$qwidth=4")
+}
+
 ##' Computes local dependence indices for all pairs of items
 ##'
 ##' Item Factor Analysis makes two assumptions: (1) that the latent
@@ -782,8 +782,8 @@ tableWithWeights <- function(colpair, weights) {
 ##' @param ...  Not used.  Forces remaining arguments to be specified by name.
 ##' @param data data
 ##' @param inames a subset of items to examine
-##' @param qwidth quadrature width
-##' @param qpoints number of equally spaced quadrature points
+##' @param qwidth DEPRECATED
+##' @param qpoints DEPRECATED
 ##' @param method method to use to calculate P values. The default is the
 ##' Pearson X^2 statistic. Use "lr" for the similar likelihood ratio statistic.
 ##' @param .twotier whether to enable the two-tier optimization
@@ -816,8 +816,7 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
   if (missing(data)) {
       data <- grp$data
   }
-	if (missing(qwidth) && !is.null(grp$qwidth)) { qwidth <- grp$qwidth }
-	if (missing(qpoints) && !is.null(grp$qpoints)) { qpoints <- grp$qpoints }
+	if (!missing(qwidth) || !missing(qpoints)) complainAboutQuadSpec()
 
   if (method != "pearson" && method != "lr") stop(paste("Unknown method", method))
   if (missing(inames)) {
@@ -864,7 +863,7 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 		observed <- tableWithWeights(obpair, rowWeight)
 		N <- sum(observed)
 
-		expected <- N * pairwiseExpected(grp, c(i1, i2), qwidth, qpoints, .twotier)
+		expected <- N * pairwiseExpected(grp, c(i1, i2), .twotier)
 		if (any(dim(observed) != dim(expected))) {
 			if (dim(observed)[1] != dim(expected)[1]) {
 				bad <- i1
@@ -946,8 +945,8 @@ crosstabTest <- function(ob, ex, trials) {
 	.Call('_rpf_crosstabTest_cpp', ob, ex, trials)
 }
 
-pairwiseExpected <- function(grp, items, qwidth=6, qpoints=49L, .twotier=FALSE) {
-	.Call('_rpf_pairwiseExpected_cpp', grp, qwidth, qpoints, items - 1L, .twotier)
+pairwiseExpected <- function(grp, items, .twotier=FALSE) {
+	.Call('_rpf_pairwiseExpected_cpp', grp, items - 1L, .twotier)
 }
 
 CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
