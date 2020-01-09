@@ -69,11 +69,11 @@ omitMostMissing <- function(grp, omit) {
 	omitItems(grp, bestToOmit(grp, omit))
 }
 
-ssEAP <- function(grp, mask, twotier=FALSE, debug=FALSE) {
+ssEAP <- function(grp, mask, twotier=FALSE) {
 	if (missing(mask)) {
 		mask <- rep(TRUE, ncol(grp$param))
 	}
-	.Call('_rpf_ssEAP_wrapper', grp, mask, twotier, debug)
+	.Call('_rpf_ssEAP_wrapper', grp, mask, twotier)
 }
 
 #' Collapse small sample size categorical frequency counts

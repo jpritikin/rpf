@@ -92,8 +92,6 @@ void ch2012::run(const char *method)
 // [[Rcpp::export]]
 List CaiHansen2012_cpp(SEXP Rgrp, const CharacterVector &Rmethod, bool twotier)
 {
-	ProtectAutoBalanceDoodad mpi;
-
 	ch2012 engine(twotier, Rgrp);
 	engine.run(Rmethod[0]);
 	

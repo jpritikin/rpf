@@ -63,10 +63,8 @@ void BA81LatentScores<T>::end(class ifaGroup *state, T extraData)
 }
 
 // [[Rcpp::export]]
-SEXP eap_wrapper(SEXP Rgrp)
+DataFrame eap_wrapper(SEXP Rgrp)
 {
-	ProtectAutoBalanceDoodad mpi;
-
 	eap eapContext;
 
 	ifaGroup grp(true);
@@ -99,41 +97,34 @@ SEXP eap_wrapper(SEXP Rgrp)
 	int rows = grp.getNumUnique();  // allow indexvector for compressed tables TODO
 	int cols = 2 * maxAbilities + triangleLoc1(maxAbilities);
 
-	SEXP Rscores;
-	Rf_protect(Rscores = Rf_allocVector(VECSXP, cols));
+	List Rscores(cols);
 	for (int cx=0; cx < cols; ++cx) {
-		SEXP vec = Rf_allocVector(REALSXP, rows);
-		SET_VECTOR_ELT(Rscores, cx, vec);
-		eapContext.scoresOut.push_back(REAL(vec));
+		NumericVector vec(rows);
+		Rscores[cx] = vec;
+		eapContext.scoresOut.push_back(vec.begin());
 	}
 
 	const int SMALLBUF = 20;
 	char buf[SMALLBUF];
-	SEXP names;
-	Rf_protect(names = Rf_allocVector(STRSXP, cols));
+	CharacterVector names(cols);
 	for (int nx=0; nx < maxAbilities; ++nx) {
-		SET_STRING_ELT(names, nx, Rf_mkChar(grp.factorNames[nx].c_str()));
+		names[nx] = grp.factorNames[nx].c_str();
 		snprintf(buf, SMALLBUF, "se%d", nx+1);
-		SET_STRING_ELT(names, maxAbilities + nx, Rf_mkChar(buf));
+		names[maxAbilities + nx] = buf;
 	}
 	for (int nx=0; nx < triangleLoc1(maxAbilities); ++nx) {
 		snprintf(buf, SMALLBUF, "cov%d", nx+1);
-		SET_STRING_ELT(names, maxAbilities*2 + nx, Rf_mkChar(buf));
+		names[maxAbilities*2 + nx] = buf;
 	}
-	Rf_setAttrib(Rscores, R_NamesSymbol, names);
-
-	SEXP classes;
-	Rf_protect(classes = Rf_allocVector(STRSXP, 1));
-	SET_STRING_ELT(classes, 0, Rf_mkChar("data.frame"));
-	Rf_setAttrib(Rscores, R_ClassSymbol, classes);
+	Rscores.attr("names") = names;
 
 	if (grp.dataRowNames) {
-		Rf_setAttrib(Rscores, R_RowNamesSymbol, grp.dataRowNames);
+		Rscores.attr("row.names") = grp.dataRowNames;
 	}
 
 	eapContext.setup(quad, GlobalNumberOfCores);
 	BA81Engine<eap&, BA81LatentScores, BA81OmitEstep> engine;
 	engine.ba81Estep1(&grp, eapContext);
 
-	return Rscores;
+	return DataFrame(Rscores);
 }

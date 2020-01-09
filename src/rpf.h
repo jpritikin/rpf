@@ -41,25 +41,6 @@ static inline int triangleLoc0(int diag)
 
 extern int GlobalNumberOfCores;
 
-class ProtectAutoBalanceDoodad {
-	PROTECT_INDEX initialpix;
- public:
-	ProtectAutoBalanceDoodad() {
-		R_ProtectWithIndex(R_NilValue, &initialpix);
-		Rf_unprotect(1);
-	}
-	PROTECT_INDEX getDepth() {
-		PROTECT_INDEX pix;
-		R_ProtectWithIndex(R_NilValue, &pix);
-		PROTECT_INDEX diff = pix - initialpix;
-		Rf_unprotect(1);
-		return diff;
-	}
-	~ProtectAutoBalanceDoodad() {
-		Rf_unprotect(getDepth());
-	}
-};
-
 static inline bool strEQ(const char *s1, const char *s2) { return strcmp(s1,s2)==0; }
 
 static inline void

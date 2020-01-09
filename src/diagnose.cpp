@@ -341,8 +341,6 @@ void otMix(ssEAP &myeap, int Sgroup, int ox, Eigen::ArrayBase<T1> &iProb, Eigen:
 // [[Rcpp::export]]
 SEXP ot2000(SEXP robj, int iPlusOne, bool alter, const LogicalVector &mask, bool twoTier)
 {
-	ProtectAutoBalanceDoodad mpi;
-
 	int interest = iPlusOne - 1;
 
 	ssEAP myeap(twoTier);
@@ -419,10 +417,8 @@ SEXP ot2000(SEXP robj, int iPlusOne, bool alter, const LogicalVector &mask, bool
 }
 
 // [[Rcpp::export]]
-SEXP ssEAP_wrapper(SEXP robj, SEXP Rmask, bool twoTier, bool debug)
+NumericMatrix ssEAP_wrapper(SEXP robj, SEXP Rmask, bool twoTier)
 {
-	ProtectAutoBalanceDoodad mpi;
-
 	ssEAP myeap(twoTier);
 	myeap.setup(robj, LOGICAL(Rmask));
 	myeap.tpbw1995();
@@ -433,38 +429,27 @@ SEXP ssEAP_wrapper(SEXP robj, SEXP Rmask, bool twoTier, bool debug)
 
 	Eigen::ArrayXXd &slCur = myeap.slCur;
 
-	if (debug) {  // nocov start
-		SEXP Rout;
-		Rf_protect(Rout = Rf_allocMatrix(REALSXP, slCur.rows(), slCur.cols()));
-		memcpy(REAL(Rout), slCur.data(), sizeof(double) * slCur.rows() * slCur.cols());
-		return Rout;
-	}  // nocov end
-
 	int curMax = myeap.maxScore;
 	int outRows = 1 + curMax;
 	int outCols = 1 + 2 * layer.primaryDims + triangleLoc1(layer.primaryDims);
 
-	SEXP dimnames;
-	Rf_protect(dimnames = Rf_allocVector(VECSXP, 2));
-	SET_VECTOR_ELT(dimnames, 0, R_NilValue);
-
-	SEXP names;
-	Rf_protect(names = Rf_allocVector(STRSXP, outCols));
-	SET_STRING_ELT(names, 0, Rf_mkChar("p"));
+	List dimnames(2);
+	CharacterVector names(outCols);
+	names[0] = "p";
 	for (int ax=0; ax < layer.primaryDims; ++ax) {
 		const int SMALLBUF = 20;
 		char buf[SMALLBUF];
-		SET_STRING_ELT(names, 1+ax, Rf_mkChar(grp.factorNames[ax].c_str()));
+		names[1+ax] = grp.factorNames[ax].c_str();
 		snprintf(buf, SMALLBUF, "se%d", 1+ax);
-		SET_STRING_ELT(names, 1+layer.primaryDims+ax, Rf_mkChar(buf));
+		names[1+layer.primaryDims+ax] = buf;
 	}
 	for (int cx=0; cx < triangleLoc1(layer.primaryDims); ++cx) {
 		const int SMALLBUF = 20;
 		char buf[SMALLBUF];
 		snprintf(buf, SMALLBUF, "cov%d", 1+cx);
-		SET_STRING_ELT(names, 1+2*layer.primaryDims+cx, Rf_mkChar(buf));
+		names[1+2*layer.primaryDims+cx] = buf;
 	}
-	SET_VECTOR_ELT(dimnames, 1, names);
+	dimnames[1] = names;
 
 	Eigen::ArrayXd &ssProb = myeap.ssProbCur;
 
@@ -477,10 +462,9 @@ SEXP ssEAP_wrapper(SEXP robj, SEXP Rmask, bool twoTier, bool debug)
 	pquad.setStructure(grp.qwidth, grp.qpoints, Eparam, meanVec, priCov, false);
 	pquad.refresh(meanVec, priCov);
 
-	SEXP Rout;
-	Rf_protect(Rout = Rf_allocMatrix(REALSXP, outRows, outCols));
-	Rf_setAttrib(Rout, R_DimNamesSymbol, dimnames);
-	double *out = REAL(Rout);
+	NumericMatrix Rout(outRows, outCols);
+	Rout.attr("dimnames") = dimnames;
+	double *out = Rout.begin();
 	memcpy(out, ssProb.data(), sizeof(double) * outRows);
 	for (int cx=0; cx <= curMax; cx++) {
 		Eigen::ArrayXd pad(layer.primaryDims + triangleLoc1(layer.primaryDims));
@@ -500,10 +484,8 @@ SEXP ssEAP_wrapper(SEXP robj, SEXP Rmask, bool twoTier, bool debug)
 }
 
 // [[Rcpp::export]]
-SEXP pairwiseExpected_cpp(SEXP robj, IntegerVector items, bool twoTier)
+NumericMatrix pairwiseExpected_cpp(SEXP robj, IntegerVector items, bool twoTier)
 {
-	ProtectAutoBalanceDoodad mpi;
-
 	if (items.size() != 2) stop("A pair of items must be specified");
 
 	ifaGroup grp(twoTier);
@@ -544,10 +526,8 @@ SEXP pairwiseExpected_cpp(SEXP robj, IntegerVector items, bool twoTier)
 	int id2 = spec2[RPF_ISpecID];
 	int outcomes2 = spec2[RPF_ISpecOutcomes];
 
-	SEXP Rexpected;
-	Rf_protect(Rexpected = Rf_allocMatrix(REALSXP, outcomes1, outcomes2));
-	double *outMem = REAL(Rexpected);
-	Eigen::Map<Eigen::MatrixXd> out(outMem, outcomes1, outcomes2);
+	NumericMatrix Rexpected(outcomes1, outcomes2);
+	Eigen::Map<Eigen::MatrixXd> out(Rexpected.begin(), outcomes1, outcomes2);
 	out.setZero();
 
 	// See Cai & Hansen (2012) Eqn 25, 26
@@ -781,8 +761,6 @@ NumericMatrix fast_tableWithWeights(IntegerVector Ritem1, IntegerVector Ritem2,
 // [[Rcpp::export]]
 List observedSumScore_cpp(SEXP Rgrp, const LogicalVector &Rmask)
 {
-	ProtectAutoBalanceDoodad mpi;
-
 	ifaGroup grp(false);
 	grp.quad.setNumThreads(1);
 	grp.import(Rgrp);
@@ -815,8 +793,6 @@ List observedSumScore_cpp(SEXP Rgrp, const LogicalVector &Rmask)
 // [[Rcpp::export]]
 List itemOutcomeBySumScore_cpp(SEXP Rgrp, const LogicalVector &Rmask, int interestPlusOne)
 {
-	ProtectAutoBalanceDoodad mpi;
-
 	ifaGroup grp(false);
 	grp.quad.setNumThreads(1);
 	grp.import(Rgrp);
