@@ -30,16 +30,6 @@ int get_model_id(const StringVector &str)
   return NA_REAL;
 }
 
-void getMatrixDims(SEXP r_theta, int *rows, int *cols)
-{
-    SEXP matrixDims;
-    Rf_protect(matrixDims = Rf_getAttrib(r_theta, R_DimSymbol));
-    int *dimList = INTEGER(matrixDims);
-    *rows = dimList[0];
-    *cols = dimList[1];
-    UNPROTECT(1);
-}
-
 static int getSpecID(const NumericVector &spec)
 {
   if (spec.size() < RPF_ISpecCount)
@@ -123,7 +113,7 @@ int unpack_theta(int dims, double *param, int numAbilities, double *theta, doubl
 }
 
 // [[Rcpp::export]]
-SEXP prob(const NumericVector &spec, SEXP r_param, SEXP r_theta)
+NumericMatrix prob(const NumericVector &spec, SEXP r_param, RObject r_theta)
 {
 	int id = getSpecID(spec);
 
@@ -140,43 +130,46 @@ SEXP prob(const NumericVector &spec, SEXP r_param, SEXP r_theta)
   double *param = REAL(r_param);
   int numPeople = 1;
   int numAbilities = 1;
+  double *theta = 0;
   if (dims == 0) {
-	  if (Rf_length(r_theta)) numPeople = Rf_length(r_theta);
+	  if (r_theta != R_NilValue) {
+			NumericVector tvec = as<NumericVector>(r_theta);
+			numPeople = tvec.size();
+		}
   } else if (dims == 1) {
-    numPeople = Rf_length(r_theta);
+		NumericVector tvec = as<NumericVector>(r_theta);
+    numPeople = Rf_length(tvec);
+		theta = tvec.begin();
   } else {
-    getMatrixDims(r_theta, &numAbilities, &numPeople);
+		NumericMatrix tmat = as<NumericMatrix>(r_theta);
+		numAbilities = tmat.nrow();
+		numPeople = tmat.ncol();
+		theta = tmat.begin();
   }
 
-  SEXP outsxp;
-  Rf_protect(outsxp = Rf_allocMatrix(REALSXP, numOutcomes, numPeople));
-  double *out = REAL(outsxp);
-  double *theta = NULL;
-  if (dims) theta = REAL(r_theta);
-    
+	NumericMatrix out(numOutcomes, numPeople);
   Eigen::VectorXd thBuf(dims);
   for (int px=0; px < numPeople; px++) {
 	  if (dims && !unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf.data())) {
 		  for (int ox=0; ox < numOutcomes; ox++) {
-			  out[px*numOutcomes + ox] = NA_REAL;
+			  out(ox, px) = NA_REAL;
 		  }
 		  continue;
 	  }
-	  (*Glibrpf_model[id].prob)(spec.begin(), param, thBuf.data(), out+px*numOutcomes);
+	  (*Glibrpf_model[id].prob)(spec.begin(), param, thBuf.data(), out.begin()+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
-      double prob = out[px*numOutcomes + ox];
+      double prob = out(ox, px);
       if (!std::isfinite(prob)) {
-	out[px*numOutcomes + ox] = NA_REAL;  // legitimate (e.g., grm thresholds misordered)
+				out(ox, px) = NA_REAL;  // legitimate (e.g., grm thresholds misordered)
       }
     }
   }
 
-  UNPROTECT(1);
-  return outsxp;
+  return out;
 }
 
 // [[Rcpp::export]]
-SEXP logprob(const NumericVector &spec, SEXP r_param, SEXP r_theta)
+SEXP logprob(const NumericVector &spec, SEXP r_param, RObject r_theta)
 {
 	int id = getSpecID(spec);
 
@@ -193,39 +186,41 @@ SEXP logprob(const NumericVector &spec, SEXP r_param, SEXP r_theta)
   int numPeople = 1;
   double *param = REAL(r_param);
   int numAbilities = 1;
+  double *theta = 0;
   if (dims == 0) {
-	  if (Rf_length(r_theta)) numPeople = Rf_length(r_theta);
+	  if (r_theta != R_NilValue) {
+			NumericVector tvec = as<NumericVector>(r_theta);
+			numPeople = tvec.size();
+		}
   } else if (dims == 1) {
-    numPeople = Rf_length(r_theta);
+		NumericVector tvec = as<NumericVector>(r_theta);
+    numPeople = Rf_length(tvec);
+		theta = tvec.begin();
   } else {
-    getMatrixDims(r_theta, &numAbilities, &numPeople);
+		NumericMatrix tmat = as<NumericMatrix>(r_theta);
+		numAbilities = tmat.nrow();
+		numPeople = tmat.ncol();
+		theta = tmat.begin();
   }
 
-  SEXP outsxp;
-  Rf_protect(outsxp = Rf_allocMatrix(REALSXP, numOutcomes, numPeople));
-  double *out = REAL(outsxp);
-  double *theta = NULL;
-  if (dims) theta = REAL(r_theta);
-    
+	NumericMatrix out(numOutcomes, numPeople);
   Eigen::VectorXd thBuf(dims);
   for (int px=0; px < numPeople; px++) {
 	  if (dims && !unpack_theta(dims, param, numAbilities, theta + px*numAbilities, thBuf.data())) {
 		  for (int ox=0; ox < numOutcomes; ox++) {
-			  out[px*numOutcomes + ox] = NA_REAL;
+			  out(ox, px) = NA_REAL;
 		  }
 		  continue;
 	  }
-	  (*Glibrpf_model[id].logprob)(spec.begin(), param, thBuf.data(), out+px*numOutcomes);
+	  (*Glibrpf_model[id].logprob)(spec.begin(), param, thBuf.data(), out.begin()+px*numOutcomes);
     for (int ox=0; ox < numOutcomes; ox++) {
-      double prob = out[px*numOutcomes + ox];
+      double prob = out(ox, px);
       if (!std::isfinite(prob)) {
-	out[px*numOutcomes + ox] = NA_REAL;  // legitimate (e.g., grm thresholds misordered)
+				out(ox, px) = NA_REAL;  // legitimate (e.g., grm thresholds misordered)
       }
     }
   }
-
-  UNPROTECT(1);
-  return outsxp;
+	return out;
 }
 
 // [[Rcpp::export]]
@@ -313,7 +308,7 @@ SEXP dTheta(const NumericVector &spec, SEXP r_param, SEXP r_where, SEXP r_dir)
 }
 
 // [[Rcpp::export]]
-SEXP rescale(const NumericVector &spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
+NumericVector rescale(const NumericVector &spec, SEXP r_param, SEXP r_mean, const NumericMatrix &r_cov)
 {
 	int id = getSpecID(spec);
   int numSpec = (*Glibrpf_model[id].numSpec)(spec.begin());
@@ -330,8 +325,8 @@ SEXP rescale(const NumericVector &spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
     stop("Item has %d dimensions, but mean is of length %d",
 	  dims, Rf_length(r_mean));
 
-  int cov_rows, cov_cols;
-  getMatrixDims(r_cov, &cov_rows, &cov_cols);
+  int cov_rows = r_cov.nrow();
+	int cov_cols = r_cov.ncol();
   if (cov_rows != dims || cov_rows != dims)
     stop("Item has %d dimensions, but cov is %dx%d",
 	  dims, cov_rows, cov_cols);
@@ -339,12 +334,9 @@ SEXP rescale(const NumericVector &spec, SEXP r_param, SEXP r_mean, SEXP r_cov)
   Eigen::VectorXi mask(numParam);
   mask.setZero();
 
-  SEXP ret;
-  Rf_protect(ret = Rf_allocVector(REALSXP, numParam));
-  memcpy(REAL(ret), REAL(r_param), sizeof(double) * numParam);
-  (*Glibrpf_model[id].rescale)(spec.begin(), REAL(ret), mask.data(),
-			      REAL(r_mean), REAL(r_cov));
-  UNPROTECT(1);
+  NumericVector ret = clone(r_param);
+  (*Glibrpf_model[id].rescale)(spec.begin(), ret.begin(), mask.data(),
+															 REAL(r_mean), r_cov.begin());
   return ret;
 }
 

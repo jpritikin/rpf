@@ -73,8 +73,6 @@ class MxRList : private MxRListBase {
 
 static inline bool strEQ(const char *s1, const char *s2) { return strcmp(s1,s2)==0; }
 
-void getMatrixDims(SEXP r_theta, int *rows, int *cols);
-
 static inline void
 pda(const double *ar, int rows, int cols) {   // column major order
 	for (int rx=0; rx < rows; rx++) {
