@@ -1,6 +1,11 @@
 .onLoad <- function(libname, pkgname) {
 	if ("package:parallel" %in% search()) {
-		cores <- detectCores(logical=TRUE)
+		cores <- as.integer(Sys.getenv("OMP_NUM_THREADS"))
+		if (is.na(cores)) {
+      cores <- detectCores(logical=TRUE)
+      if(is.na(cores)) cores <- 1L
+			else cores <- 2L
+    }
 		.Call(`_rpf_setNumberOfCores`, cores)
 		#packageStartupMessage(paste("OpenMP will use", cores, "cores"))
 	}
