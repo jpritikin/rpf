@@ -60,17 +60,6 @@ class ProtectAutoBalanceDoodad {
 	}
 };
 
-typedef std::vector< std::pair<const char *, SEXP> > MxRListBase;
-class MxRList : private MxRListBase {
- public:
-	size_t size() const { return MxRListBase::size(); }
-	SEXP asR();
-	void add(const char *key, SEXP val) {
-		Rf_protect(val);
-		push_back(std::make_pair(key, val));
-	};
-};
-
 static inline bool strEQ(const char *s1, const char *s2) { return strcmp(s1,s2)==0; }
 
 static inline void

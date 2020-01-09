@@ -1,23 +1,5 @@
 #include "rpf.h"
 
-SEXP MxRList::asR()
-{
-	// detect duplicate keys? TODO
-	SEXP names, ans;
-	int len = size();
-	Rf_protect(names = Rf_allocVector(STRSXP, len));
-	Rf_protect(ans = Rf_allocVector(VECSXP, len));
-	for (int lx=0; lx < len; ++lx) {
-		const char *p1 = (*this)[lx].first;
-		SEXP p2 = (*this)[lx].second;
-		if (!p1 || !p2) stop("Attempt to return NULL pointer to R");
-		SET_STRING_ELT(names, lx, Rf_mkChar(p1));
-		SET_VECTOR_ELT(ans,   lx, p2);
-	}
-	Rf_namesgets(ans, names);
-	return ans;
-}
-
 // [[Rcpp::export]]
 int get_model_id(const StringVector &str)
 {
