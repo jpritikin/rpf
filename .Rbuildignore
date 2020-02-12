@@ -1,6 +1,7 @@
 .gitignore
 .Rhistory
 .gdbinit
+.editorconfig
 .*.tar.gz
 ^vignettes/auto
 ^vignettes/*.html
