@@ -20,6 +20,9 @@
 
 ##' Read a flexMIRT PRM file
 ##'
+##' \lifecycle{experimental}
+##' This was last updated in 2017 and may no longer work.
+##' 
 ##' Load the item parameters from a flexMIRT PRM file.
 ##'
 ##' @param fname file name
