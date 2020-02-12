@@ -1,30 +1,50 @@
-Encoding: UTF-8
-Package: rpf
 Type: Package
+Package: rpf
 Title: Response Probability Functions
 Version: 0.62
 Date: 2019-04-12
-Authors@R: c(person("Joshua",family="Pritikin", email="jpritikin@pobox.com",
-    role=c('cre','aut')), person("Jonathan",family="Weeks",
-    email="weeksjp@gmail.com", role=c('ctb')),
-    person("Li", family="Cai", role=c('ctb')), person("Carrie",
-    family="Houts", role=c('ctb')), person("Phil", "Chalmers", email =
-    "rphilip.chalmers@gmail.com", role = c("ctb")),
-    person(c("Michael", "D."), "Hunter", role="ctb"),
-    person(c("Carl", "F."), "Falk", email =
-    "falkcarl@msu.edu", role = c("ctb"))
-    )
+Authors@R: 
+    c(person(given = "Joshua",
+             family = "Pritikin",
+             role = c("cre", "aut"),
+             email = "jpritikin@pobox.com"),
+      person(given = "Jonathan",
+             family = "Weeks",
+             role = "ctb",
+             email = "weeksjp@gmail.com"),
+      person(given = "Li",
+             family = "Cai",
+             role = "ctb"),
+      person(given = "Carrie",
+             family = "Houts",
+             role = "ctb"),
+      person(given = "Phil",
+             family = "Chalmers",
+             role = "ctb",
+             email = "rphilip.chalmers@gmail.com"),
+      person(given = c("Michael", "D."),
+             family = "Hunter",
+             role = "ctb"),
+      person(given = c("Carl", "F."),
+             family = "Falk",
+             role = "ctb",
+             email = "falkcarl@msu.edu"))
 Maintainer: Joshua Pritikin <jpritikin@pobox.com>
-Description: The purpose of this package is to factor out logic and math common
-    to Item Factor Analysis fitting, diagnostics, and analysis. It is
-    envisioned as core support code suitable for more specialized IRT packages
-    to build upon. Complete access to optimized C functions are made available
-    with R_RegisterCCallable().
-SystemRequirements: GNU make
-LazyData: yes
-LazyDataCompression: bzip2
+Description: The purpose of this package is to factor out logic
+    and math common to Item Factor Analysis fitting, diagnostics, and
+    analysis. It is envisioned as core support code suitable for more
+    specialized IRT packages to build upon. Complete access to optimized C
+    functions are made available with R_RegisterCCallable().
 License: GPL (>= 3)
-LinkingTo: Rcpp, RcppEigen
+URL: https://github.com/jpritikin/rpf
+Depends:
+    methods,
+    parallel,
+    R (>= 2.14.0)
+Imports:
+    Rcpp (>= 1.0.2),
+    mvtnorm,
+    lifecycle
 Suggests:
     testthat,
     roxygen2,
@@ -34,13 +54,18 @@ Suggests:
     numDeriv,
     knitr,
     mirt
-Imports:
-    Rcpp (>= 1.0.2), mvtnorm
-Depends:
-    methods,
-    parallel,
-    R (>= 2.14.0)
-VignetteBuilder: knitr
+LinkingTo: 
+    Rcpp,
+    RcppEigen
+VignetteBuilder: 
+    knitr
+RdMacros: 
+    lifecycle
+Encoding: UTF-8
+LazyData: yes
+LazyDataCompression: bzip2
+RoxygenNote: 7.0.2
+SystemRequirements: GNU make
 Collate:
     'init.R'
     'classes.R'
@@ -61,6 +86,4 @@ Collate:
     'lmp.R'
     'grmp.R'
     'gpcmp.R'
-		'RcppExports.R'
-URL: https://github.com/jpritikin/rpf
-RoxygenNote: 7.0.2
+    'RcppExports.R'

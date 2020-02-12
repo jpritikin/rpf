@@ -13,3 +13,4 @@
 ^\.travis\.yml$
 ^man-roxygen
 ^codecov\.yml$
+^.*\.Rproj$

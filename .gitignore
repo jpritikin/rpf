@@ -1,5 +1,5 @@
 .Rhistory
-/man
+/man/*.Rd
 *.o
 *.so
 /*.tar.gz
@@ -13,3 +13,4 @@
 /inst/doc/cache
 /staging
 /oprofile_data
+.Rproj.user
