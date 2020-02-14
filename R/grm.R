@@ -17,12 +17,13 @@
 ##' provides a little more information than the nominal model.
 ##' Stronger a priori assumptions offer provide more power at the cost
 ##' of flexibility.
-##' 
+##'
 ##' @param outcomes The number of choices available
 ##' @param factors the number of factors
 ##' @param multidimensional whether to use a multidimensional model.
 ##' Defaults to \code{TRUE}.
 ##' @return an item model
+##' @family response model
 ##' @examples
 ##' spec <- rpf.grm()
 ##' rpf.prob(spec, rpf.rparam(spec), 0)

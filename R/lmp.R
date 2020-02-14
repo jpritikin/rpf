@@ -1,5 +1,5 @@
 ##' Create logistic function of a monotonic polynomial (LMP) model
-##' 
+##'
 ##' This model is a dichotomous response model originally proposed by
 ##' Liang (2007) and is implemented using the parameterization by
 ##' Falk & Cai (2016).
@@ -68,7 +68,7 @@
 ##' Liang (2007). \emph{A semi-parametric approach to estimating item response
 ##' functions}. Unpublished doctoral dissertation, Department of Psychology,
 ##' The Ohio State University.
-##' @seealso \code{\link{rpf.gpcmp}} \code{\link{rpf.grmp}}
+##' @family response model
 ##' @examples
 ##' spec <- rpf.lmp(1) # 3rd order polynomial
 ##' theta<-seq(-3,3,.1)

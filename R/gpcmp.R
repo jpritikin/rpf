@@ -1,5 +1,5 @@
 ##' Create monotonic polynomial generalized partial credit (GPC-MP) model
-##' 
+##'
 ##' This model is a polytomous model proposed by Falk & Cai (2016) and is based
 ##' on the generalized partial credit model (Muraki, 1992).
 ##'
@@ -16,7 +16,7 @@
 ##' of length q. The GPC-MP uses the same parameterization for the polynomial
 ##' as described for the logistic function of a monotonic polynomial (LMP).
 ##' See also (\code{\link{rpf.lmp}}).
-##' 
+##'
 ##' The order of the polynomial is always odd and is controlled by
 ##' the user specified non-negative integer, q. The model contains
 ##' 1+(outcomtes-1)+2*q parameters and are used as input to the \code{\link{rpf.prob}}
@@ -45,8 +45,8 @@
 ##' applications to multiple group analysis. \emph{Psychometrika, 81}, 434-460.
 ##' \url{http://dx.doi.org/10.1007/s11336-014-9428-7}
 ##' @references Muraki, E. (1992). A generalized partial credit model: Application of an EM algorithm. \emph{Applied Psychological Measurement, 16,} 159–176.
-##' 
-##' @seealso \code{\link{rpf.lmp}} \code{\link{rpf.grmp}}
+##'
+##' @family response model
 ##'
 ##' @examples
 ##' spec <- rpf.gpcmp(5,2) # 5-category, 3rd order polynomial

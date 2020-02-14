@@ -4,6 +4,7 @@
 ##' models and parameters. If \code{grp} is given then theta, items, params,
 ##' mean, and cov can be omitted.
 ##'
+##' @template detail-group
 ##' @name rpf.sample
 ##' @param theta either a vector (for 1 dimension) or a matrix (for >1
 ##' dimension) of person abilities or the number of response patterns
@@ -11,14 +12,14 @@
 ##' @param items a list of item models
 ##' @param params a list or matrix of item parameters. If omitted, random item
 ##' parameters are generated for each item model.
-##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @template arg-dots
 ##' @param prefix Column names are taken from param or items.
 ##' If no column names are available, some will be generated using
 ##' the given prefix.
 ##' @param mean mean vector of latent distribution (optional)
 ##' @param cov covariance matrix of latent distribution (optional)
 ##' @param mcar proportion of generated data to set to NA (missing completely at random)
-##' @param grp a list with spec, param, mean, and cov
+##' @template arg-grp
 ##' @return Returns a data frame of response patterns
 ##' @examples
 ##' # 1 dimensional items
@@ -82,7 +83,7 @@ rpf.sample <- function(theta, items, params, ..., prefix="i",
   }
 
   outcomes <- vapply(items, function(i) i@outcomes, 0)
-  
+
   name <- colnames(params)
   if (is.null(name)) name <- names(items)
 

@@ -1,14 +1,15 @@
 ##' Create a multiple-choice response model
 ##'
-##' WARNING: This model is mostly not implemented.
-##' 
+##' \lifecycle{experimental}
+##'
 ##' This function instantiates a multiple-choice response
 ##' model.
-##' 
+##'
 ##' @param outcomes the number of possible outcomes
 ##' @param numChoices the number of choices available
 ##' @param factors the number of factors
 ##' @return an item model
+##' @family response model
 ##' @author Jonathan Weeks <weeksjp@@gmail.com>
 rpf.mcm <- function(outcomes=2, numChoices=5, factors=1) {
   stop("Not implemented")
@@ -27,12 +28,12 @@ setMethod("rpf.prob", signature(m="rpf.mdim.mcm", param="numeric",
                                 theta="matrix"),
           function(m, param, theta) {
             den <- NULL
-            
+
             a1 <- param[1:(m@factors*m@outcomes)]
             b1 <- param[(m@factors*m@outcomes+1):
                         ((m@factors+1)*m@outcomes)]
             c1 <- param[-1:-((m@factors+1)*m@outcomes)]
-            
+
             ##   Compute the denominator
             for (k in 1:m@outcomes) {
               tmp <- (k-1)*m@factors

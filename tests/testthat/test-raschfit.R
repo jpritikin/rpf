@@ -34,6 +34,29 @@ test_that("kct", {
   expect_equal(fit$outfit.z, kct.people$OUT.ZSTD[1:34], tolerance=.005)
 })
 
+test_that("freq", {
+  data(kct)
+  responses <- kct.people[,paste("V",2:19, sep="")]
+  colnames(responses) <- kct.items$NAME
+  
+  params <- cbind(1, kct.items$MEASURE, logit(0), logit(1))
+  rownames(params) <- kct.items$NAME
+  params[,2] <- -params[,2]
+  grp <- list(spec=rep(list(rpf.drm()),18),
+              param=t(params),
+              data=responses,
+              scores=data.frame(skill=kct.people$MEASURE))
+  
+  fit1 <- suppressWarnings(rpf.1dim.fit(group=grp, margin=1, wh.exact = TRUE))
+  expect_equal(as.integer(fit1$name), 1:34)
+  
+  grp$data <- grp$data[c(rep(1,10),2:34),]
+  grp$scores <- grp$scores[c(rep(1,10),2:34),,drop=FALSE]
+  fit2 <- suppressWarnings(rpf.1dim.fit(group=grp, margin=1, wh.exact = TRUE))
+  fit2 <- fit2[-c(2:10),]
+  expect_true(all(fit1 == fit2))
+})
+
 plot.icc <- function(ii, ii.p, width=7) {
   require(ggplot2)
   require(reshape2)

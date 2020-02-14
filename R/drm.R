@@ -10,7 +10,7 @@
 ##'
 ##' The pseudo-guessing and upper bound parameter are specified in
 ##' logit units (see \code{\link{logit}}).
-##' 
+##'
 ##' For discussion on the choice of priors see Cai, Yang, and
 ##' Hansen (2011, p. 246).
 ##'
@@ -20,6 +20,7 @@
 ##' @param poor if TRUE, use the traditional parameterization of
 ##' the 1d model instead of the slope-intercept parameterization
 ##' @return an item model
+##' @family response model
 ##' @references Cai, L., Yang, J. S., & Hansen, M. (2011). Generalized
 ##' Full-Information Item Bifactor Analysis.  \emph{Psychological
 ##' Methods, 16}(3), 221-248.

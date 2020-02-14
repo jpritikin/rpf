@@ -28,7 +28,7 @@ public:
 	Eigen::ArrayXi ttPrevCurMax;
 	Eigen::ArrayXXd slPrev;
 	Eigen::ArrayXd ssProbPrev;
-	
+
 	ssEAP(bool twotier) : grp(twotier) { grp.quad.setNumThreads(1); }
 	void setup(SEXP grp, const int *_mask);
 	void setLastItem(int which);
@@ -491,7 +491,7 @@ NumericMatrix pairwiseExpected_cpp(SEXP robj, IntegerVector items, bool twoTier)
 	ifaGroup grp(twoTier);
 	grp.quad.setNumThreads(1);
 	grp.import(robj);
-	
+
 	ba81NormalQuad &quad = grp.quad;
 	ba81NormalQuad::layer &layer = quad.getLayer();
 
@@ -603,7 +603,7 @@ struct ManhattenCollapse {
 	double bestFit;
 	Eigen::DenseIndex bestR, bestC;
 	double minExpected;
-	
+
 	ManhattenCollapse(int rows, int cols, double *oMem, double *eMem)
 		: obs(oMem, rows, cols), expected(eMem, rows, cols),
 		  minExpected(KANG_CHEN_MIN_EXPECTED) {};
@@ -765,6 +765,7 @@ List observedSumScore_cpp(SEXP Rgrp, const LogicalVector &Rmask)
 	grp.quad.setNumThreads(1);
 	grp.import(Rgrp);
 	if (grp.getNumUnique() == 0) stop("observedSumScore requires data");
+  grp.buildRowMult();
 
 	if (Rmask.size() != int(grp.spec.size())) {
 		stop("Mask must be of length %d not %d", int(grp.spec.size()), Rmask.size());
@@ -781,7 +782,7 @@ List observedSumScore_cpp(SEXP Rgrp, const LogicalVector &Rmask)
 	for (int rx=0; rx < grp.getNumUnique(); ++rx) {
 		int ss;
 		if (computeObservedSumScore(grp, itemMask, rx, &ss)) continue;
-		double weight = grp.getRowWeight(rx);
+		double weight = grp.rowMult(rx);
 		distOut[ss] += weight;
 		rowsIncluded += weight;
 	}
@@ -797,6 +798,7 @@ List itemOutcomeBySumScore_cpp(SEXP Rgrp, const LogicalVector &Rmask, int intere
 	grp.quad.setNumThreads(1);
 	grp.import(Rgrp);
 	if (grp.getNumUnique() == 0) stop("itemOutcomeBySumScore requires data");
+  grp.buildRowMult();
 
 	if (Rmask.size() != int(grp.spec.size())) {
 		stop("Mask must be of length %d not %d", int(grp.spec.size()), Rmask.size());
@@ -825,7 +827,7 @@ List itemOutcomeBySumScore_cpp(SEXP Rgrp, const LogicalVector &Rmask, int intere
 		if (pick == NA_INTEGER) continue;
 		int ss;
 		if (computeObservedSumScore(grp, itemMask, rx, &ss)) continue;
-		double weight = grp.getRowWeight(rx);
+		double weight = grp.rowMult(rx);
 		out(ss, pick-1) += weight;
 		rowsIncluded += weight;
 	}

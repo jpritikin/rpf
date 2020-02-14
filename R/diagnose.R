@@ -1,7 +1,7 @@
 ##' Calculate cell central moments
-##' 
+##'
 ##' Popular central moments include 2 (variance) and 4 (kurtosis).
-##' 
+##'
 ##' @param spec list of item models
 ##' @param params data frame of item parameters, 1 per row
 ##' @param scores model derived person scores
@@ -74,24 +74,29 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' The Wilson-Hilferty transformation is biased for less than 25 items.
 ##' Consider wh.exact=FALSE for less than 25 items.
 ##'
-##' @param spec list of item models
-##' @param params matrix of item parameters, 1 per column
-##' @param responses persons in rows and items in columns
-##' @param scores model derived person scores
+##' @template detail-group
+##'
+##' @param spec list of item response models \lifecycle{deprecated}
+##' @param params matrix of item parameters, 1 per column \lifecycle{deprecated}
+##' @param responses persons in rows and items in columns \lifecycle{deprecated}
+##' @param scores model derived person scores \lifecycle{deprecated}
 ##' @param margin for people 1, for items 2
 ##' @param wh.exact whether to use the exact Wilson-Hilferty transformation
 ##' @param group spec, params, data, and scores can be provided in a list instead of as arguments
+##' @template detail-group
+##'
 ##' @references Masters, G. N. & Wright, B. D. (1997). The Partial
 ##' Credit Model. In W. van der Linden & R. K. Kambleton (Eds.),
 ##' \emph{Handbook of modern item response theory}
 ##' (pp. 101-121). Springer.
-##' 
+##'
 ##' Wilson, E. B., & Hilferty, M. M. (1931). The distribution of
 ##' chi-square. \emph{Proceedings of the National Academy of Sciences of the
 ##' United States of America,} 17, 684-688.
-##' 
+##'
 ##' Wright, B. D. & Masters, G. N. (1982). \emph{Rating Scale
 ##' Analysis.} Chicago: Mesa Press.
+##' @family diagnostic
 ##' @examples
 ##' data(kct)
 ##' responses <- kct.people[,paste("V",2:19, sep="")]
@@ -105,14 +110,24 @@ rpf.1dim.stdresidual <- function(spec, params, responses, scores) {
 ##' params[,2] <- -params[,2]
 ##' rpf.1dim.fit(items, t(params), responses, scores, 2, wh.exact=TRUE)
 rpf.1dim.fit <- function(spec, params, responses, scores, margin, group=NULL, wh.exact=TRUE) {
-    if (!missing(group)) {
+  if (missing(margin)) stop("Which margin?")
+  if (!missing(group)) {
         spec <- group$spec
         params <- group$param
         responses <- group$data
         scores <- group$score[,1]  # should not assume first score TODO
-    }
+  }
 
   if (any(is.na(responses))) warning("Rasch fit statistics should not be used with missing data")  # true? TODO
+
+  if (dim(params)[2] != length(spec)) {
+    stop(paste("spec is length", length(spec), "but param has",
+               dim(params)[2], "columns"))
+  }
+  if (nrow(responses) != length(scores)) {
+    stop(paste("nrow(responses) is", nrow(responses), "but",length(scores),
+               "factor scores"))
+  }
 
   if (dim(params)[2] < 25 && wh.exact) {
     if (missing(wh.exact)) {
@@ -202,7 +217,7 @@ rpf.1dim.fit <- function(spec, params, responses, scores, margin, group=NULL, wh
 
 ##' Find the point where an item provides mean maximum information
 ##'
-##' WARNING: This function is experimental and may disappear.
+##' \lifecycle{experimental}
 ##'
 ##' @param spec an item spec
 ##' @param iparam an item parameter vector
@@ -218,13 +233,12 @@ rpf.mean.info1 <- function(spec, iparam, grain=.1) {
 
 ##' Find the point where an item provides mean maximum information
 ##'
+##' \lifecycle{experimental}
 ##' This is a point estimate of the mean difficulty of items that do
 ##' not offer easily interpretable parameters such as the Generalized
 ##' PCM. Since the information curve may not be unimodal, this
 ##' function integrates across the latent space.
-##' 
-##' WARNING: This function is experimental and may disappear.
-##' 
+##'
 ##' @param spec list of item specs
 ##' @param param list or matrix of item parameters
 ##' @param grain the step size for numerical integration (optional)
@@ -375,7 +389,7 @@ SitemFit1Internal <- function(out) {
 ##' missing. Therefore, you can optionally omit items with the
 ##' greatest number of responses missing relative to the item of
 ##' interest.
-##' 
+##'
 ##' Pearson is slightly more powerful than RMS in most cases I
 ##' examined.
 ##'
@@ -386,17 +400,20 @@ SitemFit1Internal <- function(out) {
 ##'
 ##' The name of the test, "S", probably stands for sum-score.
 ##'
-##' @param grp a list with spec, param, mean, cov, and data
+##' @template detail-group
+##'
+##' @template arg-grp
 ##' @param item the item of interest
 ##' @param free the number of free parameters involved in estimating the item (to adjust the df)
-##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @template arg-dots
 ##' @param method whether to use a pearson or rms test
-##' @param log whether to return pvalues in log units
-##' @param qwidth  DEPRECATED
-##' @param qpoints DEPRECATED
+##' @param log whether to return p-values in log units
+##' @param qwidth  \lifecycle{deprecated}
+##' @param qpoints \lifecycle{deprecated}
 ##' @param alt whether to include the item of interest in the denominator
 ##' @param omit number of items to omit or a character vector with the names of the items to omit when calculating the observed and expected sum-score tables
 ##' @param .twotier whether to enable the two-tier optimization
+##' @family diagnostic
 ##' @references Kang, T. and Chen, T. T. (2007). An investigation of
 ##' the performance of the generalized S-Chisq item-fit index for
 ##' polytomous IRT models. ACT Research Report Series.
@@ -466,18 +483,21 @@ ot2000md <- function(grp, item, alt=FALSE, mask, .twotier) {
 ##' Runs \code{\link{SitemFit1}} for every item and accumulates
 ##' the results.
 ##'
-##' @param grp a list with spec, param, mean, cov, data, and the free variable pattern
-##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' @template detail-group
+##'
+##' @template arg-grp
+##' @template arg-dots
 ##' @param method whether to use a pearson or rms test
-##' @param log whether to return pvalues in log units
-##' @param qwidth DEPRECATED
-##' @param qpoints DEPRECATED
+##' @param log whether to return p-values in log units
+##' @param qwidth \lifecycle{deprecated}
+##' @param qpoints \lifecycle{deprecated}
 ##' @param alt whether to include the item of interest in the denominator
 ##' @param omit number of items to omit (a single number) or a list of the length the number of items
 ##' @param .twotier whether to enable the two-tier optimization
 ##' @param .parallel whether to take advantage of multiple CPUs (default TRUE)
 ##' @return
 ##' a list of output from \code{\link{SitemFit1}}
+##' @family diagnostic
 ##' @examples
 ##' grp <- list(spec=list())
 ##' grp$spec[1:20] <- list(rpf.grm())
@@ -609,13 +629,14 @@ P.cdf.fn <- function(x, g.var, t) {
 
 ##' Compute the P value that the observed and expected tables come from the same distribution
 ##'
+##' \lifecycle{experimental}
 ##' This test is an alternative to Pearson's X^2
 ##' goodness-of-fit test.  In contrast to Pearson's X^2, no ad hoc cell
 ##' collapsing is needed to avoid an inflated false positive rate
 ##' in situations of sparse cell frequences.
 ##' The statistic rapidly converges to the Monte-Carlo estimate
 ##' as the number of draws increases.
-##' 
+##'
 ##' @param observed observed matrix
 ##' @param expected expected matrix
 ##' @return The P value indicating whether the two tables come from
@@ -657,10 +678,10 @@ ptw2011.gof.test <- function(observed, expected) {
   diag(P) <- 1 - 1/n
   B <- P %*% D %*% P
   g.var <- 1 / eigen(B, only.values=TRUE)$values[-n]
-  
+
   # Eqn 8 needs n variances, but matrix B (Eqn 6) only has n-1 non-zero
   # eigenvalues. Perhaps n-1 degrees of freedom?
-  
+
 # debugging:
 #  plot(function(t) P.cdf.fn(X, g.var, t), 0, 40)
 
@@ -680,7 +701,7 @@ ptw2011.gof.test <- function(observed, expected) {
 CT1997Internal1 <- function(info, method) {
 	observed <- info$orig.observed
 	expected <- info$orig.expected
-	
+
 	s <- ordinal.gamma(observed) - ordinal.gamma(expected)
 	if (!is.finite(s) || is.na(s) || s==0) s <- 1
 	info <- c(info, sign=sign(s), gamma=s)
@@ -778,12 +799,14 @@ complainAboutQuadSpec <- function()
 ##' or the use of testlets for scoring. Negative entries indicate that
 ##' the two item residuals are less correlated than expected.
 ##'
-##' @param grp a list with the spec, param, mean, and cov describing the group
-##' @param ...  Not used.  Forces remaining arguments to be specified by name.
-##' @param data data
+##' @template detail-group
+##'
+##' @template arg-grp
+##' @template arg-dots
+##' @param data data \lifecycle{deprecated}
 ##' @param inames a subset of items to examine
-##' @param qwidth DEPRECATED
-##' @param qpoints DEPRECATED
+##' @param qwidth \lifecycle{deprecated}
+##' @param qpoints \lifecycle{deprecated}
 ##' @param method method to use to calculate P values. The default is the
 ##' Pearson X^2 statistic. Use "lr" for the similar likelihood ratio statistic.
 ##' @param .twotier whether to enable the two-tier optimization
@@ -804,6 +827,7 @@ complainAboutQuadSpec <- function()
 ##' Wainer, H. & Kiely, G. L. (1987). Item clusters and computerized
 ##' adaptive testing: A case for testlets.  \emph{Journal of
 ##' Educational measurement, 24}(3), 185--201.
+##' @family diagnostic
 ##' @seealso \href{https://github.com/jpritikin/ifaTools}{ifaTools}
 ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=49, method="pearson",
 			    .twotier=TRUE, .parallel=TRUE) {
@@ -859,6 +883,11 @@ ChenThissen1997 <- function(grp, ..., data=NULL, inames=NULL, qwidth=6, qpoints=
 		rowWeight <- c()
 		if (!is.null(grp[['weightColumn']])) {
 			rowWeight <- data[[ grp[['weightColumn']] ]]
+		}
+		if (!is.null(grp[['freqColumn']])) {
+      fc <- data[[ grp[['freqColumn']] ]]
+			if (length(rowWeight) == 0) rowWeight <- fc
+      else rowWeight <- rowWeight * fc
 		}
 		observed <- tableWithWeights(obpair, rowWeight)
 		N <- sum(observed)
@@ -935,6 +964,7 @@ print.summary.ChenThissen1997 <- function(x,...) {
 
 ##' Monte-Carlo test for cross-tabulation tables
 ##'
+##' \lifecycle{experimental}
 ##' This is for developers.
 ##'
 ##' @param ob observed table
@@ -963,15 +993,17 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' can conduct a Monte-Carlo simulation study (see examples).
 ##'
 ##' Rows with missing data are ignored.
-##' 
+##'
 ##' The full information test is described in Bartholomew & Tzamourani
 ##' (1999, Section 3).
 ##'
-##' For CFI and TLI, you must provide an independence model.
-##' 
-##' @param grp a list with the spec, param, mean, and cov describing the group
-##' @param independenceGrp a list with the spec, param, mean, and cov describing the independence group
-##' @param ...  Not used.  Forces remaining arguments to be specified by name.
+##' For CFI and TLI, you must provide an \code{independenceGrp}.
+##'
+##' @template detail-group
+##'
+##' @template arg-grp
+##' @param independenceGrp the independence group
+##' @template arg-dots
 ##' @param method lr (default) or pearson
 ##' @param log whether to report p-value in log units
 ##' @param .twotier whether to use the two-tier optimization (default TRUE)
@@ -982,6 +1014,7 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' Bock, R. D., Gibbons, R., & Muraki, E. (1988). Full-information
 ##' item factor analysis. \emph{Applied Psychological Measurement, 12}(3),
 ##' 261-280.
+##' @family diagnostic
 ##' @examples
 ##' # Create an example IFA group
 ##' grp <- list(spec=list())
@@ -992,7 +1025,7 @@ CaiHansen2012 <- function(grp, method, .twotier = FALSE) {
 ##' grp$cov <- diag(1)
 ##' grp$uniqueFree <- sum(grp$param != 0)
 ##' grp$data <- rpf.sample(1000, grp=grp)
-##' 
+##'
 ##' # Monte-Carlo simulation study
 ##' mcReps <- 3    # increase this to 10,000 or so
 ##' stat <- rep(NA, mcReps)

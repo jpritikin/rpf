@@ -9,8 +9,8 @@
 ######################################################################################################################################
 ######################################################################################################################################
 
-#The R programs provided are free software; you can redistribute and/or modify them under the terms of the GNU General Public License 
-#(http://www.gnu.org/copyleft/gpl.html) as published by the Free Software Foundation; either version 2 of the License, or 
+#The R programs provided are free software; you can redistribute and/or modify them under the terms of the GNU General Public License
+#(http://www.gnu.org/copyleft/gpl.html) as published by the Free Software Foundation; either version 2 of the License, or
 #(at your option) any later version.  The programs are distributed in the hope that they will be useful, but WITHOUT ANY WARRANTY;
 #without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #See the GNU General Public License for more details.
@@ -22,11 +22,12 @@
 ##'
 ##' \lifecycle{experimental}
 ##' This was last updated in 2017 and may no longer work.
-##' 
+##'
 ##' Load the item parameters from a flexMIRT PRM file.
+##' @template detail-group
 ##'
 ##' @param fname file name
-##' @return a list of groups each with item parameters and the latent distribution
+##' @return a list of groups as described in the details
 read.flexmirt <- function(fname) {
   groups <- list()
 
@@ -58,7 +59,7 @@ read.flexmirt <- function(fname) {
     for (i in 1:nrow(thisGroup)) {
       spec <- NULL
       param <- c()
-      
+
       dims <- thisGroup[i,4]
 
       if (thisGroup[i,1] == 1) { # item
@@ -181,11 +182,14 @@ serialize.T <- function(spec, Tmat, T) {
 
 ##' Write a flexMIRT PRM file
 ##'
+##' \lifecycle{experimental}
+##' This was last updated in 2017 and may no longer work.
+##'
 ##' Formats item parameters in the way that flexMIRT expects to read
-##' them. Use \code{\link{read.flexmirt}} to see what shape the groups
-##' parameter of this function should take.
+##' them.
 ##'
 ##' NOTE: Support for the graded response model may not be complete.
+##' @template detail-group
 ##'
 ##' @param groups a list of groups each with items and latent parameters
 ##' @param file the destination file name
@@ -194,10 +198,10 @@ write.flexmirt <- function(groups, file=NULL, fileEncoding="") {
   if (missing(file)) {
     stop("You must specify the destination file=")
   }
-  if (file == "") 
+  if (file == "")
     file <- stdout()
   else if (is.character(file)) {
-    file <- if (nzchar(fileEncoding)) 
+    file <- if (nzchar(fileEncoding))
       file(file, "w", encoding = fileEncoding)
     else file(file, "w")
     on.exit(close(file))
@@ -206,9 +210,9 @@ write.flexmirt <- function(groups, file=NULL, fileEncoding="") {
     open(file, "w")
     on.exit(close(file))
   }
-  if (!inherits(file, "connection")) 
+  if (!inherits(file, "connection"))
     stop("'file' must be a character string or connection")
-  
+
   for (gx in 1:length(groups)) {
     grp <- groups[[gx]]
     for (ix in 1:length(grp$spec)) {

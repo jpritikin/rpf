@@ -79,12 +79,13 @@ build.T <- function(outcomes, got, type) {
 ##' of free parameters \eqn{\alpha} and \eqn{\gamma} by fixed matrices \eqn{T_a} and \eqn{T_c}, respectively;
 ##' \eqn{a_0} and \eqn{c_0} are fixed to 0 for identification;
 ##' and \eqn{C} is a normalizing factor to ensure that \eqn{\sum_k \mathrm P(\mathrm{pick}=k) = 1}.
-##' 
+##'
 ##' @param outcomes The number of choices available
 ##' @param factors the number of factors
 ##' @param T.a the T matrix for slope parameters
 ##' @param T.c the T matrix for intercept parameters
 ##' @return an item model
+##' @family response model
 ##' @references Thissen, D., Cai, L., & Bock, R. D. (2010). The
 ##' Nominal Categories Item Response Model. In M. L. Nering &
 ##' R. Ostini (Eds.), \emph{Handbook of Polytomous Item Response
