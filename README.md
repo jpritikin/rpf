@@ -24,7 +24,7 @@ install.packages("rpf")
 
 # Developer notes
 
-There are a number of useful scripts in the `util` subdir:
+There are a number of useful scripts in the `tools` subdir:
 
 * `install` -- Installs the package as quickly as possible. Skips
   building the vignettes and documentation.
