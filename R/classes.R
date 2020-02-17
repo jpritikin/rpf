@@ -287,6 +287,13 @@ setMethod("rpf.rescale", signature(m="rpf.base", param="numeric",
 ##' Map an item model, item parameters, and person trait score into a
 ##' probability vector
 ##'
+##' This function is known by many names in the literature. When
+##' plotted against latent trait, it is often called a traceline, item
+##' characteristic curve, or item response function. Sometimes the word
+##' 'category' or 'outcome' is used in place of 'item'. For example,
+##' 'item response function' might become 'category response
+##' function'. All these terms refer to the same thing.
+##'
 ##' @param m an item model
 ##' @param param item parameters
 ##' @param theta the trait score(s)
