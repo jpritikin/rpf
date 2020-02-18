@@ -19,12 +19,6 @@ using namespace Rcpp;
 
 #include "Eigen/Core"
 
-#if defined(_OPENMP)
-#include <omp.h>
-#else
-static inline int omp_get_thread_num() { return 0; }
-#endif
-
 static inline int triangleLoc1(int diag)
 {
 	return (diag) * (diag+1) / 2;   // 0 1 3 6 10 15 ..

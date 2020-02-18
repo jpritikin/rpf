@@ -21,6 +21,10 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 #include <Eigen/Core>
 #include <Eigen/Cholesky>
 #include <Eigen/Eigenvalues>
@@ -29,12 +33,6 @@ using namespace Rcpp;
 
 extern const struct rpf *Glibrpf_model;
 extern int Glibrpf_numModels;
-
-#if defined(_OPENMP)
-#include <omp.h>
-#else
-static inline int omp_get_thread_num() { return 0; }
-#endif
 
 namespace ba81quad {
 
@@ -1036,7 +1034,10 @@ void BA81Engine<T, LatentPolicy, EstepPolicy>::ba81Estep1(class ifaGroup *state,
 			continue;
 		}
 
-		int thrId = omp_get_thread_num();
+		int thrId = 0;
+#if defined(_OPENMP)
+    thrId = omp_get_thread_num();
+#endif
 		int mpx = state->rowMap[px];
 		double patternLik1 = state->quad.computePatternLik(thrId, mpx);
 
