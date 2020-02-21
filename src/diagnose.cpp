@@ -168,7 +168,6 @@ void ssEAP::aggregateSpecific(Eigen::ArrayBase<T1> &inMat, Eigen::ArrayBase<T2> 
 template <typename T1, typename T2, typename T3>
 void ssEAP::tt2prod(Eigen::ArrayBase<T1> &tt, Eigen::ArrayBase<T2> &buffer, Eigen::ArrayBase<T3> &perSpecific)
 {
-	ba81NormalQuad &quad = grp.quad;
 	ba81NormalQuad::layer &layer = grp.quad.getLayer();
 
 	int combinations = perSpecific.prod();
@@ -190,9 +189,7 @@ void ssEAP::tt2prod(Eigen::ArrayBase<T1> &tt, Eigen::ArrayBase<T2> &buffer, Eige
 template <typename T1, typename T2, typename T3>
 void ssEAP::prod2ss(Eigen::ArrayBase<T1> &buffer, Eigen::ArrayBase<T2> &ssMat, Eigen::ArrayBase<T3> &perSpecific)
 {
-	ba81NormalQuad &quad = grp.quad;
 	ba81NormalQuad::layer &layer = grp.quad.getLayer();
-
 	int combinations = perSpecific.prod();
 
 	ssMat.setZero();
@@ -212,7 +209,6 @@ void ssEAP::tt2ss(Eigen::ArrayBase<T1> &curMax1, Eigen::ArrayBase<T2> &curTbl,
 		  Eigen::ArrayBase<T3> &outTbl)
 {
 	int numScores = 1+maxScore;
-	ba81NormalQuad &quad = grp.quad;
 	ba81NormalQuad::layer &layer = grp.quad.getLayer();
 
 	Eigen::ArrayXXd Eis(layer.totalPrimaryPoints * layer.numSpecific, numScores);
@@ -256,7 +252,7 @@ void ssEAP::tpbw1995TwoTier()
 	ttPrevCurMax = ttCurMax;
 
 	Eigen::VectorXi abx(layer.maxDims);
-	Eigen::VectorXd where(layer.maxDims);
+	Eigen::VectorXd where(layer.numAbil());
 	int item0 = items[0];
 	{
 		const double *spec = grp.spec[item0];
@@ -351,11 +347,10 @@ SEXP ot2000(SEXP robj, int iPlusOne, bool alter, const LogicalVector &mask, bool
 	int outcomes = myeap.grp.itemOutcomes[interest];
 
 	ifaGroup &grp = myeap.grp;
-	ba81NormalQuad &quad = myeap.grp.quad;
 	ba81NormalQuad::layer &layer = grp.quad.getLayer();
 	Eigen::ArrayXXd iProb(layer.totalQuadPoints, outcomes);
 	Eigen::VectorXi abx(layer.maxDims);
-	Eigen::VectorXd where(layer.maxDims);
+	Eigen::VectorXd where(layer.numAbil());
 
 	{
 		const double *spec = grp.spec[interest];
@@ -533,7 +528,7 @@ NumericMatrix pairwiseExpected_cpp(SEXP robj, IntegerVector items, bool twoTier)
 	// See Cai & Hansen (2012) Eqn 25, 26
 
 	Eigen::VectorXi abx(layer.maxDims);
-	Eigen::VectorXd where(layer.maxDims);
+	Eigen::VectorXd where(layer.numAbil());
 	Eigen::VectorXd o1(outcomes1);
 	Eigen::VectorXd o2(outcomes2);
 

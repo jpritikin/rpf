@@ -66,7 +66,7 @@ void ba81NormalQuad::layer::copyStructure(ba81NormalQuad::layer &orig)
 void ba81NormalQuad::cacheOutcomeProb(double *param, bool wantLog)
 {
 	if (layers.size() != 1) stop("layers.size() != 1");
-	
+
 	layer &l1 = layers[0];
 	l1.outcomeProbX.resize(l1.totalOutcomes * l1.totalQuadPoints);
 
@@ -379,7 +379,7 @@ void ifaGroup::import(const List &Rlist)
 		stop("At least %d rows are required in the item parameter matrix, only %d found",
 			 impliedParamRows, paramRows);
 	}
-	
+
 	quad.refresh(meanVec, covMat);
 }
 
@@ -411,7 +411,9 @@ void ba81NormalQuad::layer::setupOutcomes(ifaGroup &ig)
 		itemOutcomes.push_back(outcomes);
 		cumItemOutcomes.push_back(totalOutcomes);
 		totalOutcomes += outcomes;
-		dataColumns.push_back(ig.dataColumns[ itemsMap[ix] ]);
+    if (ig.dataColumns.size()) {
+      dataColumns.push_back(ig.dataColumns[ itemsMap[ix] ]);
+    }
 	}
 
 	spec = ig.spec;
