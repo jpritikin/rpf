@@ -131,10 +131,10 @@ sumScoreEAPTestInternal <- function(result) {
 ##' @param .twotier whether to enable the two-tier optimization
 ##' @family diagnostic
 ##' @references
-##' Li, Z., & Cai, L. (2012, July). Summed score likelihood based indices for testing
-##' latent variable distribution fit in Item Response Theory. Paper presented at
-##' the annual International Meeting of the Psychometric Society, Lincoln,
-##' NE. Retrieved from http://www.cse.ucla.edu/downloads/files/SD2-final-4.pdf
+##' Li, Z., & Cai, L. (2018). Summed Score Likelihood-Based Indices for
+##' Testing Latent Variable Distribution Fit in
+##' Item Response Theory. \emph{Educational and
+##' Psychological Measurement, 78}(5), 857-886.
 sumScoreEAPTest <- function(grp, ..., qwidth=6.0, qpoints=49L, .twotier=TRUE) {
 	if (length(list(...)) > 0) {
 		stop(paste("Remaining parameters must be passed by name", deparse(list(...))))
@@ -319,7 +319,7 @@ print.summary.itemOutcomeBySumScore <- function(x,...) {
 	cat(sprintf("  N = %d\n", x$n))
 }
 
-##' Compute EAP scores
+##' Compute Expected A Posteriori (EAP) scores
 ##'
 ##' If you have missing data then you must specify
 ##' \code{minItemsPerScore}.  This option will set scores to NA when
