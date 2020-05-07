@@ -1,3 +1,5 @@
+CXX_STD = CXX14
+
 #DEBUG_CXXFLAGS=-DDEBUG -D_GLIBCXX_DEBUG -g3 -fno-inline -O0 -UNDEBUG
 #OPT_CXXFLAGS=-O2
 #GCC_CXXFLAGS=-Wall -Wextra -Wno-unknown-pragmas -Wno-unused-parameter -Wvla -Wno-ignored-attributes -Wno-deprecated-copy -Wno-cast-function-type
