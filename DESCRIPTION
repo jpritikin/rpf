@@ -1,9 +1,9 @@
 Type: Package
 Package: rpf
 Title: Response Probability Functions
-Version: 1.0.4
-Date: 2020-05-06
-Authors@R: 
+Version: 1.0.5
+Date: 2020-09-15
+Authors@R:
     c(person(given = "Joshua",
              family = "Pritikin",
              role = c("cre", "aut"),
@@ -35,6 +35,7 @@ Description: The purpose of this package is to factor out logic
     analysis. It is envisioned as core support code suitable for more
     specialized IRT packages to build upon. Complete access to optimized C
     functions are made available with R_RegisterCCallable().
+    This softare is described in Pritikin & Falk (2020) <doi:10.1177/0146621620929431>.
 License: GPL (>= 3)
 URL: https://github.com/jpritikin/rpf
 Depends:
@@ -54,17 +55,17 @@ Suggests:
     numDeriv,
     knitr,
     mirt
-LinkingTo: 
+LinkingTo:
     Rcpp,
     RcppEigen
-VignetteBuilder: 
+VignetteBuilder:
     knitr
-RdMacros: 
+RdMacros:
     lifecycle
 Encoding: UTF-8
 LazyData: yes
 LazyDataCompression: bzip2
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 SystemRequirements: GNU make
 Collate:
     'init.R'

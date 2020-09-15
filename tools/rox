@@ -9,7 +9,7 @@ if [ ! -x tools/rox ]; then
   exit 1
 fi
 
-Version=1.0.4
+Version=1.0.5
 descVersion=$(grep Version DESCRIPTION | cut -d ' ' -f 2)
 if [ "$descVersion" != "$Version" ]; then
   today=$(date +%Y-%m-%d)
