@@ -211,7 +211,7 @@ void ifaGroup::import(const List &Rlist)
 
 	paramRows = -1;
 	int pmatCols=-1;
-	int mips = 1;
+	int mips_ = 1;
 	int dataRows = 0;
 	NumericVector Rmean;
 	NumericMatrix Rcov;
@@ -271,7 +271,7 @@ void ifaGroup::import(const List &Rlist)
 		} else if (strEQ(key, "qpoints")) {
 			qpoints = as<int>(slotValue);
 		} else if (strEQ(key, "minItemsPerScore")) {
-			mips = as<int>(slotValue);
+			mips_ = as<int>(slotValue);
 		} else {
 			// ignore
 		}
@@ -312,7 +312,7 @@ void ifaGroup::import(const List &Rlist)
 
 	setLatentDistribution(mean, cov);
 
-	setMinItemsPerScore(mips);
+	setMinItemsPerScore(mips_);
 
 	if (numItems() != pmatCols) {
 		stop("item matrix implies %d items but spec is length %d",
@@ -423,13 +423,13 @@ void ba81NormalQuad::layer::setupOutcomes(ifaGroup &ig)
 void ba81NormalQuad::setupOutcomes(class ifaGroup &ig)
 { layers[0].setupOutcomes(ig); }
 
-void ifaGroup::setMinItemsPerScore(int mips)
+void ifaGroup::setMinItemsPerScore(int mips_)
 {
-	if (numItems() && mips > numItems()) {
+	if (numItems() && mips_ > numItems()) {
 		stop("minItemsPerScore (=%d) cannot be larger than the number of items (=%d)",
-			 mips, numItems());
+			 mips_, numItems());
 	}
-	minItemsPerScore = mips;
+	minItemsPerScore = mips_;
 }
 
 void ifaGroup::buildRowMult()
