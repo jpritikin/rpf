@@ -63,7 +63,7 @@
 ##' @references Falk, C. F., & Cai, L. (2016). Maximum marginal likelihood
 ##' estimation of a monotonic polynomial generalized partial credit model with
 ##' applications to multiple group analysis. \emph{Psychometrika, 81}, 434-460.
-##' \url{http://dx.doi.org/10.1007/s11336-014-9428-7}
+##' \doi{10.1007/s11336-014-9428-7}
 ##'
 ##' Liang (2007). \emph{A semi-parametric approach to estimating item response
 ##' functions}. Unpublished doctoral dissertation, Department of Psychology,

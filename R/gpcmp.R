@@ -43,7 +43,7 @@
 ##' @references Falk, C. F., & Cai, L. (2016). Maximum marginal likelihood
 ##' estimation of a monotonic polynomial generalized partial credit model with
 ##' applications to multiple group analysis. \emph{Psychometrika, 81}, 434-460.
-##' \url{http://dx.doi.org/10.1007/s11336-014-9428-7}
+##' \doi{10.1007/s11336-014-9428-7}
 ##' @references Muraki, E. (1992). A generalized partial credit model: Application of an EM algorithm. \emph{Applied Psychological Measurement, 16,} 159–176.
 ##'
 ##' @family response model
