@@ -12,6 +12,7 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - g++-8
+    - gfortran-8
 
 env:
   global:
@@ -29,7 +30,7 @@ before_script:
 - export _R_CHECK_FORCE_SUGGESTS_=false
 - echo "pkgbuild::compile_dll(); devtools::document(roclets = c('rd', 'collate', 'namespace'))" | R --vanilla
 
-script: 
+script:
   - |
     R CMD build --no-build-vignettes .
     travis_wait 59 R CMD check --ignore-vignettes rpf*tar.gz
