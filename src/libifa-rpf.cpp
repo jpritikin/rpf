@@ -1179,7 +1179,7 @@ irt_rpf_nominal_deriv2(const double *spec,
   }
 
   // don't need to transform the main a parameters TODO
-  double *dmat = Realloc(NULL, 3 * numParam * numParam, double);
+  double *dmat = R_Realloc(NULL, 3 * numParam * numParam, double);
   const int hsize = hessianIndex(0, numParam-1, numParam-1);
   {
 	  // unpack triangular storage into a full matrix
@@ -1236,7 +1236,7 @@ irt_rpf_nominal_deriv2(const double *spec,
     }
   }
 
-  Free(dmat);
+  R_Free(dmat);
 }
 
 static void
